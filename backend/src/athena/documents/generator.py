@@ -17,7 +17,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from docx.document import Document as DocxDocumentType
@@ -83,10 +83,10 @@ class DocumentOutput:
     """Result of document generation."""
 
     docx_bytes: bytes
-    pdf_bytes: Optional[bytes] = None
+    pdf_bytes: bytes | None = None
     filename: str = ""
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 class DocumentGenerator:
@@ -100,7 +100,7 @@ class DocumentGenerator:
     - Tailoring: Emphasize matching keywords, reorder sections based on job requirements
     """
 
-    def __init__(self, template_dir: Optional[Path] = None) -> None:
+    def __init__(self, template_dir: Path | None = None) -> None:
         """Initialize the document generator."""
         if template_dir is None:
             template_dir = Path(__file__).parent / "templates"
@@ -114,7 +114,7 @@ class DocumentGenerator:
     async def generate_resume(
         self,
         profile: UserProfile,
-        job: Optional[Job] = None,
+        job: Job | None = None,
         output_format: str = "docx",
     ) -> DocumentOutput:
         """
@@ -170,7 +170,7 @@ class DocumentGenerator:
             DocumentOutput with generated document(s)
         """
         logger.info(
-            f"Generating cover letter for {profile.full_name} - {job.title} at {job.company}"
+            f"Generating cover letter for {profile.full_name} - {job.title} at {job.company}",
         )
 
         # Tailor content for job
@@ -178,7 +178,7 @@ class DocumentGenerator:
 
         # Build DOCX
         docx_bytes = await asyncio.to_thread(
-            self._build_cover_letter_docx, tailored_data, profile, job
+            self._build_cover_letter_docx, tailored_data, profile, job,
         )
 
         output = DocumentOutput(
@@ -200,9 +200,9 @@ class DocumentGenerator:
     async def generate_both(
         self,
         profile: UserProfile,
-        job: Optional[Job] = None,
+        job: Job | None = None,
         output_format: str = "docx",
-    ) -> Tuple[DocumentOutput, Optional[DocumentOutput]]:
+    ) -> tuple[DocumentOutput, DocumentOutput | None]:
         """
         Generate both resume and cover letter.
 
@@ -226,7 +226,7 @@ class DocumentGenerator:
     # Resume Building
     # =========================================================================
 
-    def _build_resume_docx(self, data: Dict[str, Any], profile: UserProfile) -> bytes:
+    def _build_resume_docx(self, data: dict[str, Any], profile: UserProfile) -> bytes:
         """Build resume DOCX document."""
         doc = DocxDocumentClass()
 
@@ -250,7 +250,7 @@ class DocumentGenerator:
         return buffer.getvalue()
 
     def _build_cover_letter_docx(
-        self, data: Dict[str, Any], profile: UserProfile, job: Job
+        self, data: dict[str, Any], profile: UserProfile, job: Job,
     ) -> bytes:
         """Build cover letter DOCX document."""
         doc = DocxDocumentClass()
@@ -360,12 +360,12 @@ class DocumentGenerator:
 
         # Company/Date Style
         self._create_style(
-            doc, "CompanyDate", FONT_FAMILY, FONT_SIZE_BODY, BRAND_GREY_DARK, space_after=SPACING_4
+            doc, "CompanyDate", FONT_FAMILY, FONT_SIZE_BODY, BRAND_GREY_DARK, space_after=SPACING_4,
         )
 
         # Body Text Style
         self._create_style(
-            doc, "ResumeBody", FONT_FAMILY, FONT_SIZE_BODY, BRAND_NAVY, space_after=SPACING_8
+            doc, "ResumeBody", FONT_FAMILY, FONT_SIZE_BODY, BRAND_NAVY, space_after=SPACING_8,
         )
 
         # Bullet Point Style
@@ -393,7 +393,7 @@ class DocumentGenerator:
 
         # Skill Item Style
         self._create_style(
-            doc, "SkillItem", FONT_FAMILY, FONT_SIZE_BODY_SM, BRAND_NAVY, space_after=SPACING_4
+            doc, "SkillItem", FONT_FAMILY, FONT_SIZE_BODY_SM, BRAND_NAVY, space_after=SPACING_4,
         )
 
     def _create_style(
@@ -435,7 +435,7 @@ class DocumentGenerator:
     # Resume Sections
     # =========================================================================
 
-    def _build_resume_header(self, doc: "DocxDocumentType", data: Dict[str, Any]) -> None:
+    def _build_resume_header(self, doc: "DocxDocumentType", data: dict[str, Any]) -> None:
         """Build resume header with name and contact info."""
         # Name
         name_para = doc.add_paragraph(data.get("full_name", ""), style="ResumeName")
@@ -463,7 +463,7 @@ class DocumentGenerator:
         # Add a subtle line
         self._add_horizontal_line(doc, BRAND_RED, thickness=Pt(2))
 
-    def _build_professional_summary(self, doc: "DocxDocumentType", data: Dict[str, Any]) -> None:
+    def _build_professional_summary(self, doc: "DocxDocumentType", data: dict[str, Any]) -> None:
         """Build professional summary section."""
         summary = data.get("summary", "")
         if not summary:
@@ -472,7 +472,7 @@ class DocumentGenerator:
         doc.add_paragraph("PROFESSIONAL SUMMARY", style="SectionHeading")
         doc.add_paragraph(summary, style="ResumeBody")
 
-    def _build_core_skills(self, doc: "DocxDocumentType", data: Dict[str, Any]) -> None:
+    def _build_core_skills(self, doc: "DocxDocumentType", data: dict[str, Any]) -> None:
         """Build core skills section with categorized skills."""
         skills = data.get("skills", [])
         if not skills:
@@ -481,7 +481,7 @@ class DocumentGenerator:
         doc.add_paragraph("CORE SKILLS", style="SectionHeading")
 
         # Group skills by category
-        categories: Dict[str, List[str]] = {}
+        categories: dict[str, list[str]] = {}
         for skill in skills:
             category = skill.get("category", "Technical") or "Technical"
             if category not in categories:
@@ -498,7 +498,7 @@ class DocumentGenerator:
             skills_text = "  •  ".join(skill_list)
             doc.add_paragraph(skills_text, style="SkillItem")
 
-    def _build_experience(self, doc: "DocxDocumentType", data: Dict[str, Any]) -> None:
+    def _build_experience(self, doc: "DocxDocumentType", data: dict[str, Any]) -> None:
         """Build experience section in reverse chronological order."""
         experiences = data.get("experience", [])
         if not experiences:
@@ -508,13 +508,13 @@ class DocumentGenerator:
 
         # Sort by start_date descending (most recent first)
         sorted_exps = sorted(
-            experiences, key=lambda x: x.get("start_date", datetime.min), reverse=True
+            experiences, key=lambda x: x.get("start_date", datetime.min), reverse=True,
         )
 
         for exp in sorted_exps:
             self._add_experience_entry(doc, exp)
 
-    def _add_experience_entry(self, doc: "DocxDocumentType", exp: Dict[str, Any]) -> None:
+    def _add_experience_entry(self, doc: "DocxDocumentType", exp: dict[str, Any]) -> None:
         """Add a single experience entry."""
         title = exp.get("title", "")
         company = exp.get("company", "")
@@ -549,7 +549,7 @@ class DocumentGenerator:
                 bullet = doc.add_paragraph(style="BulletPoint")
                 bullet.text = achievement
 
-    def _build_education(self, doc: "DocxDocumentType", data: Dict[str, Any]) -> None:
+    def _build_education(self, doc: "DocxDocumentType", data: dict[str, Any]) -> None:
         """Build education section."""
         education = data.get("education", [])
         if not education:
@@ -594,7 +594,7 @@ class DocumentGenerator:
             if details:
                 doc.add_paragraph("  |  ".join(details), style="CompanyDate")
 
-    def _build_certifications(self, doc: "DocxDocumentType", data: Dict[str, Any]) -> None:
+    def _build_certifications(self, doc: "DocxDocumentType", data: dict[str, Any]) -> None:
         """Build certifications section."""
         certifications = data.get("certifications", [])
         if not certifications:
@@ -611,7 +611,7 @@ class DocumentGenerator:
     # Cover Letter Sections
     # =========================================================================
 
-    def _build_cover_letter_header(self, doc: "DocxDocumentType", data: Dict[str, Any]) -> None:
+    def _build_cover_letter_header(self, doc: "DocxDocumentType", data: dict[str, Any]) -> None:
         """Build cover letter header matching resume."""
         # Name
         name_para = doc.add_paragraph(data.get("full_name", ""), style="ResumeName")
@@ -658,7 +658,7 @@ class DocumentGenerator:
         para.paragraph_format.space_after = SPACING_16
 
     def _build_opening_paragraph(
-        self, doc: "DocxDocumentType", data: Dict[str, Any], job: Job
+        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job,
     ) -> None:
         """Build opening paragraph - position, company, hook."""
         headline = data.get("headline", "")
@@ -676,7 +676,7 @@ class DocumentGenerator:
         para.paragraph_format.space_after = SPACING_16
 
     def _build_body_paragraphs(
-        self, doc: "DocxDocumentType", data: Dict[str, Any], job: Job
+        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job,
     ) -> None:
         """Build body paragraphs matching skills to job requirements."""
         # Match skills to job requirements
@@ -710,7 +710,7 @@ class DocumentGenerator:
                     f"{job.company}'s objectives."
                 )
                 doc.add_paragraph(
-                    text, style="ResumeBody"
+                    text, style="ResumeBody",
                 ).paragraph_format.space_after = SPACING_12
 
         # Paragraph 3: Cultural fit / company knowledge
@@ -724,7 +724,7 @@ class DocumentGenerator:
             doc.add_paragraph(text, style="ResumeBody").paragraph_format.space_after = SPACING_16
 
     def _build_closing_paragraph(
-        self, doc: "DocxDocumentType", data: Dict[str, Any], job: Job
+        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job,
     ) -> None:
         """Build closing paragraph with call to action."""
         text = (
@@ -738,7 +738,7 @@ class DocumentGenerator:
     def _build_sign_off(self, doc: "DocxDocumentType", profile: UserProfile) -> None:
         """Build professional sign-off."""
         doc.add_paragraph(
-            "Sincerely,", style="ResumeBody"
+            "Sincerely,", style="ResumeBody",
         ).paragraph_format.space_after = SPACING_32
         doc.add_paragraph(profile.full_name, style="ResumeBody")
 
@@ -746,7 +746,7 @@ class DocumentGenerator:
     # Tailoring Logic
     # =========================================================================
 
-    def _tailor_profile_for_job(self, profile: UserProfile, job: Optional[Job]) -> Dict[str, Any]:
+    def _tailor_profile_for_job(self, profile: UserProfile, job: Job | None) -> dict[str, Any]:
         """
         Tailor profile data for a specific job.
 
@@ -754,7 +754,7 @@ class DocumentGenerator:
         - Highlights relevant experience
         - Adjusts summary to match job language
         """
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "full_name": profile.full_name,
             "phone": profile.phone,
             "location": profile.location,
@@ -812,7 +812,7 @@ class DocumentGenerator:
 
         return data
 
-    def _match_skills_to_job(self, skills: List[Dict[str, Any]], job: Job) -> List[str]:
+    def _match_skills_to_job(self, skills: list[dict[str, Any]], job: Job) -> list[str]:
         """Find skills that match job requirements."""
         job_keywords = set(kw.lower() for kw in job.keywords)
         job_requirements = [r.lower() for r in job.requirements]
@@ -833,7 +833,7 @@ class DocumentGenerator:
     # Conversion Helpers
     # =========================================================================
 
-    def _skill_to_dict(self, skill: Skill) -> Dict[str, Any]:
+    def _skill_to_dict(self, skill: Skill) -> dict[str, Any]:
         """Convert Skill model to dict."""
         return {
             "name": skill.name,
@@ -842,7 +842,7 @@ class DocumentGenerator:
             "category": skill.category,
         }
 
-    def _experience_to_dict(self, exp: Experience) -> Dict[str, Any]:
+    def _experience_to_dict(self, exp: Experience) -> dict[str, Any]:
         """Convert Experience model to dict."""
         return {
             "title": exp.title,
@@ -856,7 +856,7 @@ class DocumentGenerator:
             "skills_used": exp.skills_used,
         }
 
-    def _education_to_dict(self, edu: Education) -> Dict[str, Any]:
+    def _education_to_dict(self, edu: Education) -> dict[str, Any]:
         """Convert Education model to dict."""
         return {
             "institution": edu.institution,
@@ -870,7 +870,7 @@ class DocumentGenerator:
         }
 
     def _format_date_range(
-        self, start: Optional[datetime], end: Optional[datetime], current: bool
+        self, start: datetime | None, end: datetime | None, current: bool,
     ) -> str:
         """Format date range for display."""
         parts = []
@@ -886,7 +886,7 @@ class DocumentGenerator:
         return " — ".join(parts) if parts else ""
 
     def _add_horizontal_line(
-        self, doc: "DocxDocumentType", color: RGBColor, thickness: Pt = LINE_THICKNESS_DEFAULT
+        self, doc: "DocxDocumentType", color: RGBColor, thickness: Pt = LINE_THICKNESS_DEFAULT,
     ) -> None:
         """Add a horizontal line to the document."""
         para = doc.add_paragraph()
@@ -956,11 +956,11 @@ class DocumentGenerator:
             # Map styles to HTML tags
             if "Heading" in style_name or "SectionHeading" in style_name:
                 html_parts.append(
-                    f'<h2 style="color:#070A40; margin-top:24pt; margin-bottom:12pt;">{text}</h2>'
+                    f'<h2 style="color:#070A40; margin-top:24pt; margin-bottom:12pt;">{text}</h2>',
                 )
             elif "JobTitle" in style_name:
                 html_parts.append(
-                    f'<h3 style="color:#070A40; margin-top:12pt; margin-bottom:4pt;">{text}</h3>'
+                    f'<h3 style="color:#070A40; margin-top:12pt; margin-bottom:4pt;">{text}</h3>',
                 )
             elif "CompanyDate" in style_name:
                 html_parts.append(f'<p style="color:#6B7280; margin-bottom:4pt;">{text}</p>')
@@ -968,15 +968,15 @@ class DocumentGenerator:
                 html_parts.append(f'<li style="margin-left:30px; margin-bottom:4pt;">{text}</li>')
             elif "SkillCategory" in style_name:
                 html_parts.append(
-                    f'<p style="color:#E63946; font-weight:bold; margin-bottom:4pt;">{text}</p>'
+                    f'<p style="color:#E63946; font-weight:bold; margin-bottom:4pt;">{text}</p>',
                 )
             elif "ResumeName" in style_name:
                 html_parts.append(
-                    f'<h1 style="color:#070A40; text-align:center; margin-bottom:8pt;">{text}</h1>'
+                    f'<h1 style="color:#070A40; text-align:center; margin-bottom:8pt;">{text}</h1>',
                 )
             elif "ResumeContact" in style_name:
                 html_parts.append(
-                    f'<p style="color:#6B7280; text-align:center; margin-bottom:24pt;">{text}</p>'
+                    f'<p style="color:#6B7280; text-align:center; margin-bottom:24pt;">{text}</p>',
                 )
             else:
                 html_parts.append(f'<p style="margin-bottom:8pt; line-height:1.15;">{text}</p>')
@@ -1024,9 +1024,9 @@ class DocumentGenerator:
 
 async def generate_resume(
     profile: UserProfile,
-    job: Optional[Job] = None,
+    job: Job | None = None,
     output_format: str = "docx",
-    template_dir: Optional[Path] = None,
+    template_dir: Path | None = None,
 ) -> DocumentOutput:
     """Convenience function to generate a resume."""
     generator = DocumentGenerator(template_dir)
@@ -1037,7 +1037,7 @@ async def generate_cover_letter(
     profile: UserProfile,
     job: Job,
     output_format: str = "docx",
-    template_dir: Optional[Path] = None,
+    template_dir: Path | None = None,
 ) -> DocumentOutput:
     """Convenience function to generate a cover letter."""
     generator = DocumentGenerator(template_dir)
@@ -1048,8 +1048,8 @@ async def generate_application_package(
     profile: UserProfile,
     job: Job,
     output_format: str = "docx",
-    template_dir: Optional[Path] = None,
-) -> Tuple[DocumentOutput, Optional[DocumentOutput]]:
+    template_dir: Path | None = None,
+) -> tuple[DocumentOutput, DocumentOutput | None]:
     """Generate both resume and cover letter for a job application."""
     generator = DocumentGenerator(template_dir)
     return await generator.generate_both(profile, job, output_format)
@@ -1060,7 +1060,7 @@ async def generate_application_package(
 # =========================================================================
 
 
-def create_base_templates(template_dir: Optional[Path] = None) -> None:
+def create_base_templates(template_dir: Path | None = None) -> None:
     """Create base template files for reference."""
     if template_dir is None:
         template_dir = Path(__file__).parent / "templates"
@@ -1082,7 +1082,7 @@ def _create_resume_template_docx(path: Path) -> None:
     # Header
     doc.add_paragraph("[FULL NAME]", style="TemplateName")
     doc.add_paragraph(
-        "[Phone]  |  [Location]  |  [Email]  |  [LinkedIn]  |  [GitHub]", style="TemplateContact"
+        "[Phone]  |  [Location]  |  [Email]  |  [LinkedIn]  |  [GitHub]", style="TemplateContact",
     )
 
     # Horizontal rule
@@ -1096,7 +1096,7 @@ def _create_resume_template_docx(path: Path) -> None:
     doc.add_paragraph("CORE SKILLS", style="TemplateSectionHeading")
     doc.add_paragraph("TECHNICAL", style="TemplateSkillCategory")
     doc.add_paragraph(
-        "[Skill 1]  •  [Skill 2]  •  [Skill 3]  •  [Skill 4]", style="TemplateSkillItem"
+        "[Skill 1]  •  [Skill 2]  •  [Skill 3]  •  [Skill 4]", style="TemplateSkillItem",
     )
     doc.add_paragraph("TOOLS & PLATFORMS", style="TemplateSkillCategory")
     doc.add_paragraph("[Tool 1]  •  [Tool 2]  •  [Tool 3]", style="TemplateSkillItem")
@@ -1121,7 +1121,7 @@ def _create_resume_template_docx(path: Path) -> None:
     doc.add_paragraph("EDUCATION", style="TemplateSectionHeading")
     doc.add_paragraph("[Degree], [Field of Study]", style="TemplateJobTitle")
     doc.add_paragraph(
-        "[Institution]  |  [Location]  |  [Graduation Year]", style="TemplateCompanyDate"
+        "[Institution]  |  [Location]  |  [Graduation Year]", style="TemplateCompanyDate",
     )
 
     # Certifications
@@ -1221,7 +1221,7 @@ def _setup_template_doc(doc: "DocxDocumentType") -> None:
 
 def _define_template_styles(doc: "DocxDocumentType") -> None:
     """Define template styles."""
-    styles_config: List[Tuple[Any, ...]] = [
+    styles_config: list[tuple[Any, ...]] = [
         (
             "TemplateName",
             FONT_SIZE_DISPLAY_XL,
@@ -1315,7 +1315,7 @@ def _define_template_styles(doc: "DocxDocumentType") -> None:
         left_indent = config[7] if len(config) > 7 else Inches(0)
 
         _create_template_style(
-            doc, name, font_size, color, bold, alignment, space_before, space_after, left_indent
+            doc, name, font_size, color, bold, alignment, space_before, space_after, left_indent,
         )
 
 

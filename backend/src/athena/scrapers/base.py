@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import httpx
 from pydantic import HttpUrl
@@ -34,19 +34,19 @@ class BaseScraper(ABC):
         self,
         source: JobSource,
         base_url: str,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
         rate_limit: float = 1.0,  # seconds between requests
         use_browser: bool = False,
     ) -> None:
         self.source = source
         self.base_url = base_url
         self.headers = headers or {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         }
         self.rate_limit = rate_limit
         self.use_browser = use_browser
-        self._client: Optional[httpx.AsyncClient] = None
-        self._browser: Optional[PlaywrightBrowser] = None
+        self._client: httpx.AsyncClient | None = None
+        self._browser: PlaywrightBrowser | None = None
         self._last_request_time = 0.0
         self.logger = logger
 
@@ -83,15 +83,15 @@ class BaseScraper(ABC):
         response.raise_for_status()
         return response.text
 
-    async def fetch_json(self, url: str) -> Dict[str, Any]:
+    async def fetch_json(self, url: str) -> dict[str, Any]:
         """Fetch JSON content from URL."""
         await self._rate_limit_wait()
         client = await self._get_client()
         response = await client.get(url)
         response.raise_for_status()
-        return cast(Dict[str, Any], response.json())
+        return cast(dict[str, Any], response.json())
 
-    async def fetch_with_browser(self, url: str, wait_for: Optional[str] = None) -> str:
+    async def fetch_with_browser(self, url: str, wait_for: str | None = None) -> str:
         """Fetch page using Playwright browser."""
         browser = await self._get_browser()
         page = await browser.new_page()
@@ -108,15 +108,15 @@ class BaseScraper(ABC):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         """Search for jobs matching criteria."""
         pass
 
     @abstractmethod
-    async def parse_job_listing(self, element_or_html: Any) -> Optional[Job]:
+    async def parse_job_listing(self, element_or_html: Any) -> Job | None:
         """Parse a single job listing from HTML element or page."""
         pass
 
@@ -158,31 +158,31 @@ class ScraperRegistry:
     """Registry for managing all scrapers."""
 
     def __init__(self) -> None:
-        self._scrapers: Dict[JobSource, BaseScraper] = {}
+        self._scrapers: dict[JobSource, BaseScraper] = {}
 
     def register(self, scraper: BaseScraper) -> None:
         self._scrapers[scraper.source] = scraper
 
-    def get(self, source: JobSource) -> Optional[BaseScraper]:
+    def get(self, source: JobSource) -> BaseScraper | None:
         return self._scrapers.get(source)
 
-    def get_all(self) -> List[BaseScraper]:
+    def get_all(self) -> list[BaseScraper]:
         return list(self._scrapers.values())
 
     async def search_all(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-        sources: Optional[List[JobSource]] = None,
-    ) -> List[Job]:
+        sources: list[JobSource] | None = None,
+    ) -> list[Job]:
         """Search across all registered scrapers."""
-        scrapers: List[BaseScraper] = list(self._scrapers.values())
+        scrapers: list[BaseScraper] = list(self._scrapers.values())
         if sources:
             scrapers = [s for s in scrapers if s.source in sources]
 
-        all_jobs: List[Job] = []
+        all_jobs: list[Job] = []
         for scraper in scrapers:
             try:
                 jobs = await scraper.search_jobs(query, location, job_type, max_results)

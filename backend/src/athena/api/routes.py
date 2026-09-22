@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
@@ -34,7 +34,7 @@ from .schemas import (
     UserProfileResponse,
 )
 
-router = APIRouter(prefix="/athena", tags=["athena"])
+router = APIRouter(tags=["athena"])
 
 
 # Job endpoints
@@ -47,15 +47,15 @@ async def create_job(job: JobCreate):
 
 @router.get("/jobs", response_model=JobListResponse)
 async def list_jobs(
-    status: Optional[JobStatus] = None,
-    source: Optional[JobSource] = None,
-    job_type: Optional[JobType] = None,
-    location: Optional[str] = None,
-    min_ats_score: Optional[float] = None,
-    max_ats_score: Optional[float] = None,
-    min_match_score: Optional[float] = None,
-    max_match_score: Optional[float] = None,
-    search: Optional[str] = None,
+    status: JobStatus | None = None,
+    source: JobSource | None = None,
+    job_type: JobType | None = None,
+    location: str | None = None,
+    min_ats_score: float | None = None,
+    max_ats_score: float | None = None,
+    min_match_score: float | None = None,
+    max_match_score: float | None = None,
+    search: str | None = None,
     limit: int = Query(50, le=100),
     offset: int = Query(0, ge=0),
 ):
@@ -110,7 +110,7 @@ async def get_job(job_id: UUID):
 
 
 @router.patch("/jobs/{job_id}", response_model=JobResponse)
-async def update_job(job_id: UUID, updates: Dict[str, Any]):
+async def update_job(job_id: UUID, updates: dict[str, Any]):
     """Update a job."""
     job = athena_db.get_job(job_id)
     if not job:
@@ -139,7 +139,7 @@ async def create_profile(profile: UserProfileCreate):
     return athena_db.add_user_profile(profile_obj)
 
 
-@router.get("/profiles", response_model=List[UserProfileResponse])
+@router.get("/profiles", response_model=list[UserProfileResponse])
 async def list_profiles():
     """List all user profiles."""
     profiles = athena_db.user_profiles.get_all()
@@ -165,7 +165,7 @@ async def get_profile_by_email(email: str):
 
 
 @router.patch("/profiles/{profile_id}", response_model=UserProfileResponse)
-async def update_profile(profile_id: UUID, updates: Dict[str, Any]):
+async def update_profile(profile_id: UUID, updates: dict[str, Any]):
     """Update a user profile."""
     profile = athena_db.get_user_profile(profile_id)
     if not profile:
@@ -188,9 +188,9 @@ async def create_application(application: ApplicationCreate):
 
 @router.get("/applications", response_model=ApplicationListResponse)
 async def list_applications(
-    user_profile_id: Optional[UUID] = None,
-    job_id: Optional[UUID] = None,
-    status: Optional[ApplicationStatus] = None,
+    user_profile_id: UUID | None = None,
+    job_id: UUID | None = None,
+    status: ApplicationStatus | None = None,
 ):
     """List applications with filters."""
     apps = athena_db.get_applications(user_profile_id, job_id, status)
@@ -210,7 +210,7 @@ async def get_application(app_id: UUID):
 
 
 @router.patch("/applications/{app_id}", response_model=ApplicationResponse)
-async def update_application(app_id: UUID, updates: Dict[str, Any]):
+async def update_application(app_id: UUID, updates: dict[str, Any]):
     """Update an application."""
     app = athena_db.get_application(app_id)
     if not app:
@@ -239,7 +239,7 @@ async def trigger_scrape(request: ScrapeJobRequest, background_tasks: Background
     return ScrapeJobResponse.model_validate(scrape_job)
 
 
-@router.get("/scrape/history", response_model=List[ScrapeJobResponse])
+@router.get("/scrape/history", response_model=list[ScrapeJobResponse])
 async def get_scrape_history(limit: int = 50):
     """Get recent scrape job history."""
     jobs = athena_db.get_recent_scrape_jobs(limit)
@@ -254,7 +254,7 @@ async def match_jobs(request: MatchJobsRequest):
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
 
-    jobs: List[Job] = []
+    jobs: list[Job] = []
     if request.job_ids:
         jobs = [j for j in (athena_db.get_job(jid) for jid in request.job_ids) if j is not None]
     else:
@@ -390,6 +390,6 @@ async def get_scheduler_status():
                 "id": job.id,
                 "name": job.name,
                 "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
-            }
+            },
         )
     return {"running": athena_scheduler._running, "jobs": jobs}

@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
+from typing import Any, Generic, TypeVar
 from uuid import UUID
 
 from filelock import FileLock
@@ -24,13 +24,13 @@ T = TypeVar("T", bound=BaseModel)
 class AthenaStore(Generic[T]):
     """File-based store for Athena data using JSONL format with file locking."""
 
-    def __init__(self, base_dir: Path, filename: str, model_class: Type[T], id_field: str = "id"):
+    def __init__(self, base_dir: Path, filename: str, model_class: type[T], id_field: str = "id"):
         self.base_dir = base_dir
         self.filepath = base_dir / filename
         self.model_class = model_class
         self.id_field = id_field
         self._lock = FileLock(str(self.filepath) + ".lock")
-        self._cache: Dict[str, T] = {}
+        self._cache: dict[str, T] = {}
         self._loaded = False
 
     def _ensure_dir(self) -> None:
@@ -38,7 +38,7 @@ class AthenaStore(Generic[T]):
         if not self.filepath.exists():
             self.filepath.write_text("")
 
-    def _load_all(self) -> Dict[str, T]:
+    def _load_all(self) -> dict[str, T]:
         if self._loaded:
             return self._cache
 
@@ -86,8 +86,8 @@ class AthenaStore(Generic[T]):
             return str(data)
         return data
 
-    def _deserialize(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
+    def _deserialize(self, data: dict[str, Any]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
         for k, v in data.items():
             if k.endswith("_at") or k in (
                 "start_date",
@@ -125,11 +125,11 @@ class AthenaStore(Generic[T]):
                 result[k] = v
         return result
 
-    def get(self, id: UUID) -> Optional[T]:
+    def get(self, id: UUID) -> T | None:
         items = self._load_all()
         return items.get(str(id))
 
-    def get_all(self) -> List[T]:
+    def get_all(self) -> list[T]:
         return list(self._load_all().values())
 
     def add(self, obj: T) -> T:
@@ -155,7 +155,7 @@ class AthenaStore(Generic[T]):
             return True
         return False
 
-    def filter(self, **kwargs: Any) -> List[T]:
+    def filter(self, **kwargs: Any) -> list[T]:
         items = self._load_all()
         results = []
         for obj in items.values():
@@ -172,13 +172,11 @@ class AthenaStore(Generic[T]):
 class AthenaDB:
     """Main database interface for Athena."""
 
-    def __init__(self, base_dir: Optional[Path] = None):
+    def __init__(self, base_dir: Path | None = None):
         if base_dir is None:
-            # Use existing paths.py pattern
-            from ai_company.paths import get_project_root
+            from .paths import get_data_root
 
-            project_root = get_project_root()
-            base_dir = project_root / "company" / "athena"
+            base_dir = get_data_root()
 
         self.base_dir = base_dir
 
@@ -192,16 +190,16 @@ class AthenaDB:
     def add_job(self, job: Job) -> Job:
         return self.jobs.add(job)
 
-    def get_job(self, job_id: UUID) -> Optional[Job]:
+    def get_job(self, job_id: UUID) -> Job | None:
         return self.jobs.get(job_id)
 
     def get_jobs(
         self,
-        status: Optional[JobStatus] = None,
-        source: Optional[JobSource] = None,
+        status: JobStatus | None = None,
+        source: JobSource | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = self.jobs.get_all()
         if status:
             jobs = [j for j in jobs if j.status == status]
@@ -232,15 +230,15 @@ class AthenaDB:
     def add_application(self, app: Application) -> Application:
         return self.applications.add(app)
 
-    def get_application(self, app_id: UUID) -> Optional[Application]:
+    def get_application(self, app_id: UUID) -> Application | None:
         return self.applications.get(app_id)
 
     def get_applications(
         self,
-        user_profile_id: Optional[UUID] = None,
-        job_id: Optional[UUID] = None,
-        status: Optional[ApplicationStatus] = None,
-    ) -> List[Application]:
+        user_profile_id: UUID | None = None,
+        job_id: UUID | None = None,
+        status: ApplicationStatus | None = None,
+    ) -> list[Application]:
         apps = self.applications.get_all()
         if user_profile_id:
             apps = [a for a in apps if a.user_profile_id == user_profile_id]
@@ -259,10 +257,10 @@ class AthenaDB:
     def add_user_profile(self, profile: UserProfile) -> UserProfile:
         return self.user_profiles.add(profile)
 
-    def get_user_profile(self, profile_id: UUID) -> Optional[UserProfile]:
+    def get_user_profile(self, profile_id: UUID) -> UserProfile | None:
         return self.user_profiles.get(profile_id)
 
-    def get_user_profile_by_email(self, email: str) -> Optional[UserProfile]:
+    def get_user_profile_by_email(self, email: str) -> UserProfile | None:
         for profile in self.user_profiles.get_all():
             if profile.email == email:
                 return profile
@@ -276,10 +274,10 @@ class AthenaDB:
     def add_scrape_job(self, scrape_job: ScrapeJob) -> ScrapeJob:
         return self.scrape_jobs.add(scrape_job)
 
-    def get_scrape_job(self, job_id: UUID) -> Optional[ScrapeJob]:
+    def get_scrape_job(self, job_id: UUID) -> ScrapeJob | None:
         return self.scrape_jobs.get(job_id)
 
-    def get_recent_scrape_jobs(self, limit: int = 50) -> List[ScrapeJob]:
+    def get_recent_scrape_jobs(self, limit: int = 50) -> list[ScrapeJob]:
         jobs = self.scrape_jobs.get_all()
         jobs.sort(key=lambda j: j.created_at, reverse=True)
         return jobs[:limit]

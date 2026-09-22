@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from ..models import Document, Education, Experience, Skill, UserProfile
 
@@ -26,7 +26,7 @@ class ParsedSection:
     name: str
     content: str
     raw_text: str
-    bbox: Optional[Tuple[float, float, float, float]] = None  # x0, y0, x1, y1
+    bbox: tuple[float, float, float, float] | None = None  # x0, y0, x1, y1
 
 
 @dataclass
@@ -34,12 +34,12 @@ class ParseResult:
     """Result of parsing a resume document."""
 
     success: bool
-    profile_data: Dict[str, Any] = field(default_factory=dict)
-    sections: List[ParsedSection] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    profile_data: dict[str, Any] = field(default_factory=dict)
+    sections: list[ParsedSection] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     raw_text: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_user_profile(self, email: str, file_path: str) -> UserProfile:
         """Convert parsed data to UserProfile model."""
@@ -67,7 +67,7 @@ class ParseResult:
                     mime_type=self._get_mime_type(file_path),
                     size_bytes=Path(file_path).stat().st_size if Path(file_path).exists() else 0,
                     parsed_content=self.profile_data,
-                )
+                ),
             ],
         )
 
@@ -101,12 +101,12 @@ class DocumentParser(ABC):
         text = text.replace("\u200b", "").replace("\ufeff", "")
         return text.strip()
 
-    def _extract_email(self, text: str) -> Optional[str]:
+    def _extract_email(self, text: str) -> str | None:
         """Extract email address from text."""
         match = re.search(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", text)
         return match.group(0) if match else None
 
-    def _extract_phone(self, text: str) -> Optional[str]:
+    def _extract_phone(self, text: str) -> str | None:
         """Extract phone number from text."""
         # Match various phone formats
         patterns = [
@@ -119,16 +119,16 @@ class DocumentParser(ABC):
                 return match.group(0)
         return None
 
-    def _extract_urls(self, text: str) -> Dict[str, Optional[str]]:
+    def _extract_urls(self, text: str) -> dict[str, str | None]:
         """Extract LinkedIn, GitHub, portfolio URLs from text."""
-        urls: Dict[str, Optional[str]] = {
+        urls: dict[str, str | None] = {
             "linkedin_url": None,
             "github_url": None,
             "portfolio_url": None,
         }
 
         linkedin_match = re.search(
-            r"(?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9_-]+", text, re.IGNORECASE
+            r"(?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9_-]+", text, re.IGNORECASE,
         )
         if linkedin_match:
             url = linkedin_match.group(0)
@@ -137,7 +137,7 @@ class DocumentParser(ABC):
             urls["linkedin_url"] = url
 
         github_match = re.search(
-            r"(?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9_-]+", text, re.IGNORECASE
+            r"(?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9_-]+", text, re.IGNORECASE,
         )
         if github_match:
             url = github_match.group(0)
@@ -147,7 +147,7 @@ class DocumentParser(ABC):
 
         # Generic portfolio/personal site
         portfolio_match = re.search(
-            r"(?:https?://)?(?:www\.)?[A-Za-z0-9_-]+\.(?:com|io|dev|me|app)", text, re.IGNORECASE
+            r"(?:https?://)?(?:www\.)?[A-Za-z0-9_-]+\.(?:com|io|dev|me|app)", text, re.IGNORECASE,
         )
         if portfolio_match and not any(portfolio_match.group(0) in v for v in urls.values() if v):
             url = portfolio_match.group(0)
@@ -157,7 +157,7 @@ class DocumentParser(ABC):
 
         return urls
 
-    def _parse_skills(self, text: str) -> List[Dict[str, Any]]:
+    def _parse_skills(self, text: str) -> list[dict[str, Any]]:
         """Parse skills from text."""
         skills = []
         # Common skill keywords/patterns
@@ -175,7 +175,7 @@ class DocumentParser(ABC):
                 if item and len(item) > 1:
                     # Try to extract level
                     level_match = re.search(
-                        r"(beginner|intermediate|advanced|expert)", item, re.IGNORECASE
+                        r"(beginner|intermediate|advanced|expert)", item, re.IGNORECASE,
                     )
                     level = level_match.group(1).lower() if level_match else None
                     name = re.sub(
@@ -188,7 +188,7 @@ class DocumentParser(ABC):
                         skills.append({"name": name, "level": level})
         return skills
 
-    def _parse_experience(self, text: str) -> List[Dict[str, Any]]:
+    def _parse_experience(self, text: str) -> list[dict[str, Any]]:
         """Parse work experience from text."""
         experiences = []
         # Look for experience section
@@ -211,7 +211,7 @@ class DocumentParser(ABC):
                     experiences.append(exp)
         return experiences
 
-    def _parse_single_experience(self, text: str) -> Optional[Dict[str, Any]]:
+    def _parse_single_experience(self, text: str) -> dict[str, Any] | None:
         """Parse a single experience entry."""
         lines = [line.strip() for line in text.split("\n") if line.strip()]
         if not lines:
@@ -297,7 +297,7 @@ class DocumentParser(ABC):
             "achievements": [],
         }
 
-    def _parse_education(self, text: str) -> List[Dict[str, Any]]:
+    def _parse_education(self, text: str) -> list[dict[str, Any]]:
         """Parse education from text."""
         education = []
         edu_section = re.search(
@@ -346,15 +346,15 @@ class DocumentParser(ABC):
                         "field_of_study": field_of_study,
                         "start_date": start_date,
                         "end_date": end_date,
-                    }
+                    },
                 )
         return education
 
     def _extract_profile_data(
-        self, full_text: str, sections: List[ParsedSection]
-    ) -> Dict[str, Any]:
+        self, full_text: str, sections: list[ParsedSection],
+    ) -> dict[str, Any]:
         """Extract structured profile data from parsed text and sections."""
-        profile: Dict[str, Any] = {}
+        profile: dict[str, Any] = {}
 
         # Extract basic info from first part of text
         first_section = full_text[:2000] if full_text else ""
@@ -420,7 +420,7 @@ class DocumentParser(ABC):
 
         return profile
 
-    def _extract_name(self, text: str) -> Optional[str]:
+    def _extract_name(self, text: str) -> str | None:
         """Extract person name from text."""
         lines = [line.strip() for line in text.split("\n") if line.strip()]
         if not lines:
@@ -438,7 +438,7 @@ class DocumentParser(ABC):
             return first_line
         return None
 
-    def _extract_location(self, text: str) -> Optional[str]:
+    def _extract_location(self, text: str) -> str | None:
         """Extract location from text."""
         # Look for city, state/country patterns
         location_patterns = [
@@ -452,7 +452,7 @@ class DocumentParser(ABC):
                 return match.group(0)
         return None
 
-    def _extract_headline(self, text: str, name: Optional[str]) -> Optional[str]:
+    def _extract_headline(self, text: str, name: str | None) -> str | None:
         """Extract professional headline."""
         lines = [line.strip() for line in text.split("\n") if line.strip()]
         start_idx = 1 if name and lines and lines[0] == name else 0
@@ -468,7 +468,7 @@ class DocumentParser(ABC):
                 return line
         return None
 
-    def _extract_summary(self, text: str) -> Optional[str]:
+    def _extract_summary(self, text: str) -> str | None:
         """Extract summary/objective section."""
         patterns = [
             r"(?:summary|objective|profile|about)[:\s]\n?(.*?)(?:\n\n|\n[A-Z][a-z]+:|\Z)",
@@ -482,7 +482,7 @@ class DocumentParser(ABC):
                     return summary
         return None
 
-    def _parse_certifications(self, text: str) -> List[str]:
+    def _parse_certifications(self, text: str) -> list[str]:
         """Parse certifications from text."""
         certs = []
         cert_section = re.search(
@@ -499,7 +499,7 @@ class DocumentParser(ABC):
                     certs.append(item)
         return certs
 
-    def _parse_languages(self, text: str) -> List[str]:
+    def _parse_languages(self, text: str) -> list[str]:
         """Parse languages from text."""
         languages = []
         lang_section = re.search(
@@ -574,7 +574,7 @@ class PDFParser(DocumentParser):
                                         content=line_text,
                                         raw_text=line_text,
                                         bbox=bbox,
-                                    )
+                                    ),
                                 )
 
                     # Extract tables
@@ -587,7 +587,7 @@ class PDFParser(DocumentParser):
                                     name=f"page_{page_num + 1}_table_{table_idx}",
                                     content=table_text,
                                     raw_text=table_text,
-                                )
+                                ),
                             )
 
             result.raw_text = full_text
@@ -602,8 +602,8 @@ class PDFParser(DocumentParser):
         return result
 
     def _group_words_into_lines(
-        self, words: List[Dict[str, Any]], y_tolerance: float = 3.0
-    ) -> List[List[Dict[str, Any]]]:
+        self, words: list[dict[str, Any]], y_tolerance: float = 3.0,
+    ) -> list[list[dict[str, Any]]]:
         """Group words into lines based on y-position."""
         if not words:
             return []
@@ -611,8 +611,8 @@ class PDFParser(DocumentParser):
         # Sort by y then x
         words = sorted(words, key=lambda w: (w.get("top", 0), w.get("x0", 0)))
 
-        lines: List[List[Dict[str, Any]]] = []
-        current_line: List[Dict[str, Any]] = [words[0]]
+        lines: list[list[dict[str, Any]]] = []
+        current_line: list[dict[str, Any]] = [words[0]]
 
         for word in words[1:]:
             last_word = current_line[-1]
@@ -625,7 +625,7 @@ class PDFParser(DocumentParser):
         lines.append(current_line)
         return lines
 
-    def _get_line_bbox(self, line: List[Dict[str, Any]]) -> Tuple[float, float, float, float]:
+    def _get_line_bbox(self, line: list[dict[str, Any]]) -> tuple[float, float, float, float]:
         """Get bounding box for a line of words."""
         x0 = min(w.get("x0", 0) for w in line)
         y0 = min(w.get("top", 0) for w in line)
@@ -633,7 +633,7 @@ class PDFParser(DocumentParser):
         y1 = max(w.get("bottom", 0) for w in line)
         return (x0, y0, x1, y1)
 
-    def _table_to_text(self, table: List[List[Any]]) -> str:
+    def _table_to_text(self, table: list[list[Any]]) -> str:
         """Convert table to readable text."""
         rows = []
         for row in table:
@@ -671,7 +671,7 @@ class DOCXParser(DocumentParser):
                             name=f"paragraph_{para_idx}",
                             content=text,
                             raw_text=text,
-                        )
+                        ),
                     )
 
             # Extract tables
@@ -684,7 +684,7 @@ class DOCXParser(DocumentParser):
                             name=f"table_{table_idx}",
                             content=table_text,
                             raw_text=table_text,
-                        )
+                        ),
                     )
 
             result.raw_text = full_text
@@ -700,7 +700,7 @@ class DOCXParser(DocumentParser):
 
     def _table_to_text(self, table: Any) -> str:
         """Convert docx table to text."""
-        rows: List[str] = []
+        rows: list[str] = []
         for row in table.rows:
             cells = [cell.text.strip() for cell in row.cells]
             rows.append(" | ".join(cells))
@@ -716,7 +716,7 @@ class ResumeParser:
     """
 
     def __init__(self) -> None:
-        self.parsers: List[DocumentParser] = [
+        self.parsers: list[DocumentParser] = [
             PDFParser(),
             DOCXParser(),
         ]
@@ -725,7 +725,7 @@ class ResumeParser:
         """Add a custom parser."""
         self.parsers.append(parser)
 
-    def get_parser(self, file_path: Path) -> Optional[DocumentParser]:
+    def get_parser(self, file_path: Path) -> DocumentParser | None:
         """Get the appropriate parser for a file."""
         for parser in self.parsers:
             if parser.supports_format(file_path):
@@ -769,7 +769,7 @@ class ResumeParser:
         self,
         file_path: str | Path,
         email: str,
-    ) -> Tuple[Optional[UserProfile], ParseResult]:
+    ) -> tuple[UserProfile | None, ParseResult]:
         """
         Parse a resume and convert directly to UserProfile.
 
@@ -797,8 +797,8 @@ class ResumeParser:
 
 # Convenience function for simple usage
 async def parse_resume(
-    file_path: str | Path, email: str
-) -> Tuple[Optional[UserProfile], ParseResult]:
+    file_path: str | Path, email: str,
+) -> tuple[UserProfile | None, ParseResult]:
     """Parse a resume file to UserProfile."""
     parser = ResumeParser()
     return await parser.parse_to_profile(file_path, email)

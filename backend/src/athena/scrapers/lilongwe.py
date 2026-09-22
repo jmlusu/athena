@@ -1,4 +1,3 @@
-from typing import List, Optional
 from urllib.parse import quote_plus, urljoin
 
 from bs4 import BeautifulSoup
@@ -20,10 +19,10 @@ class LilongweJobsScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         location_param = quote_plus(location or "Lilongwe")
@@ -44,7 +43,7 @@ class LilongweJobsScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one("h2 a, h3 a, .job-title a, [class*='title'] a")
             if not title_elem:
@@ -89,10 +88,10 @@ class MalawiWorkScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/jobs/search?q={search_query}"
@@ -112,7 +111,7 @@ class MalawiWorkScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one("h2 a, h3 a, .job-title a")
             if not title_elem:
@@ -157,10 +156,10 @@ class JobsMalawiScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/search?q={search_query}"
@@ -180,7 +179,7 @@ class JobsMalawiScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one("h2 a, .job-title a")
             if not title_elem:

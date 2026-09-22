@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 try:
     from playwright.async_api import Page
@@ -47,7 +47,7 @@ class FieldMapping:
     selectors: list[str]  # CSS selectors to try in order
     field_type: str  # text, email, tel, textarea, select, radio, checkbox, file
     required: bool = False
-    transform: Optional[str] = None  # Optional transform function name
+    transform: str | None = None  # Optional transform function name
     platform_specific: dict[ATSPlatform, list[str]] = field(default_factory=dict)
 
 
@@ -65,7 +65,7 @@ class FormField:
     options: list[str] = field(default_factory=list)  # For select/radio
     is_file_input: bool = False
     confidence: float = 0.0  # 0-1 confidence score
-    profile_field: Optional[str] = None  # matched user-profile field (e.g. "email")
+    profile_field: str | None = None  # matched user-profile field (e.g. "email")
 
 
 class FormFiller:
@@ -373,7 +373,7 @@ class FormFiller:
 
     def __init__(self, browser: AthenaBrowser):
         self.browser = browser
-        self.page: Optional[Page] = browser.page
+        self.page: Page | None = browser.page
         self.detected_platform: ATSPlatform = ATSPlatform.UNKNOWN
         self.detected_fields: list[FormField] = []
 
@@ -383,15 +383,15 @@ class FormFiller:
         url_lower = url.lower()
         if "greenhouse.io" in url_lower or "boards.greenhouse.io" in url_lower:
             return ATSPlatform.GREENHOUSE
-        elif "lever.co" in url_lower or "jobs.lever.co" in url_lower:
+        if "lever.co" in url_lower or "jobs.lever.co" in url_lower:
             return ATSPlatform.LEVER
-        elif "workdayjobs.com" in url_lower or "myworkdayjobs.com" in url_lower:
+        if "workdayjobs.com" in url_lower or "myworkdayjobs.com" in url_lower:
             return ATSPlatform.WORKDAY
-        elif "icims.com" in url_lower:
+        if "icims.com" in url_lower:
             return ATSPlatform.ICIM
-        elif "smartrecruiters.com" in url_lower:
+        if "smartrecruiters.com" in url_lower:
             return ATSPlatform.SMARTRECRUITERS
-        elif "bamboohr.com" in url_lower:
+        if "bamboohr.com" in url_lower:
             return ATSPlatform.BAMBOOHR
         return ATSPlatform.UNKNOWN
 
@@ -420,7 +420,7 @@ class FormFiller:
 
         # Get all input, select, textarea elements
         elements = await self.page.query_selector_all(
-            "input:not([type='hidden']):not([type='submit']):not([type='button']), select, textarea"
+            "input:not([type='hidden']):not([type='submit']):not([type='button']), select, textarea",
         )
 
         fields = []
@@ -431,7 +431,7 @@ class FormFiller:
 
         return fields
 
-    async def _extract_field_info(self, element: Any) -> Optional[FormField]:
+    async def _extract_field_info(self, element: Any) -> FormField | None:
         """Extract metadata from a form element."""
         try:
             tag_name = await element.evaluate("el => el.tagName.toLowerCase()")
@@ -565,7 +565,7 @@ class FormFiller:
         return input_type
 
     def _calculate_confidence(
-        self, label: str, name: str, id_attr: str, placeholder: str, aria_label: str
+        self, label: str, name: str, id_attr: str, placeholder: str, aria_label: str,
     ) -> float:
         """Calculate confidence score for field identification."""
         score = 0.0
@@ -612,7 +612,7 @@ class FormFiller:
         """Match a detected field to a platform mapping."""
         score = 0.0
         search_text = " ".join(
-            [field.label, field.name, field.placeholder, field.aria_label]
+            [field.label, field.name, field.placeholder, field.aria_label],
         ).lower()
 
         for pattern in self.FIELD_PATTERNS.get(mapping.profile_field, []):
@@ -628,7 +628,7 @@ class FormFiller:
         return min(score, 1.0)
 
     async def fill_form(
-        self, profile: UserProfile, resume_path: Path, cover_letter_path: Optional[Path] = None
+        self, profile: UserProfile, resume_path: Path, cover_letter_path: Path | None = None,
     ) -> dict[str, bool]:
         """Fill form with user profile data."""
         if not self.detected_fields:
@@ -656,7 +656,7 @@ class FormFiller:
         return results
 
     def _build_field_values(
-        self, profile: UserProfile, resume_path: Path, cover_letter_path: Optional[Path]
+        self, profile: UserProfile, resume_path: Path, cover_letter_path: Path | None,
     ) -> dict[str, Any]:
         """Build field values from user profile."""
         values = {
@@ -686,10 +686,10 @@ class FormFiller:
         }
         return values
 
-    def _heuristic_match_field(self, field: FormField) -> Optional[str]:
+    def _heuristic_match_field(self, field: FormField) -> str | None:
         """Match field to profile field using heuristics."""
         search_text = " ".join(
-            [field.label, field.name, field.placeholder, field.aria_label]
+            [field.label, field.name, field.placeholder, field.aria_label],
         ).lower()
 
         for profile_field, patterns in self.FIELD_PATTERNS.items():
@@ -707,17 +707,16 @@ class FormFiller:
         try:
             if field.field_type == "file" and isinstance(value, Path):
                 return await self.browser.upload_file(field.selector, value)
-            elif field.field_type in ("text", "email", "tel", "url", "textarea"):
+            if field.field_type in ("text", "email", "tel", "url", "textarea"):
                 return await self.browser.fill_field(field.selector, str(value))
-            elif field.field_type == "select":
+            if field.field_type == "select":
                 return await self.browser.select_option(field.selector, str(value))
-            elif field.field_type in ("radio", "checkbox"):
+            if field.field_type in ("radio", "checkbox"):
                 if value:
                     return await self.browser.click(field.selector)
                 return True
-            else:
-                logger.warning("Unknown field type: %s", field.field_type)
-                return False
+            logger.warning("Unknown field type: %s", field.field_type)
+            return False
         except Exception as e:  # noqa: BLE001 - per-field fill errors are handled per-field
             logger.warning("Failed to fill field %s: %s", field.selector, e)
             return False
@@ -759,7 +758,7 @@ class FormFiller:
             lines.append(line)
         return "\n".join(lines)
 
-    async def find_next_button(self) -> Optional[str]:
+    async def find_next_button(self) -> str | None:
         """Find next/continue button selector."""
         if not self.page:
             return None
@@ -801,7 +800,7 @@ class FormFiller:
         self,
         profile: UserProfile,
         resume_path: Path,
-        cover_letter_path: Optional[Path] = None,
+        cover_letter_path: Path | None = None,
         max_steps: int = 10,
     ) -> dict[str, Any]:
         """Handle multi-step form filling."""

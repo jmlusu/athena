@@ -28,11 +28,11 @@ interface AthenaLayoutProps {
 }
 
 const NAV_ITEMS = [
-  { path: '/athena', label: 'Dashboard', icon: BarChart2 },
-  { path: '/athena/jobs', label: 'Jobs', icon: Briefcase },
-  { path: '/athena/applications', label: 'Applications', icon: FileText },
-  { path: '/athena/analytics', label: 'Analytics', icon: BarChart2 },
-  { path: '/athena/settings', label: 'Settings', icon: Settings },
+  { path: '/', label: 'Dashboard', icon: BarChart2 },
+  { path: '/jobs', label: 'Jobs', icon: Briefcase },
+  { path: '/applications', label: 'Applications', icon: FileText },
+  { path: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
 const RIGHT_SIDEBAR_TABS = [

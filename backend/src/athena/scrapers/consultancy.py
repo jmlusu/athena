@@ -1,5 +1,4 @@
 import re
-from typing import List, Optional
 from urllib.parse import quote_plus, urljoin
 
 from bs4 import BeautifulSoup
@@ -22,10 +21,10 @@ class UpworkScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/nx/search/jobs/?q={search_query}&sort=recency"
@@ -45,7 +44,7 @@ class UpworkScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one("h2 a, .job-title a, [data-test='job-title']")
             if not title_elem:
@@ -96,7 +95,7 @@ class UpworkScraper(BaseScraper):
             return job
         try:
             html = await self.fetch_with_browser(
-                str(job.application_url), wait_for=".job-description"
+                str(job.application_url), wait_for=".job-description",
             )
             soup = BeautifulSoup(html, "html.parser")
             desc_elem = soup.select_one(".job-description, [data-test='job-description']")
@@ -113,7 +112,7 @@ class UpworkScraper(BaseScraper):
             self.logger.error(f"Failed to get Upwork job details: {e}")
         return job
 
-    def _extract_requirements(self, description: str) -> List[str]:
+    def _extract_requirements(self, description: str) -> list[str]:
         req_patterns = [
             r"(?:requirements?|qualifications?|skills?):\s*(.*?)(?:\n\n|\n[A-Z]|$)",
             r"(?:must have|required|experience with):\s*(.*?)(?:\n|$)",
@@ -141,10 +140,10 @@ class ToptalScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/freelance-jobs?skill={search_query}"
@@ -164,7 +163,7 @@ class ToptalScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one("h3 a, .job-title a")
             if not title_elem:
@@ -212,10 +211,10 @@ class FreelancerScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/jobs/{search_query}/"
@@ -235,7 +234,7 @@ class FreelancerScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one(".JobSearchCard-primary-heading a, h3 a")
             if not title_elem:
@@ -280,10 +279,10 @@ class GuruScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/d/jobs/{search_query}/"
@@ -303,7 +302,7 @@ class GuruScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one(".jobTitle a, h3 a")
             if not title_elem:
@@ -347,10 +346,10 @@ class PeoplePerHourScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/freelance-jobs/{search_query}"
@@ -370,7 +369,7 @@ class PeoplePerHourScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one("h3 a, .job-title a")
             if not title_elem:

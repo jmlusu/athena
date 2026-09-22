@@ -9,15 +9,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
-from ...executor.hitl_gate import HITLGate
-from ...orchestrator.message_bus import MessageBus
 from ..models.enums import ApplicationStatus
 from ..models.jobs import Application, Document, Job, UserProfile
 from ..store import athena_db
@@ -27,7 +25,93 @@ from .form_filler import FormFiller
 logger = logging.getLogger(__name__)
 
 
-class SubmissionStage(str, Enum):
+# ─── Local Stubs for Decoupled Operation ────────────────────────────
+
+class LocalApprovalGate:
+    """
+    Local approval gate for standalone operation.
+
+    When ATHENA_HITL_EXTERNAL is not set, this provides a simple
+    file-based approval mechanism storing requests in the data directory.
+    """
+
+    def __init__(self) -> None:
+        from ..paths import get_data_root
+        self.data_dir = get_data_root() / "approvals"
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+
+    def request_and_park(
+        self,
+        task_id: str,
+        agent_id: str,
+        tool: str,
+        args: dict[str, Any],
+    ) -> str:
+        """Create an approval request and return its ID."""
+        import json
+        import uuid
+        request_id = str(uuid.uuid4())
+        request_file = self.data_dir / f"{request_id}.json"
+        request_data = {
+            "request_id": request_id,
+            "task_id": task_id,
+            "agent_id": agent_id,
+            "tool": tool,
+            "args": args,
+            "status": "pending",
+            "created_at": datetime.utcnow().isoformat(),
+        }
+        request_file.write_text(json.dumps(request_data, indent=2))
+        logger.info("Created local approval request %s for task %s", request_id, task_id)
+        return request_id
+
+    def resume_approved(self, request_id: str) -> bool | None:
+        """Check approval status. Returns True if approved, False if rejected, None if pending."""
+        import json
+        request_file = self.data_dir / f"{request_id}.json"
+        if not request_file.exists():
+            return None
+        try:
+            data = json.loads(request_file.read_text())
+            status = data.get("status")
+            if status == "approved":
+                return True
+            if status == "rejected":
+                return False
+        except Exception:
+            pass
+        return None
+
+
+def get_hitl_gate():
+    """Factory to get the appropriate HITL gate based on environment."""
+    if os.getenv("ATHENA_HITL_EXTERNAL"):
+        # Try to import external gate; fall back to local
+        try:
+            from ...executor.hitl_gate import HITLGate
+            return HITLGate()
+        except ImportError:
+            logger.warning("ATHENA_HITL_EXTERNAL set but external HITLGate not available; using local gate")
+            return LocalApprovalGate()
+    return LocalApprovalGate()
+
+
+class DummyMessageBus:
+    """No-op message bus for decoupled operation."""
+
+    def send_task(self, task: Any) -> None:
+        logger.debug("MessageBus.send_task called (no-op): %s", getattr(task, "name", task))
+
+    def __getattr__(self, name: str) -> Any:
+        return lambda *args, **kwargs: None
+
+
+def get_message_bus():
+    """Factory to get message bus (always dummy in standalone)."""
+    return DummyMessageBus()
+
+
+# ─── Workflow Types ────────────────────────────────────────────────
     """Stages of the submission workflow."""
 
     INITIALIZED = "initialized"
@@ -70,12 +154,12 @@ class SubmitConfig:
             ".receipt-number",
             "#confirmationNumber",
             "text=/confirmation|receipt|reference/i",
-        ]
+        ],
     )
 
     # Audit
     save_audit_trail: bool = True
-    audit_dir: Optional[Path] = None
+    audit_dir: Path | None = None
 
 
 @dataclass
@@ -83,20 +167,20 @@ class SubmissionResult:
     """Result of application submission."""
 
     success: bool = False
-    application_id: Optional[UUID] = None
-    job_id: Optional[UUID] = None
+    application_id: UUID | None = None
+    job_id: UUID | None = None
     stage: SubmissionStage = SubmissionStage.INITIALIZED
-    confirmation_number: Optional[str] = None
-    confirmation_url: Optional[str] = None
-    screenshot_path: Optional[Path] = None
-    error_message: Optional[str] = None
+    confirmation_number: str | None = None
+    confirmation_url: str | None = None
+    screenshot_path: Path | None = None
+    error_message: str | None = None
     fields_filled: dict[str, bool] = field(default_factory=dict)
     required_fields_missing: list[str] = field(default_factory=list)
     retry_count: int = 0
     started_at: datetime = field(default_factory=datetime.now)
-    completed_at: Optional[datetime] = None
-    approval_request_id: Optional[str] = None
-    approved: Optional[bool] = None
+    completed_at: datetime | None = None
+    approval_request_id: str | None = None
+    approved: bool | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -123,24 +207,22 @@ class ApplicationSubmitter:
 
     def __init__(
         self,
-        browser: Optional[AthenaBrowser] = None,
-        config: Optional[SubmitConfig] = None,
-        message_bus: Optional[MessageBus] = None,
-        hitl_gate: Optional[HITLGate] = None,
+        browser: AthenaBrowser | None = None,
+        config: SubmitConfig | None = None,
     ):
         self.browser = browser
         self.config = config or SubmitConfig()
-        self.message_bus = message_bus
-        self.hitl_gate = hitl_gate or HITLGate()
-        self.form_filler: Optional[FormFiller] = None
-        self._current_application: Optional[Application] = None
-        self._current_job: Optional[Job] = None
-        self._current_profile: Optional[UserProfile] = None
-        self._current_resume: Optional[Document] = None
-        self._current_cover_letter: Optional[Document] = None
+        self.message_bus = get_message_bus()
+        self.hitl_gate = get_hitl_gate()
+        self.form_filler: FormFiller | None = None
+        self._current_application: Application | None = None
+        self._current_job: Job | None = None
+        self._current_profile: UserProfile | None = None
+        self._current_resume: Document | None = None
+        self._current_cover_letter: Document | None = None
         self._result = SubmissionResult()
 
-    async def __aenter__(self) -> "ApplicationSubmitter":
+    async def __aenter__(self) -> ApplicationSubmitter:
         if self.browser is None:
             browser_config = BrowserConfig(
                 headless=True,
@@ -157,8 +239,8 @@ class ApplicationSubmitter:
 
     async def __aexit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
         exc_tb: Any,
     ) -> None:
         if self.browser:
@@ -169,8 +251,8 @@ class ApplicationSubmitter:
         job: Job,
         profile: UserProfile,
         resume: Document,
-        cover_letter: Optional[Document] = None,
-        application: Optional[Application] = None,
+        cover_letter: Document | None = None,
+        application: Application | None = None,
     ) -> SubmissionResult:
         """Execute full application submission workflow."""
         self._current_job = job
@@ -311,7 +393,7 @@ class ApplicationSubmitter:
                 continue
 
     async def _fill_application_form(
-        self, profile: UserProfile, resume: Document, cover_letter: Optional[Document]
+        self, profile: UserProfile, resume: Document, cover_letter: Document | None,
     ) -> dict[str, bool]:
         """Fill the application form with profile data."""
         resume_path = Path(resume.file_path)
@@ -322,7 +404,7 @@ class ApplicationSubmitter:
 
         # Try multi-step form handling
         results = await self.form_filler.handle_multi_step_form(
-            profile, resume_path, cover_letter_path, max_steps=10
+            profile, resume_path, cover_letter_path, max_steps=10,
         )
 
         # Flatten results
@@ -408,13 +490,13 @@ class ApplicationSubmitter:
             if result is True:
                 logger.info("Application approved by human")
                 return True
-            elif result is False:
+            if result is False:
                 logger.info("Application rejected by human")
                 return False
             await asyncio.sleep(2)
 
         logger.warning(
-            "HITL approval timed out after %d minutes", self.config.approval_timeout_minutes
+            "HITL approval timed out after %d minutes", self.config.approval_timeout_minutes,
         )
         return False
 
@@ -474,7 +556,7 @@ class ApplicationSubmitter:
                     # Text-based selector
                     element = await self.browser.page.query_selector(
                         "xpath=//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'confirmation') "
-                        "or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'receipt')]"
+                        "or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'receipt')]",
                     )
                 else:
                     element = await self.browser.page.query_selector(selector)
@@ -508,23 +590,10 @@ class ApplicationSubmitter:
         self._result.stage = stage
         logger.info("Stage: %s", stage.value)
 
-        # Emit event to message bus
+        # Emit event to message bus (no-op in standalone mode)
         if self.message_bus and self._current_application:
-            from ...models.task import Task, TaskStatus
-
-            task = Task(
-                id=f"submit-{self._current_application.id}-{stage.value}",
-                name="submission_stage_update",
-                sender_id="athena-submitter",
-                receiver_id="dashboard",
-                instruction=(
-                    f"Submission {self._current_application.id} reached stage {stage.value} "
-                    f"(job_id={self._current_job.id if self._current_job else 'unknown'})"
-                ),
-                tags=["athena", "submission"],
-                status=TaskStatus.COMPLETED,
-            )
-            self.message_bus.send_task(task)
+            # DummyMessageBus.send_task is a no-op; Task import removed for decoupling
+            pass
 
         # Update application in database
         if self._current_application:
@@ -571,33 +640,18 @@ class ApplicationSubmitter:
                             "audit_log": audit_log,
                         },
                         indent=2,
-                    )
+                    ),
                 )
                 logger.info("Audit trail saved: %s", audit_file)
 
-        # Emit final event
+        # Emit final event (no-op in standalone mode)
         if self.message_bus and self._current_application:
-            from ...models.task import Task, TaskStatus
-
-            task = Task(
-                id=f"submit-{self._current_application.id}-final",
-                name="submission_completed",
-                sender_id="athena-submitter",
-                receiver_id="dashboard",
-                instruction=(
-                    f"Submission {self._current_application.id} completed successfully"
-                    if self._result.success
-                    else f"Submission {self._current_application.id} failed: "
-                    f"{self._result.error_message or 'unknown error'}"
-                ),
-                tags=["athena", "submission", "final"],
-                status=TaskStatus.COMPLETED if self._result.success else TaskStatus.FAILED,
-            )
-            self.message_bus.send_task(task)
+            # DummyMessageBus.send_task is a no-op; Task import removed for decoupling
+            pass
 
         logger.info("Submission finalized: success=%s", self._result.success)
 
-    async def retry_submission(self, max_retries: Optional[int] = None) -> SubmissionResult:
+    async def retry_submission(self, max_retries: int | None = None) -> SubmissionResult:
         """Retry failed submission."""
         max_retries = max_retries or self.config.max_retries
 

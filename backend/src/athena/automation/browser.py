@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 from urllib.parse import urlparse
 
 try:
@@ -50,7 +50,7 @@ class BrowserConfig:
     slow_mo: int = 0  # milliseconds
     viewport_width: int = 1920
     viewport_height: int = 1080
-    user_agent: Optional[str] = None
+    user_agent: str | None = None
     locale: str = "en-US"
     timezone_id: str = "America/New_York"
     # Stealth settings
@@ -59,11 +59,11 @@ class BrowserConfig:
     mock_chrome_runtime: bool = True
     mock_permissions: bool = True
     # Session persistence
-    session_dir: Optional[Path] = None
+    session_dir: Path | None = None
     persist_cookies: bool = True
     persist_localstorage: bool = True
     # Audit trail
-    audit_dir: Optional[Path] = None
+    audit_dir: Path | None = None
     record_video: bool = True
     record_har: bool = True
     screenshot_on_action: bool = True
@@ -71,9 +71,9 @@ class BrowserConfig:
     navigation_timeout: int = 60000  # ms
     action_timeout: int = 30000  # ms
     # Proxy
-    proxy_server: Optional[str] = None
-    proxy_username: Optional[str] = None
-    proxy_password: Optional[str] = None
+    proxy_server: str | None = None
+    proxy_username: str | None = None
+    proxy_password: str | None = None
 
 
 @dataclass
@@ -102,7 +102,7 @@ class BrowserSession:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "BrowserSession":
+    def from_dict(cls, data: dict[str, Any]) -> BrowserSession:
         return cls(
             id=data["id"],
             created_at=datetime.fromisoformat(data["created_at"]),
@@ -118,25 +118,25 @@ class BrowserSession:
 class AthenaBrowser:
     """Playwright browser wrapper with stealth, persistence, and audit trail."""
 
-    def __init__(self, config: Optional[BrowserConfig] = None):
+    def __init__(self, config: BrowserConfig | None = None):
         self.config = config or BrowserConfig()
-        self._playwright: Optional[Playwright] = None
-        self._browser: Optional[PlaywrightBrowser] = None
-        self._context: Optional[BrowserContext] = None
-        self._page: Optional[Page] = None
-        self._session: Optional[BrowserSession] = None
+        self._playwright: Playwright | None = None
+        self._browser: PlaywrightBrowser | None = None
+        self._context: BrowserContext | None = None
+        self._page: Page | None = None
+        self._session: BrowserSession | None = None
         self._audit_log: list[dict[str, Any]] = []
-        self._video_path: Optional[Path] = None
-        self._har_path: Optional[Path] = None
+        self._video_path: Path | None = None
+        self._har_path: Path | None = None
 
-    async def __aenter__(self) -> "AthenaBrowser":
+    async def __aenter__(self) -> AthenaBrowser:
         await self.start()
         return self
 
     async def __aexit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_val: Optional[BaseException],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
         exc_tb: Any,
     ) -> None:
         await self.stop()
@@ -148,7 +148,7 @@ class AthenaBrowser:
         if not PLAYWRIGHT_AVAILABLE:
             raise RuntimeError(
                 "Athena browser automation requires the optional 'playwright' package. "
-                "Install the e2e extras with: uv sync --extra e2e"
+                "Install the e2e extras with: uv sync --extra e2e",
             )
 
         self._playwright = await async_playwright().start()
@@ -384,7 +384,7 @@ class AthenaBrowser:
                 "method": request.method,
                 "headers": dict(request.headers),
                 "resource_type": request.resource_type,
-            }
+            },
         )
 
     def _log_response(self, response: Any) -> None:
@@ -398,7 +398,7 @@ class AthenaBrowser:
                 "url": response.url,
                 "status": response.status,
                 "headers": dict(response.headers),
-            }
+            },
         )
 
     async def _save_audit_log(self) -> None:
@@ -434,7 +434,7 @@ class AthenaBrowser:
     async def screenshot(self, name: str = "screenshot") -> Path:
         """Take a screenshot and save to audit directory."""
         if not self._page or not self.config.audit_dir:
-            return Path("")
+            return Path()
 
         self.config.audit_dir.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -453,7 +453,7 @@ class AthenaBrowser:
         return cast(str, await self._page.content())
 
     async def wait_for_selector(
-        self, selector: str, timeout: Optional[int] = None, state: str = "visible"
+        self, selector: str, timeout: int | None = None, state: str = "visible",
     ) -> bool:
         """Wait for selector to appear."""
         if not self._page:
@@ -474,7 +474,7 @@ class AthenaBrowser:
                 await asyncio.sleep(delay / 1000)
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(
-                    f"fill_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}"
+                    f"fill_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
             return True
         except (TimeoutError, ValueError) as e:
@@ -489,7 +489,7 @@ class AthenaBrowser:
             await self._page.click(selector, force=force, timeout=self.config.action_timeout)
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(
-                    f"click_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}"
+                    f"click_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
             return True
         except (TimeoutError, ValueError) as e:
@@ -502,11 +502,11 @@ class AthenaBrowser:
             raise RuntimeError("No active page")
         try:
             await self._page.select_option(
-                selector, value=value, timeout=self.config.action_timeout
+                selector, value=value, timeout=self.config.action_timeout,
             )
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(
-                    f"select_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}"
+                    f"select_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
             return True
         except (TimeoutError, ValueError) as e:
@@ -526,21 +526,21 @@ class AthenaBrowser:
             logger.warning("Failed to upload file %s: %s", file_path, e)
             return False
 
-    async def get_text(self, selector: str) -> Optional[str]:
+    async def get_text(self, selector: str) -> str | None:
         """Get text content of an element."""
         if not self._page:
             raise RuntimeError("No active page")
         try:
-            return cast(Optional[str], await self._page.text_content(selector))
+            return cast(str | None, await self._page.text_content(selector))
         except (TimeoutError, ValueError):
             return None
 
-    async def get_attribute(self, selector: str, attribute: str) -> Optional[str]:
+    async def get_attribute(self, selector: str, attribute: str) -> str | None:
         """Get attribute of an element."""
         if not self._page:
             raise RuntimeError("No active page")
         try:
-            return cast(Optional[str], await self._page.get_attribute(selector, attribute))
+            return cast(str | None, await self._page.get_attribute(selector, attribute))
         except (TimeoutError, ValueError):
             return None
 
@@ -551,12 +551,12 @@ class AthenaBrowser:
         return await self._page.evaluate(script)
 
     @property
-    def page(self) -> Optional[Page]:
+    def page(self) -> Page | None:
         """Get current page."""
         return self._page
 
     @property
-    def context(self) -> Optional[BrowserContext]:
+    def context(self) -> BrowserContext | None:
         """Get browser context."""
         return self._context
 

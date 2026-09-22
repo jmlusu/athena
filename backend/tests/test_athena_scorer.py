@@ -2,8 +2,8 @@ from uuid import uuid4
 
 import pytest
 
-from ai_company.athena.ats.scorer import ATSScorer
-from ai_company.athena.models import Job, JobSource, JobStatus, JobType, Skill, UserProfile
+from athena.ats.scorer import ATSScorer
+from athena.models import Job, JobSource, JobStatus, JobType, Skill, UserProfile
 
 
 @pytest.fixture

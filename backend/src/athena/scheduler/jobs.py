@@ -1,19 +1,14 @@
-import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Optional
 from uuid import UUID
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from ai_company.models.task import Task, TaskPriority, TaskStatus
-from ai_company.orchestrator.message_bus import MessageBus
-
-from ..ats import ATSScoreBreakdown, ats_scorer
+from ..ats import ats_scorer
 from ..matching import matching_engine
-from ..models import Job, JobSource, JobStatus, JobType, ScrapeJob, UserProfile
+from ..models import JobSource, JobStatus, JobType, ScrapeJob
 from ..scrapers import scraper_registry
 from ..store import athena_db
 
@@ -25,21 +20,20 @@ class ScrapeConfig:
     """Configuration for a scrape job."""
 
     query: str
-    location: Optional[str] = None
-    job_type: Optional[JobType] = None
+    location: str | None = None
+    job_type: JobType | None = None
     max_results: int = 100
-    sources: Optional[List[JobSource]] = None
-    user_profile_id: Optional[UUID] = None  # For matching/scoring
+    sources: list[JobSource] | None = None
+    user_profile_id: UUID | None = None  # For matching/scoring
 
 
 class AthenaScheduler:
     """Scheduler for Athena scraping and processing jobs."""
 
-    def __init__(self, message_bus: Optional[MessageBus] = None):
+    def __init__(self):
         self.scheduler = AsyncIOScheduler()
-        self.message_bus = message_bus
         self._running = False
-        self.default_configs: List[ScrapeConfig] = []
+        self.default_configs: list[ScrapeConfig] = []
 
     def add_default_config(self, config: ScrapeConfig) -> None:
         """Add a default scrape configuration."""
@@ -147,7 +141,7 @@ class AthenaScheduler:
             scrape_job.completed_at = datetime.utcnow()
 
             logger.info(
-                f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)"
+                f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)",
             )
 
         except Exception as e:  # noqa: BLE001
@@ -210,98 +204,33 @@ class AthenaScheduler:
                     # Update job status
                     if ats_breakdown.overall >= 90:
                         job.status = JobStatus.SCORED
-                        # Queue for auto-application if enabled
-                        if self.message_bus and ats_scorer.should_auto_apply(ats_breakdown.overall):
-                            await self._queue_application(job, best_match, ats_breakdown)
+                        # Auto-application queuing removed - scheduler is decoupled from MessageBus
+                        if ats_scorer.should_auto_apply(ats_breakdown.overall):
+                            logger.info(
+                                "Job %s meets auto-apply threshold (ATS=%.1f) - "
+                                "would queue for application if MessageBus were available",
+                                job.id, ats_breakdown.overall,
+                            )
                     elif ats_breakdown.overall >= 80:
                         job.status = JobStatus.SCORED
-                        # Flag for review
-                        if self.message_bus:
-                            await self._queue_review(job, best_match, ats_breakdown)
+                        # Review flagging removed - scheduler is decoupled from MessageBus
+                        logger.info(
+                            "Job %s flagged for review (ATS=%.1f) - "
+                            "would queue for review if MessageBus were available",
+                            job.id, ats_breakdown.overall,
+                        )
                     else:
                         job.status = JobStatus.FETCHED
 
                     athena_db.update_job(job)
                     logger.info(
-                        f"Job {job.title} scored: ATS={ats_breakdown.overall}, Match={best_score}"
+                        f"Job {job.title} scored: ATS={ats_breakdown.overall}, Match={best_score}",
                     )
 
             except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to process job {job.id}: {e}")
                 job.status = JobStatus.FETCHED
                 athena_db.update_job(job)
-
-    async def _queue_application(
-        self,
-        job: Job,
-        profile: UserProfile,
-        ats_breakdown: ATSScoreBreakdown,
-    ) -> None:
-        """Queue an application task via MessageBus."""
-        bus = self.message_bus
-        if bus is None:
-            logger.warning("No message bus available; skipping auto-apply queue for job %s", job.id)
-            return
-
-        task = Task(
-            id=f"athena-apply-{job.id}",
-            name="athena.apply",
-            sender_id="athena-scheduler",
-            receiver_id="dashboard",
-            instruction=(
-                f"Auto-apply for job {job.id} on behalf of profile {profile.id} — "
-                f"ATS score {ats_breakdown.overall} meets the auto-apply threshold."
-            ),
-            description=json.dumps(
-                {
-                    "job_id": str(job.id),
-                    "profile_id": str(profile.id),
-                    "ats_score": ats_breakdown.overall,
-                    "auto_apply": True,
-                }
-            ),
-            tags=["athena", "apply"],
-            priority=TaskPriority.HIGH,
-            status=TaskStatus.PENDING,
-        )
-        bus.send_task(task)
-        logger.info("Queued auto-application for job %s", job.id)
-
-    async def _queue_review(
-        self,
-        job: Job,
-        profile: UserProfile,
-        ats_breakdown: ATSScoreBreakdown,
-    ) -> None:
-        """Queue a review task via MessageBus."""
-        bus = self.message_bus
-        if bus is None:
-            logger.warning("No message bus available; skipping review queue for job %s", job.id)
-            return
-
-        task = Task(
-            id=f"athena-review-{job.id}",
-            name="athena.review",
-            sender_id="athena-scheduler",
-            receiver_id="dashboard",
-            instruction=(
-                f"Review job {job.id} for profile {profile.id} — "
-                f"ATS score {ats_breakdown.overall} is in the 80-89 human-review band."
-            ),
-            description=json.dumps(
-                {
-                    "job_id": str(job.id),
-                    "profile_id": str(profile.id),
-                    "ats_score": ats_breakdown.overall,
-                    "flag_reason": "ATS score 80-89 requires human review",
-                }
-            ),
-            tags=["athena", "review"],
-            priority=TaskPriority.MEDIUM,
-            status=TaskStatus.PENDING,
-        )
-        bus.send_task(task)
-        logger.info("Queued review for job %s", job.id)
 
     async def cleanup_old_jobs(self, days: int = 90) -> None:
         """Clean up old jobs beyond retention period."""
@@ -319,67 +248,3 @@ class AthenaScheduler:
 
 # Global scheduler instance
 athena_scheduler = AthenaScheduler()
-
-
-def init_scheduler(message_bus: MessageBus) -> AthenaScheduler:
-    """Initialize the scheduler with message bus."""
-    global athena_scheduler
-    athena_scheduler = AthenaScheduler(message_bus)
-
-    # Add default scrape configurations
-    athena_scheduler.add_default_config(
-        ScrapeConfig(
-            query="software engineer",
-            location="Lilongwe, Malawi",
-            max_results=50,
-        )
-    )
-    athena_scheduler.add_default_config(
-        ScrapeConfig(
-            query="data scientist",
-            location="Lilongwe, Malawi",
-            max_results=50,
-        )
-    )
-    athena_scheduler.add_default_config(
-        ScrapeConfig(
-            query="software engineer",
-            location="Remote",
-            max_results=50,
-            sources=[
-                JobSource.REMOTE_OK,
-                JobSource.WE_WORK_REMOTELY,
-                JobSource.REMOTE_CO,
-            ],
-        )
-    )
-    athena_scheduler.add_default_config(
-        ScrapeConfig(
-            query="data scientist",
-            location="Remote",
-            max_results=50,
-            sources=[
-                JobSource.REMOTE_OK,
-                JobSource.WE_WORK_REMOTELY,
-                JobSource.REMOTE_CO,
-            ],
-        )
-    )
-    athena_scheduler.add_default_config(
-        ScrapeConfig(
-            query="remote software engineer",
-            location="Remote",
-            max_results=100,
-        )
-    )
-    athena_scheduler.add_default_config(
-        ScrapeConfig(
-            query="freelance developer",
-            location="Remote",
-            max_results=50,
-            sources=[JobSource.UPWORK, JobSource.TOPTAL],
-        )
-    )
-
-    athena_scheduler.start()
-    return athena_scheduler

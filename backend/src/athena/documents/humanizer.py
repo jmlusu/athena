@@ -6,11 +6,12 @@ sound natural and human-written while preserving all factual information.
 """
 
 import logging
+import os
 import re
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from docx.document import Document as DocxDocumentType
@@ -18,9 +19,6 @@ if TYPE_CHECKING:
 from docx import Document as DocxDocumentClass
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
-
-from ai_company.llm.client import LLMClient
-from ai_company.model_router import ModelRouter
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +37,9 @@ class HumanizationResult:
 
     original_text: str
     humanized_text: str
-    docx_path: Optional[str] = None
+    docx_path: str | None = None
     intensity: HumanizationIntensity = HumanizationIntensity.MEDIUM
-    changes_made: Optional[list[str]] = None
+    changes_made: list[str] | None = None
 
     def __post_init__(self) -> None:
         if self.changes_made is None:
@@ -258,7 +256,8 @@ class Humanizer:
     """
     Rewrites AI-generated resume/cover letter content to sound human.
 
-    Uses LLMClient for rewriting with intensity-controlled prompts.
+    In standalone mode, provides template-based humanization without LLM.
+    When ATHENA_LLM_PROVIDER is set, can optionally use external LLM.
     Preserves all factual information while removing AI tells.
     """
 
@@ -267,8 +266,44 @@ class Humanizer:
         config_path: str = "company/models.yaml",
         registry_path: str = "company/agent-registry.json",
     ) -> None:
-        self.llm_client = LLMClient(config_path=config_path, registry_path=registry_path)
-        self.model_router = ModelRouter(config_path=config_path, registry_path=registry_path)
+        self.config_path = config_path
+        self.registry_path = registry_path
+        self._llm_client = None
+        self._model_router = None
+        self._llm_available = self._check_llm_available()
+
+    def _check_llm_available(self) -> bool:
+        """Check if external LLM is available via env var."""
+        if os.getenv("ATHENA_LLM_PROVIDER"):
+            try:
+                # Test import
+                from ai_company.llm.client import LLMClient
+                from ai_company.model_router import ModelRouter
+                return True
+            except ImportError:
+                logger.warning("ATHENA_LLM_PROVIDER set but ai_company LLM not available; using template fallback")
+                return False
+        return False
+
+    @property
+    def llm_client(self):
+        if self._llm_client is None and self._llm_available:
+            try:
+                from ai_company.llm.client import LLMClient
+                self._llm_client = LLMClient(config_path=self.config_path, registry_path=self.registry_path)
+            except ImportError:
+                self._llm_available = False
+        return self._llm_client
+
+    @property
+    def model_router(self):
+        if self._model_router is None and self._llm_available:
+            try:
+                from ai_company.model_router import ModelRouter
+                self._model_router = ModelRouter(config_path=self.config_path, registry_path=self.registry_path)
+            except ImportError:
+                self._llm_available = False
+        return self._model_router
 
     def humanize_cover_letter(
         self,
@@ -391,34 +426,82 @@ class Humanizer:
         system_prompt: str,
         user_prompt: str,
     ) -> str:
-        """Call the LLM and return the humanized text."""
-        # For humanization, we want the raw text response, not JSON
-        # Use the LLMClient's provider directly with a simple chat call
-        route = self.model_router.resolve(
-            agent_name=agent_name,
-            priority="medium",
-            context="domain_code_review",  # Use premium tier for quality writing
-            task_prompt=user_prompt,
-        )
+        """Call the LLM and return the humanized text, or fallback to template."""
+        if self._llm_available and self.llm_client and self.model_router:
+            try:
+                route = self.model_router.resolve(
+                    agent_name=agent_name,
+                    priority="medium",
+                    context="domain_code_review",
+                    task_prompt=user_prompt,
+                )
 
-        provider = self.llm_client.get_provider(route.provider)
-        if not provider:
-            raise RuntimeError(f"Provider {route.provider} not available")
+                provider = self.llm_client.get_provider(route.provider)
+                if provider:
+                    logger.info(
+                        "Humanizing with %s/%s (tier: %s)",
+                        route.provider,
+                        route.model,
+                        route.tier,
+                    )
 
-        logger.info(
-            "Humanizing with %s/%s (tier: %s)",
-            route.provider,
-            route.model,
-            route.tier,
-        )
+                    response = provider.chat(
+                        system_prompt=system_prompt,
+                        user_prompt=user_prompt,
+                        model=route.model,
+                    )
+                    return response.content.strip()
+            except Exception as e:
+                logger.warning("LLM humanization failed, falling back to template: %s", e)
 
-        response = provider.chat(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            model=route.model,
-        )
+        # Template-based fallback - basic AI tell removal
+        return self._template_humanize(user_prompt)
 
-        return response.content.strip()
+    def _template_humanize(self, content: str) -> str:
+        """Basic template-based humanization without LLM."""
+        import re
+        result = content
+
+        # Remove common AI tells
+        ai_replacements = {
+            r"I am writing to express my interest in\s*": "I'm interested in ",
+            r"I am writing to apply for\s*": "I'm applying for ",
+            r"I have extensive experience in\s*": "I've worked extensively with ",
+            r"I have a proven track record of\s*": "I've consistently ",
+            r"passionate about\s*": "I care deeply about ",
+            r"excited about the opportunity\s*": "eager to ",
+            r"\bspearheaded\b": "led",
+            r"\borchestrated\b": "coordinated",
+            r"\bleveraged\b": "used",
+            r"\butilize\b": "use",
+            r"\bfacilitate\b": "help",
+            r"\bimplement\b": "build",
+            r"I am confident that\s*": "",
+            r"I believe that\s*": "",
+            r"I would welcome the opportunity to\s*": "I'd love to ",
+            r"thank you for your consideration\s*": "Thanks for your time",
+        }
+
+        for pattern, replacement in ai_replacements.items():
+            result = re.sub(pattern, replacement, result, flags=re.IGNORECASE)
+
+        # Add natural contractions
+        contractions = [
+            (r"\bI have\b", "I've"),
+            (r"\bI am\b", "I'm"),
+            (r"\bit is\b", "it's"),
+            (r"\bdo not\b", "don't"),
+            (r"\bwill not\b", "won't"),
+            (r"\bcannot\b", "can't"),
+            (r"\bI will\b", "I'll"),
+            (r"\byou are\b", "you're"),
+            (r"\bwe have\b", "we've"),
+        ]
+        for pattern, replacement in contractions:
+            result = re.sub(pattern, replacement, result)
+
+        logger.info("Used template-based humanization fallback")
+        return result.strip()
 
     def _detect_changes(self, original: str, humanized: str) -> list[str]:
         """Detect what changes were made."""
@@ -428,7 +511,7 @@ class Humanizer:
         for category, patterns in AI_TELL_PATTERNS.items():
             for pattern in patterns:
                 if re.search(pattern, original, re.IGNORECASE) and not re.search(
-                    pattern, humanized, re.IGNORECASE
+                    pattern, humanized, re.IGNORECASE,
                 ):
                     changes.append(f"Removed {category}: '{pattern}'")
 
@@ -453,7 +536,7 @@ class Humanizer:
             hum_unique = len(set(v.lower() for v in hum_bullets))
             if hum_unique > orig_unique:
                 changes.append(
-                    f"Increased bullet verb diversity: {orig_unique} → {hum_unique} unique verbs"
+                    f"Increased bullet verb diversity: {orig_unique} → {hum_unique} unique verbs",
                 )
 
         return changes
@@ -573,7 +656,7 @@ async def humanize_cover_letter_async(
     job_description: str,
     user_profile: dict[str, Any],
     intensity: HumanizationIntensity = HumanizationIntensity.MEDIUM,
-    output_path: Optional[str] = None,
+    output_path: str | None = None,
 ) -> HumanizationResult:
     """Async wrapper for humanizing cover letters (if needed)."""
     # The LLMClient is sync, but we can wrap for async contexts

@@ -1,5 +1,4 @@
 import re
-from typing import List, Optional
 from urllib.parse import quote_plus, urljoin
 
 from bs4 import BeautifulSoup
@@ -22,10 +21,10 @@ class LinkedInScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         location_param = quote_plus(location or "Remote")
@@ -48,7 +47,7 @@ class LinkedInScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one(".base-search-card__title, h3 a")
             if not title_elem:
@@ -83,7 +82,7 @@ class LinkedInScraper(BaseScraper):
             return job
         try:
             html = await self.fetch_with_browser(
-                str(job.application_url), wait_for=".description__text"
+                str(job.application_url), wait_for=".description__text",
             )
             soup = BeautifulSoup(html, "html.parser")
             desc_elem = soup.select_one(".description__text, .show-more-less-html__markup")
@@ -94,7 +93,7 @@ class LinkedInScraper(BaseScraper):
             self.logger.error(f"Failed to get LinkedIn job details: {e}")
         return job
 
-    def _extract_requirements(self, description: str) -> List[str]:
+    def _extract_requirements(self, description: str) -> list[str]:
         req_patterns = [
             r"(?:requirements?|qualifications?):\s*(.*?)(?:\n\n|\n[A-Z]|$)",
             r"(?:must have|required):\s*(.*?)(?:\n|$)",
@@ -122,10 +121,10 @@ class IndeedScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         location_param = quote_plus(location or "Remote")
@@ -149,7 +148,7 @@ class IndeedScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one("h2 a, .jobTitle a, [data-testid='job-title']")
             if not title_elem:
@@ -197,10 +196,10 @@ class GlassdoorScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         location_param = quote_plus(location or "Remote")
@@ -221,7 +220,7 @@ class GlassdoorScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one(".jobTitle, .jobLink")
             if not title_elem:
@@ -265,10 +264,10 @@ class RemoteOKScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/remote-{search_query}-jobs"
@@ -288,7 +287,7 @@ class RemoteOKScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one(".company_and_position h2, .position h2")
             if not title_elem:
@@ -336,10 +335,10 @@ class WeWorkRemotelyScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/remote-jobs/search?term={search_query}"
@@ -359,7 +358,7 @@ class WeWorkRemotelyScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one(".title, h2 a")
             if not title_elem:
@@ -403,10 +402,10 @@ class RemoteCoScraper(BaseScraper):
     async def search_jobs(
         self,
         query: str,
-        location: Optional[str] = None,
-        job_type: Optional[JobType] = None,
+        location: str | None = None,
+        job_type: JobType | None = None,
         max_results: int = 100,
-    ) -> List[Job]:
+    ) -> list[Job]:
         jobs = []
         search_query = quote_plus(query)
         url = f"{self.base_url}/remote-jobs/search/?search_keywords={search_query}"
@@ -426,7 +425,7 @@ class RemoteCoScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Optional[Job]:
+    async def parse_job_listing(self, element) -> Job | None:
         try:
             title_elem = element.select_one("h2 a, .job-title a")
             if not title_elem:

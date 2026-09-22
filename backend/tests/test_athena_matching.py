@@ -2,8 +2,8 @@ from uuid import uuid4
 
 import pytest
 
-from ai_company.athena.matching.engine import MatchingEngine
-from ai_company.athena.models import Job, JobSource, JobStatus, JobType, Skill, UserProfile
+from athena.matching.engine import MatchingEngine
+from athena.models import Job, JobSource, JobStatus, JobType, Skill, UserProfile
 
 
 @pytest.fixture

@@ -15,7 +15,7 @@ import type {
   MatchTier,
 } from './types';
 
-const API_BASE = '/api/v1/athena';
+const API_BASE = import.meta.env.VITE_ATHENA_API_BASE || '/api/v1/athena';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {

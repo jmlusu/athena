@@ -2,8 +2,8 @@ from uuid import uuid4
 
 import pytest
 
-from ai_company.athena.models import Job, JobSource, JobStatus, JobType
-from ai_company.athena.store import AthenaDB
+from athena.models import Job, JobSource, JobStatus, JobType
+from athena.store import AthenaDB
 
 
 @pytest.fixture

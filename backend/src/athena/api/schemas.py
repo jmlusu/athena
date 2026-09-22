@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
@@ -22,52 +22,52 @@ from ..models import (
 # Request/Response schemas
 class JobCreate(BaseModel):
     source: JobSource
-    source_job_id: Optional[str] = None
+    source_job_id: str | None = None
     title: str
     company: str
     location: str
     job_type: JobType
     description: str
-    requirements: List[str] = []
-    responsibilities: List[str] = []
-    keywords: List[str] = []
-    salary_range: Optional[SalaryRange] = None
-    posted_date: Optional[datetime] = None
-    expiry_date: Optional[datetime] = None
+    requirements: list[str] = []
+    responsibilities: list[str] = []
+    keywords: list[str] = []
+    salary_range: SalaryRange | None = None
+    posted_date: datetime | None = None
+    expiry_date: datetime | None = None
     application_url: HttpUrl
-    apply_email: Optional[EmailStr] = None
-    contact_person: Optional[str] = None
-    company_website: Optional[HttpUrl] = None
-    company_size: Optional[str] = None
-    company_industry: Optional[str] = None
-    benefits: List[str] = []
+    apply_email: EmailStr | None = None
+    contact_person: str | None = None
+    company_website: HttpUrl | None = None
+    company_size: str | None = None
+    company_industry: str | None = None
+    benefits: list[str] = []
 
 
 class JobResponse(BaseModel):
     id: UUID
     source: JobSource
-    source_job_id: Optional[str]
+    source_job_id: str | None
     title: str
     company: str
     location: str
     job_type: JobType
     description: str
-    requirements: List[str]
-    responsibilities: List[str]
-    keywords: List[str]
-    salary_range: Optional[SalaryRange]
-    posted_date: Optional[datetime]
-    expiry_date: Optional[datetime]
+    requirements: list[str]
+    responsibilities: list[str]
+    keywords: list[str]
+    salary_range: SalaryRange | None
+    posted_date: datetime | None
+    expiry_date: datetime | None
     application_url: HttpUrl
-    apply_email: Optional[EmailStr]
-    contact_person: Optional[str]
-    company_website: Optional[HttpUrl]
-    company_size: Optional[str]
-    company_industry: Optional[str]
-    benefits: List[str]
-    ats_score: Optional[float]
-    match_score: Optional[float]
-    match_tier: Optional[MatchTier]
+    apply_email: EmailStr | None
+    contact_person: str | None
+    company_website: HttpUrl | None
+    company_size: str | None
+    company_industry: str | None
+    benefits: list[str]
+    ats_score: float | None
+    match_score: float | None
+    match_tier: MatchTier | None
     status: JobStatus
     scraped_at: datetime
     updated_at: datetime
@@ -77,22 +77,22 @@ class JobResponse(BaseModel):
 
 
 class JobListResponse(BaseModel):
-    jobs: List[JobResponse]
+    jobs: list[JobResponse]
     total: int
     limit: int
     offset: int
 
 
 class JobFilter(BaseModel):
-    status: Optional[JobStatus] = None
-    source: Optional[JobSource] = None
-    job_type: Optional[JobType] = None
-    location: Optional[str] = None
-    min_ats_score: Optional[float] = None
-    max_ats_score: Optional[float] = None
-    min_match_score: Optional[float] = None
-    max_match_score: Optional[float] = None
-    search: Optional[str] = None
+    status: JobStatus | None = None
+    source: JobSource | None = None
+    job_type: JobType | None = None
+    location: str | None = None
+    min_ats_score: float | None = None
+    max_ats_score: float | None = None
+    min_match_score: float | None = None
+    max_match_score: float | None = None
+    search: str | None = None
     limit: int = 50
     offset: int = 0
 
@@ -100,18 +100,18 @@ class JobFilter(BaseModel):
 class UserProfileCreate(BaseModel):
     email: EmailStr
     full_name: str
-    phone: Optional[str] = None
-    location: Optional[str] = None
-    linkedin_url: Optional[HttpUrl] = None
-    portfolio_url: Optional[HttpUrl] = None
-    github_url: Optional[HttpUrl] = None
+    phone: str | None = None
+    location: str | None = None
+    linkedin_url: HttpUrl | None = None
+    portfolio_url: HttpUrl | None = None
+    github_url: HttpUrl | None = None
     headline: str = ""
     summary: str = ""
-    skills: List[Skill] = []
-    experience: List[Experience] = []
-    education: List[Education] = []
-    certifications: List[str] = []
-    languages: List[str] = []
+    skills: list[Skill] = []
+    experience: list[Experience] = []
+    education: list[Education] = []
+    certifications: list[str] = []
+    languages: list[str] = []
     preferences: JobPreferences = Field(default_factory=JobPreferences)
 
 
@@ -119,20 +119,20 @@ class UserProfileResponse(BaseModel):
     id: UUID
     email: EmailStr
     full_name: str
-    phone: Optional[str]
-    location: Optional[str]
-    linkedin_url: Optional[HttpUrl]
-    portfolio_url: Optional[HttpUrl]
-    github_url: Optional[HttpUrl]
+    phone: str | None
+    location: str | None
+    linkedin_url: HttpUrl | None
+    portfolio_url: HttpUrl | None
+    github_url: HttpUrl | None
     headline: str
     summary: str
-    skills: List[Skill]
-    experience: List[Experience]
-    education: List[Education]
-    certifications: List[str]
-    languages: List[str]
+    skills: list[Skill]
+    experience: list[Experience]
+    education: list[Education]
+    certifications: list[str]
+    languages: list[str]
     preferences: JobPreferences
-    documents: List[Document]
+    documents: list[Document]
     created_at: datetime
     updated_at: datetime
 
@@ -144,7 +144,7 @@ class ApplicationCreate(BaseModel):
     job_id: UUID
     user_profile_id: UUID
     resume_id: UUID
-    cover_letter_id: Optional[UUID] = None
+    cover_letter_id: UUID | None = None
 
 
 class ApplicationResponse(BaseModel):
@@ -152,16 +152,16 @@ class ApplicationResponse(BaseModel):
     job_id: UUID
     user_profile_id: UUID
     resume_id: UUID
-    cover_letter_id: Optional[UUID]
-    tailored_resume_path: Optional[str]
-    tailored_cover_letter_path: Optional[str]
+    cover_letter_id: UUID | None
+    tailored_resume_path: str | None
+    tailored_cover_letter_path: str | None
     ats_score: float
     match_score: float
     status: ApplicationStatus
-    submitted_at: Optional[datetime]
-    confirmed_at: Optional[datetime]
-    receipt_data: Dict[str, Any]
-    follow_up_dates: List[datetime]
+    submitted_at: datetime | None
+    confirmed_at: datetime | None
+    receipt_data: dict[str, Any]
+    follow_up_dates: list[datetime]
     notes: str
     created_at: datetime
     updated_at: datetime
@@ -171,33 +171,33 @@ class ApplicationResponse(BaseModel):
 
 
 class ApplicationListResponse(BaseModel):
-    applications: List[ApplicationResponse]
+    applications: list[ApplicationResponse]
     total: int
 
 
 class ScrapeJobRequest(BaseModel):
     query: str
-    location: Optional[str] = None
-    job_type: Optional[JobType] = None
+    location: str | None = None
+    job_type: JobType | None = None
     max_results: int = 100
-    sources: Optional[List[JobSource]] = None
-    user_profile_id: Optional[UUID] = None
+    sources: list[JobSource] | None = None
+    user_profile_id: UUID | None = None
 
 
 class ScrapeJobResponse(BaseModel):
     id: UUID
     source: JobSource
     query: str
-    location: Optional[str]
-    job_type: Optional[JobType]
+    location: str | None
+    job_type: JobType | None
     max_results: int
     status: str
     jobs_found: int
     jobs_new: int
     jobs_updated: int
-    error: Optional[str]
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
+    error: str | None
+    started_at: datetime | None
+    completed_at: datetime | None
     created_at: datetime
 
     class Config:
@@ -212,7 +212,7 @@ class ATSScoreResponse(BaseModel):
     experience_relevance: float
     education_match: float
     overall: float
-    details: Dict[str, Any]
+    details: dict[str, Any]
     tier: str
     should_auto_apply: bool
     should_flag_for_review: bool
@@ -220,13 +220,13 @@ class ATSScoreResponse(BaseModel):
 
 class MatchJobsRequest(BaseModel):
     profile_id: UUID
-    job_ids: Optional[List[UUID]] = None
-    top_k: Optional[int] = None
+    job_ids: list[UUID] | None = None
+    top_k: int | None = None
     min_score: float = 0
 
 
 class MatchJobsResponse(BaseModel):
-    matches: List[Dict[str, Any]]
+    matches: list[dict[str, Any]]
     total: int
 
 
@@ -240,14 +240,14 @@ class PipelineStatsResponse(BaseModel):
     interview: int
     offer: int
     rejected: int
-    by_source: Dict[str, int]
-    by_type: Dict[str, int]
+    by_source: dict[str, int]
+    by_type: dict[str, int]
     avg_ats_score: float
     avg_match_score: float
 
 
 class ScrapeStatsResponse(BaseModel):
-    recent_scrapes: List[ScrapeJobResponse]
+    recent_scrapes: list[ScrapeJobResponse]
     total_jobs_scraped: int
     total_new_jobs: int
-    last_scrape_at: Optional[datetime]
+    last_scrape_at: datetime | None

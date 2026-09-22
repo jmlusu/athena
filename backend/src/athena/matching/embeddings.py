@@ -1,23 +1,23 @@
 import contextlib
 import hashlib
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import numpy as np
 
-from ai_company.paths import get_project_root
+from ..paths import get_data_root
 
 
 class EmbeddingCache:
     """Cache for embeddings to avoid recomputation."""
 
-    def __init__(self, cache_dir: Optional[Path] = None):
+    def __init__(self, cache_dir: Path | None = None):
         if cache_dir is None:
-            project_root = get_project_root()
-            cache_dir = project_root / "company" / "athena" / "embeddings_cache"
+            data_root = get_data_root()
+            cache_dir = data_root / "embeddings_cache"
         self.cache_dir = cache_dir
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self._memory_cache: Dict[str, np.ndarray] = {}
+        self._memory_cache: dict[str, np.ndarray] = {}
 
     def _get_cache_key(self, text: str) -> str:
         return hashlib.sha256(text.encode()).hexdigest()[:32]
@@ -25,7 +25,7 @@ class EmbeddingCache:
     def _get_cache_path(self, key: str) -> Path:
         return self.cache_dir / f"{key}.npy"
 
-    def get(self, text: str) -> Optional[np.ndarray]:
+    def get(self, text: str) -> np.ndarray | None:
         key = self._get_cache_key(text)
         if key in self._memory_cache:
             return self._memory_cache[key]
@@ -80,7 +80,7 @@ class EmbeddingModel:
     def is_available(self) -> bool:
         return self._model is not None
 
-    def encode(self, texts: List[str], use_cache: bool = True) -> np.ndarray:
+    def encode(self, texts: list[str], use_cache: bool = True) -> np.ndarray:
         """Encode texts to embeddings."""
         if not self.is_available():
             raise RuntimeError("sentence-transformers not available")
@@ -88,7 +88,7 @@ class EmbeddingModel:
         if isinstance(texts, str):
             texts = [texts]
 
-        embeddings: List[Optional[np.ndarray]] = []
+        embeddings: list[np.ndarray | None] = []
         uncached_texts = []
         uncached_indices = []
 

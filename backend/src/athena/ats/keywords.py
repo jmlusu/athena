@@ -2,7 +2,7 @@
 
 import re
 from collections import Counter
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 # Industry-specific keyword dictionaries
 INDUSTRY_KEYWORDS = {
@@ -115,7 +115,7 @@ INDUSTRY_KEYWORDS = {
 }
 
 
-def extract_keywords_from_text(text: str, industry: Optional[str] = None) -> List[str]:
+def extract_keywords_from_text(text: str, industry: str | None = None) -> list[str]:
     """Extract keywords from text, optionally filtered by industry."""
     text_lower = text.lower()
     keywords = set()
@@ -151,7 +151,7 @@ def extract_keywords_from_text(text: str, industry: Optional[str] = None) -> Lis
     return sorted(list(keywords))
 
 
-def get_keyword_frequency(texts: List[str], industry: Optional[str] = None) -> Dict[str, int]:
+def get_keyword_frequency(texts: list[str], industry: str | None = None) -> dict[str, int]:
     """Get frequency count of keywords across multiple texts."""
     all_keywords = []
     for text in texts:
@@ -159,13 +159,13 @@ def get_keyword_frequency(texts: List[str], industry: Optional[str] = None) -> D
     return dict(Counter(all_keywords))
 
 
-def suggest_keywords_for_job(job_title: str, job_description: str) -> List[str]:
+def suggest_keywords_for_job(job_title: str, job_description: str) -> list[str]:
     """Suggest relevant keywords for a job posting."""
     combined = f"{job_title} {job_description}"
     return extract_keywords_from_text(combined)
 
 
-def compare_keywords(keywords1: List[str], keywords2: List[str]) -> Dict[str, Any]:
+def compare_keywords(keywords1: list[str], keywords2: list[str]) -> dict[str, Any]:
     """Compare two keyword lists."""
     set1 = set(keywords1)
     set2 = set(keywords2)

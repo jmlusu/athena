@@ -1,4 +1,3 @@
-from typing import Dict, List, Optional, Tuple
 
 from ..models import Job, MatchTier, Skill, UserProfile
 from .embeddings import cosine_similarity, embedding_model
@@ -122,8 +121,8 @@ class MatchingEngine:
         return (len(matches) / len(job_keywords)) * 100
 
     def rank_jobs(
-        self, profile: UserProfile, jobs: List[Job], top_k: Optional[int] = None
-    ) -> List[Tuple[Job, float]]:
+        self, profile: UserProfile, jobs: list[Job], top_k: int | None = None,
+    ) -> list[tuple[Job, float]]:
         """Rank jobs by match score for a profile."""
         scored_jobs = []
         for job in jobs:
@@ -142,13 +141,13 @@ class MatchingEngine:
     def _get_match_tier(self, score: float) -> MatchTier:
         if score >= 90:
             return MatchTier.EXCELLENT
-        elif score >= 80:
+        if score >= 80:
             return MatchTier.GOOD
-        elif score >= 70:
+        if score >= 70:
             return MatchTier.FAIR
         return MatchTier.POOR
 
-    def find_matching_skills(self, profile: UserProfile, job: Job) -> Dict[str, List[str]]:
+    def find_matching_skills(self, profile: UserProfile, job: Job) -> dict[str, list[str]]:
         """Find matching and missing skills between profile and job."""
         profile_skills = {s.name.lower(): s for s in profile.skills}
         for exp in profile.experience:

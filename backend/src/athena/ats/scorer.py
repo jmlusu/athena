@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, Set
+from typing import Any
 
 from ..matching import matching_engine
 from ..models import Job, UserProfile
@@ -13,7 +13,7 @@ class ATSScoreBreakdown:
     experience_relevance: float
     education_match: float
     overall: float
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
 
 class ATSScorer:
@@ -131,8 +131,8 @@ class ATSScorer:
         )
 
     def _compute_keyword_match(
-        self, profile: UserProfile, job: Job
-    ) -> tuple[float, Dict[str, Any]]:
+        self, profile: UserProfile, job: Job,
+    ) -> tuple[float, dict[str, Any]]:
         """Compute keyword-based match score."""
         # Extract keywords from job
         job_keywords = self._extract_job_keywords(job)
@@ -155,7 +155,7 @@ class ATSScorer:
             "matched_count": len(matched),
         }
 
-    def _extract_job_keywords(self, job: Job) -> Set[str]:
+    def _extract_job_keywords(self, job: Job) -> set[str]:
         """Extract relevant keywords from job description."""
         keywords = set()
 
@@ -225,7 +225,7 @@ class ATSScorer:
         }
         return {k for k in keywords if k not in stopwords and len(k) > 2}
 
-    def _extract_profile_keywords(self, profile: UserProfile) -> Set[str]:
+    def _extract_profile_keywords(self, profile: UserProfile) -> set[str]:
         """Extract keywords from user profile."""
         keywords = set()
 
@@ -254,7 +254,7 @@ class ATSScorer:
 
         return keywords
 
-    def _extract_skills_from_text(self, text: str) -> Set[str]:
+    def _extract_skills_from_text(self, text: str) -> set[str]:
         """Extract potential skill keywords from text."""
         # Common skill patterns
         text_lower = text.lower()
@@ -283,8 +283,8 @@ class ATSScorer:
         return skills
 
     def _compute_experience_relevance(
-        self, profile: UserProfile, job: Job
-    ) -> tuple[float, Dict[str, Any]]:
+        self, profile: UserProfile, job: Job,
+    ) -> tuple[float, dict[str, Any]]:
         """Compute experience relevance score."""
         if not profile.experience:
             return 0.0, {"years_experience": 0, "relevant_roles": 0}
@@ -333,8 +333,8 @@ class ATSScorer:
         }
 
     def _compute_education_match(
-        self, profile: UserProfile, job: Job
-    ) -> tuple[float, Dict[str, Any]]:
+        self, profile: UserProfile, job: Job,
+    ) -> tuple[float, dict[str, Any]]:
         """Compute education match score."""
         if not profile.education:
             return 50.0, {"has_degree": False, "matching_fields": []}  # Neutral
@@ -372,12 +372,11 @@ class ATSScorer:
         """Get tier label for score."""
         if score >= 90:
             return "excellent"
-        elif score >= 80:
+        if score >= 80:
             return "good"
-        elif score >= 70:
+        if score >= 70:
             return "fair"
-        else:
-            return "poor"
+        return "poor"
 
     def should_auto_apply(self, score: float) -> bool:
         """Determine if application should be auto-submitted."""

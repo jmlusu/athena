@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from ai_company.dashboard.app import create_app
+from athena.api.app import create_app
 
 
 @pytest.fixture
