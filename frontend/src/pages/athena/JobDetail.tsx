@@ -4,7 +4,7 @@ import { ATSGauge } from '@/components/athena/ATSGauge';
 import { AreaChart } from '@/components/athena/AreaChart';
 import { SkillTags, SkillComparison } from '@/components/athena/SkillTags';
 import { cn, formatSalary, formatDate, getJobTypeLabel, getJobSourceLabel, getMatchTierColor, getMatchTierLabel } from '@/lib/athena/utils';
-import { getJob, getATSScore } from '@/lib/athena/api';
+import { getJob, getATSScore, listProfiles } from '@/lib/athena/api';
 import type { Job, MatchTier, SkillTag } from '@/lib/athena/types';
 import { ChevronDown, ChevronLeft, Download, Upload, FileText, Flag, Share2, ExternalLink, Check, X, Sparkles, Brain, Loader2 } from 'lucide-react';
 
@@ -42,15 +42,20 @@ export const JobDetail: React.FC = () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [jobData, atsData] = await Promise.all([
-        getJob(id),
-        getATSScore(id, 'current-user-profile-id'),
-      ]);
+      const jobData = await getJob(id);
       setJob(jobData);
-      setAtsScore(atsData);
+      try {
+        const profiles = await listProfiles();
+        if (profiles.length > 0) {
+          const atsData = await getATSScore(id, profiles[0].id);
+          setAtsScore(atsData);
+        }
+      } catch (atsErr) {
+        console.warn('ATS score unavailable:', atsErr);
+      }
     } catch (error) {
       console.error('Failed to load job detail:', error);
-      navigate('/athena/jobs');
+      navigate('/jobs');
     } finally {
       setLoading(false);
     }

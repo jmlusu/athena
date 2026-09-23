@@ -148,7 +148,47 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("Athena data directory initialised: %s", data_root)
     except Exception:  # noqa: BLE001 - non-critical startup hook
         logger.debug("Data directory initialisation skipped (non-critical)")
+
+    # Auto-start scheduler with a default scrape config (unattended operation)
+    scheduler_started = False
+    try:
+        from athena.scheduler import ScrapeConfig, athena_scheduler
+
+        if not athena_scheduler.default_configs:
+            default_query = os.environ.get("ATHENA_DEFAULT_SCRAPE_QUERY", "software engineer")
+            default_location = os.environ.get("ATHENA_DEFAULT_SCRAPE_LOCATION") or None
+            default_max = int(os.environ.get("ATHENA_DEFAULT_SCRAPE_MAX", "50"))
+            athena_scheduler.add_default_config(
+                ScrapeConfig(
+                    query=default_query,
+                    location=default_location,
+                    max_results=default_max,
+                ),
+            )
+            logger.info(
+                "Default scrape config registered: query=%r location=%r max=%d",
+                default_query,
+                default_location,
+                default_max,
+            )
+
+        if os.environ.get("ATHENA_SCHEDULER_AUTOSTART", "true").lower() in ("1", "true", "yes"):
+            athena_scheduler.start()
+            scheduler_started = True
+        else:
+            logger.info("Scheduler autostart disabled (ATHENA_SCHEDULER_AUTOSTART=false)")
+    except Exception as e:  # noqa: BLE001 - non-critical startup hook
+        logger.warning("Scheduler autostart skipped: %s", e)
+
     yield
+
+    if scheduler_started:
+        try:
+            from athena.scheduler import athena_scheduler
+
+            athena_scheduler.stop()
+        except Exception:  # noqa: BLE001 - non-critical shutdown hook
+            logger.debug("Scheduler shutdown skipped")
 
 
 # ── App factory ─────────────────────────────────────────────────────────

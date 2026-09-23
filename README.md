@@ -67,7 +67,11 @@ Services:
 | `ATHENA_DATA_DIR` | Data directory for JSONL stores | `./company/athena` |
 | `ATHENA_HITL_EXTERNAL` | Use external HITL gate (requires ai_company) | `false` |
 | `ATHENA_LLM_PROVIDER` | External LLM provider for humanization | (empty) |
+| `ATHENA_SCHEDULER_AUTOSTART` | Start scheduler on boot | `true` |
+| `ATHENA_DEFAULT_SCRAPE_QUERY` | Default scheduled scrape query | `software engineer` |
+| `ATHENA_DEFAULT_SCRAPE_MAX` | Max results per scheduled scrape | `50` |
 | `VITE_ATHENA_API_BASE` | Frontend API base path | `/api/v1/athena` |
+| `VITE_ATHENA_API_KEY` | API key baked into frontend build (must match `ATHENA_API_KEY`) | `dev-admin-key` |
 
 ## Features
 
@@ -102,6 +106,21 @@ npm run test
 ## Deployment
 
 The platform is designed to run as two Docker containers (backend + frontend) behind a reverse proxy. Configure `ATHENA_API_KEY` and `ATHENA_CORS_ORIGINS` for production.
+
+### Oracle Cloud / VPS (always-on)
+
+```bash
+# On the instance, after cloning this repo:
+bash deploy/oci-deploy.sh
+```
+
+The script installs Docker if needed, generates a `.env` with a random `ATHENA_API_KEY`, builds images (backend includes Playwright Chromium), starts the stack, and waits for health.
+
+- Dashboard: `http://<instance-ip>:8530`
+- API: `http://<instance-ip>:8520`
+- Scheduler auto-starts (`ATHENA_SCHEDULER_AUTOSTART=true`) and scrapes every 4 hours
+
+Open TCP 80/443 (or 8520/8530) in the OCI security list. Put TLS (Caddy/nginx) in front before public exposure. Never commit the generated `.env`.
 
 ## History
 

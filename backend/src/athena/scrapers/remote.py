@@ -252,7 +252,7 @@ class GlassdoorScraper(BaseScraper):
 
 
 class RemoteOKScraper(BaseScraper):
-    """Scraper for RemoteOK (remote jobs aggregator)."""
+    """Scraper for RemoteOK (uses their public JSON API)."""
 
     def __init__(self):
         super().__init__(
@@ -269,16 +269,30 @@ class RemoteOKScraper(BaseScraper):
         max_results: int = 100,
     ) -> list[Job]:
         jobs = []
-        search_query = quote_plus(query)
-        url = f"{self.base_url}/remote-{search_query}-jobs"
-
         try:
-            html = await self.fetch_html(url)
-            soup = BeautifulSoup(html, "html.parser")
-            job_rows = soup.select("tr.job, .job")
+            data = await self.fetch_json(f"{self.base_url}/api")
+            if not isinstance(data, list):
+                return jobs
 
-            for row in job_rows[:max_results]:
-                job = await self.parse_job_listing(row)
+            terms = [t for t in query.lower().split() if t]
+            for item in data:
+                if len(jobs) >= max_results:
+                    break
+                if not isinstance(item, dict) or not item.get("position"):
+                    continue
+
+                haystack = " ".join(
+                    [
+                        str(item.get("position", "")),
+                        str(item.get("company", "")),
+                        " ".join(item.get("tags") or []),
+                        str(item.get("description", ""))[:500],
+                    ]
+                ).lower()
+                if terms and not any(t in haystack for t in terms):
+                    continue
+
+                job = self._job_from_api_item(item)
                 if job:
                     jobs.append(job)
 
@@ -287,39 +301,60 @@ class RemoteOKScraper(BaseScraper):
 
         return jobs
 
-    async def parse_job_listing(self, element) -> Job | None:
+    def _job_from_api_item(self, item: dict) -> Job | None:
         try:
-            title_elem = element.select_one(".company_and_position h2, .position h2")
-            if not title_elem:
-                return None
+            url = item.get("url") or item.get("apply_url") or item.get("original") or ""
+            if not url:
+                url = f"{self.base_url}/remote-jobs/{item.get('slug') or item.get('id')}"
+            if not url.startswith("http"):
+                url = urljoin(self.base_url, url)
 
-            title = title_elem.get_text(strip=True)
+            description = item.get("description") or ""
+            # Strip HTML tags lightly for the description body
+            description = re.sub(r"<[^>]+>", " ", description)
+            description = re.sub(r"\s+", " ", description).strip()
 
-            company_elem = element.select_one(".companyLink h3, .company h3")
-            company = company_elem.get_text(strip=True) if company_elem else "Unknown"
+            salary_min = item.get("salary_min")
+            salary_max = item.get("salary_max")
+            salary_range = None
+            if salary_min or salary_max:
+                from ..models import SalaryRange
 
-            location_elem = element.select_one(".location, .region")
-            location = location_elem.get_text(strip=True) if location_elem else "Remote"
+                salary_range = SalaryRange(
+                    min=salary_min,
+                    max=salary_max,
+                    currency="USD",
+                    period="yearly",
+                )
 
-            job_link = element.select_one("a[href*='/remote-jobs/']")
-            job_url = urljoin(self.base_url, job_link.get("href", "")) if job_link else ""
+            from datetime import datetime
 
-            tags = element.select(".tag, .tooltip")
-            keywords = [tag.get_text(strip=True) for tag in tags]
+            posted = None
+            if item.get("date"):
+                try:
+                    posted = datetime.fromisoformat(str(item["date"]).replace("Z", "+00:00"))
+                except ValueError:
+                    posted = None
 
             return self._create_job(
-                title=title,
-                company=company,
-                location=location,
+                title=str(item.get("position", "")).strip(),
+                company=str(item.get("company", "Unknown")).strip() or "Unknown",
+                location=str(item.get("location") or "Remote").strip() or "Remote",
                 job_type=JobType.FULL_TIME,
-                description="",
-                application_url=job_url,
-                source_job_id=job_url,
-                keywords=keywords,
+                description=description,
+                application_url=url,
+                source_job_id=str(item.get("id") or url),
+                keywords=[str(t) for t in (item.get("tags") or [])],
+                salary_range=salary_range,
+                posted_date=posted,
             )
         except Exception as e:  # noqa: BLE001
-            self.logger.error(f"Failed to parse RemoteOK listing: {e}")
+            self.logger.error(f"Failed to parse RemoteOK API item: {e}")
             return None
+
+    async def parse_job_listing(self, element) -> Job | None:
+        # HTML path unused — API path is authoritative
+        return None
 
 
 class WeWorkRemotelyScraper(BaseScraper):

@@ -19,6 +19,9 @@ COPY backend/pyproject.toml backend/uv.lock* ./
 # Install Python dependencies
 RUN uv sync --frozen --no-dev
 
+# Install Playwright Chromium (+ system deps) for browser-based scrapers
+RUN uv run playwright install --with-deps chromium
+
 # Copy application code
 COPY backend/src ./src
 

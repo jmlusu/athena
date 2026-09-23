@@ -247,6 +247,15 @@ async def get_scrape_history(limit: int = 50):
 
 
 # Matching & Scoring endpoints
+@router.post("/process")
+async def process_jobs():
+    """Re-run matching/scoring for all NEW/FETCHED jobs (e.g. after profile save)."""
+    await athena_scheduler.process_new_jobs()
+    jobs = athena_db.jobs.get_all()
+    scored = len([j for j in jobs if j.status == JobStatus.SCORED])
+    return {"status": "processed", "total_jobs": len(jobs), "scored": scored}
+
+
 @router.post("/match", response_model=MatchJobsResponse)
 async def match_jobs(request: MatchJobsRequest):
     """Match jobs against a user profile."""

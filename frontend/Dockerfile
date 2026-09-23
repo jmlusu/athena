@@ -12,6 +12,10 @@ RUN npm ci
 # Copy source code
 COPY frontend/ ./
 
+# Bake Athena API key into the client bundle (override at build time for prod)
+ARG VITE_ATHENA_API_KEY=dev-admin-key
+ENV VITE_ATHENA_API_KEY=$VITE_ATHENA_API_KEY
+
 # Build the application
 RUN npm run build
 

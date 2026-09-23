@@ -8,12 +8,16 @@ services:
     container_name: athena-backend
     environment:
       - ATHENA_API_KEY=${ATHENA_API_KEY:-dev-admin-key}
-      - ATHENA_CORS_ORIGINS=http://localhost:8530,http://127.0.0.1:8530
+      - ATHENA_CORS_ORIGINS=${ATHENA_CORS_ORIGINS:-http://localhost:8530,http://127.0.0.1:8530}
       - ATHENA_AUTH_MODE=api_key
-      - ATHENA_RATE_LIMIT=100
+      - ATHENA_RATE_LIMIT=${ATHENA_RATE_LIMIT:-100}
       - ATHENA_DATA_DIR=/app/company/athena
       - ATHENA_HITL_EXTERNAL=false
       - ATHENA_LLM_PROVIDER=
+      - ATHENA_SCHEDULER_AUTOSTART=${ATHENA_SCHEDULER_AUTOSTART:-true}
+      - ATHENA_DEFAULT_SCRAPE_QUERY=${ATHENA_DEFAULT_SCRAPE_QUERY:-software engineer}
+      - ATHENA_DEFAULT_SCRAPE_LOCATION=${ATHENA_DEFAULT_SCRAPE_LOCATION:-}
+      - ATHENA_DEFAULT_SCRAPE_MAX=${ATHENA_DEFAULT_SCRAPE_MAX:-50}
     volumes:
       - athena_data:/app/company/athena
     ports:
@@ -31,6 +35,8 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        - VITE_ATHENA_API_KEY=${ATHENA_API_KEY:-dev-admin-key}
     container_name: athena-frontend
     ports:
       - "8530:80"

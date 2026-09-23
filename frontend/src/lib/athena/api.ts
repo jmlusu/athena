@@ -16,11 +16,15 @@ import type {
 } from './types';
 
 const API_BASE = import.meta.env.VITE_ATHENA_API_BASE || '/api/v1/athena';
+// Athena's admin key — required on all write (POST/PUT/PATCH/DELETE) endpoints.
+// Override via VITE_ATHENA_API_KEY at build time; defaults to the backend dev fallback.
+const API_KEY = import.meta.env.VITE_ATHENA_API_KEY || 'dev-admin-key';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      'X-API-Key': API_KEY,
       ...options?.headers,
     },
     ...options,
@@ -140,6 +144,10 @@ export async function matchJobs(request: {
 
 export async function getATSScore(jobId: string, profileId: string): Promise<ATSScoreResponse> {
   return fetchJson<ATSScoreResponse>(`${API_BASE}/score/${jobId}/${profileId}`);
+}
+
+export async function processJobs(): Promise<{ status: string; total_jobs: number; scored: number }> {
+  return fetchJson(`${API_BASE}/process`, { method: 'POST' });
 }
 
 // Scraping endpoints
