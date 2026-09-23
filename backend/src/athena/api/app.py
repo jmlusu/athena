@@ -112,12 +112,7 @@ def _check_api_key(request: Request) -> bool:
 
 
 # Paths that are exempt from the API-key guard
-_API_EXEMPT_PREFIXES = (
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-    "/health",
-)
+_API_EXEMPT_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/health")
 
 
 def _is_exempt_from_auth(path: str) -> bool:
@@ -137,12 +132,14 @@ def is_loopback_host(host: str) -> bool:
 
 # ── Lifespan ────────────────────────────────────────────────────────────
 
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan handler for FastAPI Athena app."""
     # Initialize Athena data directory
     try:
         from athena.paths import get_data_root
+
         data_root = get_data_root()
         data_root.mkdir(parents=True, exist_ok=True)
         logger.info("Athena data directory initialised: %s", data_root)
@@ -160,10 +157,8 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             default_max = int(os.environ.get("ATHENA_DEFAULT_SCRAPE_MAX", "50"))
             athena_scheduler.add_default_config(
                 ScrapeConfig(
-                    query=default_query,
-                    location=default_location,
-                    max_results=default_max,
-                ),
+                    query=default_query, location=default_location, max_results=default_max
+                )
             )
             logger.info(
                 "Default scrape config registered: query=%r location=%r max=%d",
@@ -210,7 +205,7 @@ def create_app() -> FastAPI:
         if bind_host and not is_loopback_host(bind_host):
             raise RuntimeError(
                 "ATHENA_AUTH_MODE=open is only allowed on loopback hosts "
-                f"(127.0.0.1 / ::1); ATHENA_HOST='{bind_host}'",
+                f"(127.0.0.1 / ::1); ATHENA_HOST='{bind_host}'"
             )
 
     # ── CORS (configurable, restricted allowlist) ────────────────────────
@@ -256,10 +251,7 @@ def create_app() -> FastAPI:
                 content='{"detail":"Rate limit exceeded"}',
                 status_code=429,
                 media_type="application/json",
-                headers={
-                    "X-RateLimit-Limit": str(rate_limit),
-                    "X-RateLimit-Remaining": "0",
-                },
+                headers={"X-RateLimit-Limit": str(rate_limit), "X-RateLimit-Remaining": "0"},
             )
         response = cast(Response, await call_next(request))
         response.headers["X-RateLimit-Limit"] = str(rate_limit)
@@ -291,6 +283,7 @@ def create_app() -> FastAPI:
 
     # ── Routers ─────────────────────────────────────────────────────────
     from athena.api.routes import router as athena_router
+
     app.include_router(athena_router, prefix="/api/v1/athena")
 
     # ── Health check ───────────────────────────────────────────────────

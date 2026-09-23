@@ -11,9 +11,7 @@ class LilongweJobsScraper(BaseScraper):
 
     def __init__(self):
         super().__init__(
-            source=JobSource.MALAWI_JOBS,
-            base_url="https://www.malawijobs.com",
-            rate_limit=2.0,
+            source=JobSource.MALAWI_JOBS, base_url="https://www.malawijobs.com", rate_limit=2.0
         )
 
     async def search_jobs(
@@ -80,9 +78,7 @@ class MalawiWorkScraper(BaseScraper):
 
     def __init__(self):
         super().__init__(
-            source=JobSource.MALAWI_WORK,
-            base_url="https://malawiwork.com",
-            rate_limit=2.0,
+            source=JobSource.MALAWI_WORK, base_url="https://malawiwork.com", rate_limit=2.0
         )
 
     async def search_jobs(
@@ -148,9 +144,7 @@ class JobsMalawiScraper(BaseScraper):
 
     def __init__(self):
         super().__init__(
-            source=JobSource.JOBS_MALAWI,
-            base_url="https://jobs.malawi.net",
-            rate_limit=2.0,
+            source=JobSource.JOBS_MALAWI, base_url="https://jobs.malawi.net", rate_limit=2.0
         )
 
     async def search_jobs(

@@ -5,15 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 
 from ..ats import ats_scorer
 from ..matching import matching_engine
-from ..models import (
-    Application,
-    ApplicationStatus,
-    Job,
-    JobSource,
-    JobStatus,
-    JobType,
-    UserProfile,
-)
+from ..models import Application, ApplicationStatus, Job, JobSource, JobStatus, JobType, UserProfile
 from ..scheduler import ScrapeConfig, athena_scheduler
 from ..store import athena_db
 from .schemas import (
@@ -93,10 +85,7 @@ async def list_jobs(
     jobs = jobs[offset : offset + limit]
 
     return JobListResponse(
-        jobs=[JobResponse.model_validate(j) for j in jobs],
-        total=total,
-        limit=limit,
-        offset=offset,
+        jobs=[JobResponse.model_validate(j) for j in jobs], total=total, limit=limit, offset=offset
     )
 
 
@@ -195,8 +184,7 @@ async def list_applications(
     """List applications with filters."""
     apps = athena_db.get_applications(user_profile_id, job_id, status)
     return ApplicationListResponse(
-        applications=[ApplicationResponse.model_validate(a) for a in apps],
-        total=len(apps),
+        applications=[ApplicationResponse.model_validate(a) for a in apps], total=len(apps)
     )
 
 
@@ -399,6 +387,6 @@ async def get_scheduler_status():
                 "id": job.id,
                 "name": job.name,
                 "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
-            },
+            }
         )
     return {"running": athena_scheduler._running, "jobs": jobs}

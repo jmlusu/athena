@@ -95,7 +95,7 @@ class UpworkScraper(BaseScraper):
             return job
         try:
             html = await self.fetch_with_browser(
-                str(job.application_url), wait_for=".job-description",
+                str(job.application_url), wait_for=".job-description"
             )
             soup = BeautifulSoup(html, "html.parser")
             desc_elem = soup.select_one(".job-description, [data-test='job-description']")
@@ -270,10 +270,7 @@ class GuruScraper(BaseScraper):
 
     def __init__(self):
         super().__init__(
-            source=JobSource.GURU,
-            base_url="https://www.guru.com",
-            rate_limit=3.0,
-            use_browser=True,
+            source=JobSource.GURU, base_url="https://www.guru.com", rate_limit=3.0, use_browser=True
         )
 
     async def search_jobs(

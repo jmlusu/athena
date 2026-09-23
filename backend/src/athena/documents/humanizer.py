@@ -279,9 +279,12 @@ class Humanizer:
                 # Test import
                 from ai_company.llm.client import LLMClient
                 from ai_company.model_router import ModelRouter
+
                 return True
             except ImportError:
-                logger.warning("ATHENA_LLM_PROVIDER set but ai_company LLM not available; using template fallback")
+                logger.warning(
+                    "ATHENA_LLM_PROVIDER set but ai_company LLM not available; using template fallback"
+                )
                 return False
         return False
 
@@ -290,7 +293,10 @@ class Humanizer:
         if self._llm_client is None and self._llm_available:
             try:
                 from ai_company.llm.client import LLMClient
-                self._llm_client = LLMClient(config_path=self.config_path, registry_path=self.registry_path)
+
+                self._llm_client = LLMClient(
+                    config_path=self.config_path, registry_path=self.registry_path
+                )
             except ImportError:
                 self._llm_available = False
         return self._llm_client
@@ -300,7 +306,10 @@ class Humanizer:
         if self._model_router is None and self._llm_available:
             try:
                 from ai_company.model_router import ModelRouter
-                self._model_router = ModelRouter(config_path=self.config_path, registry_path=self.registry_path)
+
+                self._model_router = ModelRouter(
+                    config_path=self.config_path, registry_path=self.registry_path
+                )
             except ImportError:
                 self._llm_available = False
         return self._model_router
@@ -329,9 +338,7 @@ class Humanizer:
         )
 
         humanized = self._call_llm(
-            agent_name=agent_name,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
+            agent_name=agent_name, system_prompt=system_prompt, user_prompt=user_prompt
         )
 
         changes = self._detect_changes(content, humanized)
@@ -365,9 +372,7 @@ class Humanizer:
         )
 
         humanized = self._call_llm(
-            agent_name=agent_name,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
+            agent_name=agent_name, system_prompt=system_prompt, user_prompt=user_prompt
         )
 
         changes = self._detect_changes(content, humanized)
@@ -399,9 +404,7 @@ class Humanizer:
         )
 
         humanized = self._call_llm(
-            agent_name=agent_name,
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
+            agent_name=agent_name, system_prompt=system_prompt, user_prompt=user_prompt
         )
 
         changes = self._detect_changes(content, humanized)
@@ -420,12 +423,7 @@ class Humanizer:
             HumanizationIntensity.HEAVY: SYSTEM_PROMPT_HEAVY,
         }[intensity]
 
-    def _call_llm(
-        self,
-        agent_name: str,
-        system_prompt: str,
-        user_prompt: str,
-    ) -> str:
+    def _call_llm(self, agent_name: str, system_prompt: str, user_prompt: str) -> str:
         """Call the LLM and return the humanized text, or fallback to template."""
         if self._llm_available and self.llm_client and self.model_router:
             try:
@@ -439,16 +437,11 @@ class Humanizer:
                 provider = self.llm_client.get_provider(route.provider)
                 if provider:
                     logger.info(
-                        "Humanizing with %s/%s (tier: %s)",
-                        route.provider,
-                        route.model,
-                        route.tier,
+                        "Humanizing with %s/%s (tier: %s)", route.provider, route.model, route.tier
                     )
 
                     response = provider.chat(
-                        system_prompt=system_prompt,
-                        user_prompt=user_prompt,
-                        model=route.model,
+                        system_prompt=system_prompt, user_prompt=user_prompt, model=route.model
                     )
                     return response.content.strip()
             except Exception as e:
@@ -460,6 +453,7 @@ class Humanizer:
     def _template_humanize(self, content: str) -> str:
         """Basic template-based humanization without LLM."""
         import re
+
         result = content
 
         # Remove common AI tells
@@ -511,7 +505,7 @@ class Humanizer:
         for category, patterns in AI_TELL_PATTERNS.items():
             for pattern in patterns:
                 if re.search(pattern, original, re.IGNORECASE) and not re.search(
-                    pattern, humanized, re.IGNORECASE,
+                    pattern, humanized, re.IGNORECASE
                 ):
                     changes.append(f"Removed {category}: '{pattern}'")
 
@@ -536,7 +530,7 @@ class Humanizer:
             hum_unique = len(set(v.lower() for v in hum_bullets))
             if hum_unique > orig_unique:
                 changes.append(
-                    f"Increased bullet verb diversity: {orig_unique} → {hum_unique} unique verbs",
+                    f"Increased bullet verb diversity: {orig_unique} → {hum_unique} unique verbs"
                 )
 
         return changes
@@ -675,8 +669,7 @@ async def humanize_cover_letter_async(
 
 
 def create_humanizer(
-    config_path: str = "company/models.yaml",
-    registry_path: str = "company/agent-registry.json",
+    config_path: str = "company/models.yaml", registry_path: str = "company/agent-registry.json"
 ) -> Humanizer:
     """Factory function to create a Humanizer instance."""
     return Humanizer(config_path=config_path, registry_path=registry_path)

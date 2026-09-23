@@ -141,7 +141,7 @@ class AthenaScheduler:
             scrape_job.completed_at = datetime.utcnow()
 
             logger.info(
-                f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)",
+                f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)"
             )
 
         except Exception as e:  # noqa: BLE001
@@ -209,7 +209,8 @@ class AthenaScheduler:
                             logger.info(
                                 "Job %s meets auto-apply threshold (ATS=%.1f) - "
                                 "would queue for application if MessageBus were available",
-                                job.id, ats_breakdown.overall,
+                                job.id,
+                                ats_breakdown.overall,
                             )
                     elif ats_breakdown.overall >= 80:
                         job.status = JobStatus.SCORED
@@ -217,14 +218,15 @@ class AthenaScheduler:
                         logger.info(
                             "Job %s flagged for review (ATS=%.1f) - "
                             "would queue for review if MessageBus were available",
-                            job.id, ats_breakdown.overall,
+                            job.id,
+                            ats_breakdown.overall,
                         )
                     else:
                         job.status = JobStatus.FETCHED
 
                     athena_db.update_job(job)
                     logger.info(
-                        f"Job {job.title} scored: ATS={ats_breakdown.overall}, Match={best_score}",
+                        f"Job {job.title} scored: ATS={ats_breakdown.overall}, Match={best_score}"
                     )
 
             except Exception as e:  # noqa: BLE001
