@@ -32,18 +32,34 @@ logger = logging.getLogger(__name__)
 
 def security_headers() -> dict[str, str]:
     """Return the hardened response-security headers for Athena API."""
-    csp = os.environ.get(
-        "ATHENA_CSP",
+    is_cloud_preview = (
+        os.environ.get("AISTUDIO_PREVIEW") == "true"
+        or os.environ.get("NODE_ENV") == "development_cloud"
+    )
+
+    csp_default = (
         "default-src 'self'; "
         "script-src 'self'; "
         "style-src 'self'; "
         "img-src 'self' data:; "
         "connect-src 'self'; "
-        "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self'; "
-        "object-src 'none'",
+        "object-src 'none'"
     )
+
+    if is_cloud_preview:
+        csp = os.environ.get(
+            "ATHENA_CSP",
+            csp_default
+            + "; frame-ancestors 'self' https://*.google.com https://*.aistudio.google.com",
+        )
+    else:
+        csp = os.environ.get(
+            "ATHENA_CSP",
+            csp_default + "; frame-ancestors 'none'",
+        )
+
     hsts_max_age = int(os.environ.get("ATHENA_HSTS_MAX_AGE", "31536000"))
     headers = {
         "Content-Security-Policy": csp,
@@ -112,7 +128,12 @@ def _check_api_key(request: Request) -> bool:
 
 
 # Paths that are exempt from the API-key guard
-_API_EXEMPT_PREFIXES = ("/docs", "/redoc", "/openapi.json", "/health")
+_API_EXEMPT_PREFIXES = (
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    "/health",
+)
 
 
 def _is_exempt_from_auth(path: str) -> bool:
@@ -157,8 +178,10 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             default_max = int(os.environ.get("ATHENA_DEFAULT_SCRAPE_MAX", "50"))
             athena_scheduler.add_default_config(
                 ScrapeConfig(
-                    query=default_query, location=default_location, max_results=default_max
-                )
+                    query=default_query,
+                    location=default_location,
+                    max_results=default_max,
+                ),
             )
             logger.info(
                 "Default scrape config registered: query=%r location=%r max=%d",
@@ -205,7 +228,7 @@ def create_app() -> FastAPI:
         if bind_host and not is_loopback_host(bind_host):
             raise RuntimeError(
                 "ATHENA_AUTH_MODE=open is only allowed on loopback hosts "
-                f"(127.0.0.1 / ::1); ATHENA_HOST='{bind_host}'"
+                f"(127.0.0.1 / ::1); ATHENA_HOST='{bind_host}'",
             )
 
     # ── CORS (configurable, restricted allowlist) ────────────────────────
@@ -251,7 +274,10 @@ def create_app() -> FastAPI:
                 content='{"detail":"Rate limit exceeded"}',
                 status_code=429,
                 media_type="application/json",
-                headers={"X-RateLimit-Limit": str(rate_limit), "X-RateLimit-Remaining": "0"},
+                headers={
+                    "X-RateLimit-Limit": str(rate_limit),
+                    "X-RateLimit-Remaining": "0",
+                },
             )
         response = cast(Response, await call_next(request))
         response.headers["X-RateLimit-Limit"] = str(rate_limit)

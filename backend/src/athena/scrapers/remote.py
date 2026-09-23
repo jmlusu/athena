@@ -82,7 +82,8 @@ class LinkedInScraper(BaseScraper):
             return job
         try:
             html = await self.fetch_with_browser(
-                str(job.application_url), wait_for=".description__text"
+                str(job.application_url),
+                wait_for=".description__text",
             )
             soup = BeautifulSoup(html, "html.parser")
             desc_elem = soup.select_one(".description__text, .show-more-less-html__markup")
@@ -256,7 +257,9 @@ class RemoteOKScraper(BaseScraper):
 
     def __init__(self):
         super().__init__(
-            source=JobSource.REMOTE_OK, base_url="https://remoteok.com", rate_limit=2.0
+            source=JobSource.REMOTE_OK,
+            base_url="https://remoteok.com",
+            rate_limit=2.0,
         )
 
     async def search_jobs(
@@ -319,7 +322,10 @@ class RemoteOKScraper(BaseScraper):
                 from ..models import SalaryRange
 
                 salary_range = SalaryRange(
-                    min=salary_min, max=salary_max, currency="USD", period="yearly"
+                    min=salary_min,
+                    max=salary_max,
+                    currency="USD",
+                    period="yearly",
                 )
 
             from datetime import datetime
@@ -357,7 +363,9 @@ class WeWorkRemotelyScraper(BaseScraper):
 
     def __init__(self):
         super().__init__(
-            source=JobSource.WE_WORK_REMOTELY, base_url="https://weworkremotely.com", rate_limit=2.0
+            source=JobSource.WE_WORK_REMOTELY,
+            base_url="https://weworkremotely.com",
+            rate_limit=2.0,
         )
 
     async def search_jobs(
@@ -421,7 +429,11 @@ class RemoteCoScraper(BaseScraper):
     """Scraper for Remote.co."""
 
     def __init__(self):
-        super().__init__(source=JobSource.REMOTE_CO, base_url="https://remote.co", rate_limit=2.0)
+        super().__init__(
+            source=JobSource.REMOTE_CO,
+            base_url="https://remote.co",
+            rate_limit=2.0,
+        )
 
     async def search_jobs(
         self,
