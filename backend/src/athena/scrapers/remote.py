@@ -82,7 +82,8 @@ class LinkedInScraper(BaseScraper):
             return job
         try:
             html = await self.fetch_with_browser(
-                str(job.application_url), wait_for=".description__text",
+                str(job.application_url),
+                wait_for=".description__text",
             )
             soup = BeautifulSoup(html, "html.parser")
             desc_elem = soup.select_one(".description__text, .show-more-less-html__markup")

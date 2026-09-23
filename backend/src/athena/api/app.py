@@ -32,18 +32,34 @@ logger = logging.getLogger(__name__)
 
 def security_headers() -> dict[str, str]:
     """Return the hardened response-security headers for Athena API."""
-    csp = os.environ.get(
-        "ATHENA_CSP",
+    is_cloud_preview = (
+        os.environ.get("AISTUDIO_PREVIEW") == "true"
+        or os.environ.get("NODE_ENV") == "development_cloud"
+    )
+
+    csp_default = (
         "default-src 'self'; "
         "script-src 'self'; "
         "style-src 'self'; "
         "img-src 'self' data:; "
         "connect-src 'self'; "
-        "frame-ancestors 'none'; "
         "base-uri 'self'; "
         "form-action 'self'; "
-        "object-src 'none'",
+        "object-src 'none'"
     )
+
+    if is_cloud_preview:
+        csp = os.environ.get(
+            "ATHENA_CSP",
+            csp_default
+            + "; frame-ancestors 'self' https://*.google.com https://*.aistudio.google.com",
+        )
+    else:
+        csp = os.environ.get(
+            "ATHENA_CSP",
+            csp_default + "; frame-ancestors 'none'",
+        )
+
     hsts_max_age = int(os.environ.get("ATHENA_HSTS_MAX_AGE", "31536000"))
     headers = {
         "Content-Security-Policy": csp,
@@ -137,12 +153,14 @@ def is_loopback_host(host: str) -> bool:
 
 # ── Lifespan ────────────────────────────────────────────────────────────
 
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan handler for FastAPI Athena app."""
     # Initialize Athena data directory
     try:
         from athena.paths import get_data_root
+
         data_root = get_data_root()
         data_root.mkdir(parents=True, exist_ok=True)
         logger.info("Athena data directory initialised: %s", data_root)
@@ -291,6 +309,7 @@ def create_app() -> FastAPI:
 
     # ── Routers ─────────────────────────────────────────────────────────
     from athena.api.routes import router as athena_router
+
     app.include_router(athena_router, prefix="/api/v1/athena")
 
     # ── Health check ───────────────────────────────────────────────────

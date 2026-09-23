@@ -7,12 +7,8 @@ import httpx
 from pydantic import HttpUrl
 
 try:
-    from playwright.async_api import (
-        Browser as PlaywrightBrowser,
-    )
-    from playwright.async_api import (
-        async_playwright,
-    )
+    from playwright.async_api import Browser as PlaywrightBrowser
+    from playwright.async_api import async_playwright
 
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:  # pragma: no cover - playwright is an optional e2e dependency
@@ -41,7 +37,7 @@ class BaseScraper(ABC):
         self.source = source
         self.base_url = base_url
         self.headers = headers or {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
         self.rate_limit = rate_limit
         self.use_browser = use_browser
@@ -53,9 +49,7 @@ class BaseScraper(ABC):
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
-                headers=self.headers,
-                timeout=30.0,
-                follow_redirects=True,
+                headers=self.headers, timeout=30.0, follow_redirects=True
             )
         return self._client
 

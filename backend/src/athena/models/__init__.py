@@ -1,10 +1,4 @@
-from .enums import (
-    ApplicationStatus,
-    JobSource,
-    JobStatus,
-    JobType,
-    MatchTier,
-)
+from .enums import ApplicationStatus, JobSource, JobStatus, JobType, MatchTier
 from .jobs import (
     Application,
     Document,

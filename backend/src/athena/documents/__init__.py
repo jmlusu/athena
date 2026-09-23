@@ -15,12 +15,7 @@ from .generator import (
     generate_cover_letter,
     generate_resume,
 )
-from .humanizer import (
-    HumanizationIntensity,
-    HumanizationResult,
-    Humanizer,
-    create_humanizer,
-)
+from .humanizer import HumanizationIntensity, HumanizationResult, Humanizer, create_humanizer
 from .parser import (
     DocumentParser,
     DOCXParser,

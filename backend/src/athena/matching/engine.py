@@ -1,4 +1,3 @@
-
 from ..models import Job, MatchTier, Skill, UserProfile
 from .embeddings import cosine_similarity, embedding_model
 
@@ -121,7 +120,7 @@ class MatchingEngine:
         return (len(matches) / len(job_keywords)) * 100
 
     def rank_jobs(
-        self, profile: UserProfile, jobs: list[Job], top_k: int | None = None,
+        self, profile: UserProfile, jobs: list[Job], top_k: int | None = None
     ) -> list[tuple[Job, float]]:
         """Rank jobs by match score for a profile."""
         scored_jobs = []
@@ -175,10 +174,7 @@ class MatchingEngine:
             else:
                 missing.append(job_skill)
 
-        return {
-            "matching": matching[:20],
-            "missing": missing[:20],
-        }
+        return {"matching": matching[:20], "missing": missing[:20]}
 
 
 # Global instance

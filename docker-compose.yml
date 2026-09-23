@@ -18,6 +18,9 @@ services:
       - ATHENA_DEFAULT_SCRAPE_QUERY=${ATHENA_DEFAULT_SCRAPE_QUERY:-software engineer}
       - ATHENA_DEFAULT_SCRAPE_LOCATION=${ATHENA_DEFAULT_SCRAPE_LOCATION:-}
       - ATHENA_DEFAULT_SCRAPE_MAX=${ATHENA_DEFAULT_SCRAPE_MAX:-50}
+      - AISTUDIO_PREVIEW=${AISTUDIO_PREVIEW:-false}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-8000}
     volumes:
       - athena_data:/app/company/athena
     ports:
@@ -38,6 +41,8 @@ services:
       args:
         - VITE_ATHENA_API_KEY=${ATHENA_API_KEY:-dev-admin-key}
     container_name: athena-frontend
+    environment:
+      - AISTUDIO_PREVIEW=${AISTUDIO_PREVIEW:-false}
     ports:
       - "8530:80"
     depends_on:

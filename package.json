@@ -1,0 +1,16 @@
+{
+  "name": "root-monorepo",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "preinstall": "npx --yes corepack enable",
+    "build": "pnpm --filter athena-frontend run build",
+    "dev": "pnpm --filter athena-frontend run dev",
+    "lint": "pnpm --filter athena-frontend run lint",
+    "test": "pnpm --filter athena-frontend run test"
+  }
+}

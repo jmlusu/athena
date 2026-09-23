@@ -45,18 +45,20 @@ include = ["athena*"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = [".git", "__pycache__", "dist", "build", "*.egg-info", "backend/tests/test_athena_api.py"]
+
+[tool.ruff.lint]
 select = [
     "E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "T10", "PTH", "ERA", "PL", "RET", "PERF", "ARG", "TID", "FURB", "LOG", "TRY", "NPY", "PD", "EXE", "COM",
 ]
 ignore = []
 fixable = ["ALL"]
 unfixable = []
-extend-exclude = [".git", "__pycache__", "dist", "build", "*.egg-info", "backend/tests/test_athena_api.py"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-skip-magic-trailing-comma = true
+skip-magic-trailing-comma = false
 line-ending = "lf"
 
 [tool.mypy]

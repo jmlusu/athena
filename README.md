@@ -34,8 +34,8 @@ uv run uvicorn athena.api.app:app --reload --port 8000
 
 # Frontend (in another terminal)
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ### Docker
@@ -100,7 +100,7 @@ uv run pytest
 
 # Frontend tests
 cd frontend
-npm run test
+pnpm test
 ```
 
 ## Deployment

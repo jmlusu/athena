@@ -112,10 +112,7 @@ class DocumentGenerator:
     # =========================================================================
 
     async def generate_resume(
-        self,
-        profile: UserProfile,
-        job: Job | None = None,
-        output_format: str = "docx",
+        self, profile: UserProfile, job: Job | None = None, output_format: str = "docx"
     ) -> DocumentOutput:
         """
         Generate a professional resume.
@@ -137,8 +134,7 @@ class DocumentGenerator:
         docx_bytes = await asyncio.to_thread(self._build_resume_docx, tailored_data, profile)
 
         output = DocumentOutput(
-            docx_bytes=docx_bytes,
-            filename=f"resume_{profile.full_name.replace(' ', '_')}.docx",
+            docx_bytes=docx_bytes, filename=f"resume_{profile.full_name.replace(' ', '_')}.docx"
         )
 
         # Generate PDF if requested
@@ -153,10 +149,7 @@ class DocumentGenerator:
         return output
 
     async def generate_cover_letter(
-        self,
-        profile: UserProfile,
-        job: Job,
-        output_format: str = "docx",
+        self, profile: UserProfile, job: Job, output_format: str = "docx"
     ) -> DocumentOutput:
         """
         Generate a professional cover letter tailored to a specific job.
@@ -170,7 +163,7 @@ class DocumentGenerator:
             DocumentOutput with generated document(s)
         """
         logger.info(
-            f"Generating cover letter for {profile.full_name} - {job.title} at {job.company}",
+            f"Generating cover letter for {profile.full_name} - {job.title} at {job.company}"
         )
 
         # Tailor content for job
@@ -178,7 +171,7 @@ class DocumentGenerator:
 
         # Build DOCX
         docx_bytes = await asyncio.to_thread(
-            self._build_cover_letter_docx, tailored_data, profile, job,
+            self._build_cover_letter_docx, tailored_data, profile, job
         )
 
         output = DocumentOutput(
@@ -198,10 +191,7 @@ class DocumentGenerator:
         return output
 
     async def generate_both(
-        self,
-        profile: UserProfile,
-        job: Job | None = None,
-        output_format: str = "docx",
+        self, profile: UserProfile, job: Job | None = None, output_format: str = "docx"
     ) -> tuple[DocumentOutput, DocumentOutput | None]:
         """
         Generate both resume and cover letter.
@@ -250,7 +240,7 @@ class DocumentGenerator:
         return buffer.getvalue()
 
     def _build_cover_letter_docx(
-        self, data: dict[str, Any], profile: UserProfile, job: Job,
+        self, data: dict[str, Any], profile: UserProfile, job: Job
     ) -> bytes:
         """Build cover letter DOCX document."""
         doc = DocxDocumentClass()
@@ -360,12 +350,12 @@ class DocumentGenerator:
 
         # Company/Date Style
         self._create_style(
-            doc, "CompanyDate", FONT_FAMILY, FONT_SIZE_BODY, BRAND_GREY_DARK, space_after=SPACING_4,
+            doc, "CompanyDate", FONT_FAMILY, FONT_SIZE_BODY, BRAND_GREY_DARK, space_after=SPACING_4
         )
 
         # Body Text Style
         self._create_style(
-            doc, "ResumeBody", FONT_FAMILY, FONT_SIZE_BODY, BRAND_NAVY, space_after=SPACING_8,
+            doc, "ResumeBody", FONT_FAMILY, FONT_SIZE_BODY, BRAND_NAVY, space_after=SPACING_8
         )
 
         # Bullet Point Style
@@ -393,7 +383,7 @@ class DocumentGenerator:
 
         # Skill Item Style
         self._create_style(
-            doc, "SkillItem", FONT_FAMILY, FONT_SIZE_BODY_SM, BRAND_NAVY, space_after=SPACING_4,
+            doc, "SkillItem", FONT_FAMILY, FONT_SIZE_BODY_SM, BRAND_NAVY, space_after=SPACING_4
         )
 
     def _create_style(
@@ -508,7 +498,7 @@ class DocumentGenerator:
 
         # Sort by start_date descending (most recent first)
         sorted_exps = sorted(
-            experiences, key=lambda x: x.get("start_date", datetime.min), reverse=True,
+            experiences, key=lambda x: x.get("start_date", datetime.min), reverse=True
         )
 
         for exp in sorted_exps:
@@ -658,7 +648,7 @@ class DocumentGenerator:
         para.paragraph_format.space_after = SPACING_16
 
     def _build_opening_paragraph(
-        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job,
+        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job
     ) -> None:
         """Build opening paragraph - position, company, hook."""
         headline = data.get("headline", "")
@@ -676,7 +666,7 @@ class DocumentGenerator:
         para.paragraph_format.space_after = SPACING_16
 
     def _build_body_paragraphs(
-        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job,
+        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job
     ) -> None:
         """Build body paragraphs matching skills to job requirements."""
         # Match skills to job requirements
@@ -710,7 +700,7 @@ class DocumentGenerator:
                     f"{job.company}'s objectives."
                 )
                 doc.add_paragraph(
-                    text, style="ResumeBody",
+                    text, style="ResumeBody"
                 ).paragraph_format.space_after = SPACING_12
 
         # Paragraph 3: Cultural fit / company knowledge
@@ -724,7 +714,7 @@ class DocumentGenerator:
             doc.add_paragraph(text, style="ResumeBody").paragraph_format.space_after = SPACING_16
 
     def _build_closing_paragraph(
-        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job,
+        self, doc: "DocxDocumentType", data: dict[str, Any], job: Job
     ) -> None:
         """Build closing paragraph with call to action."""
         text = (
@@ -738,7 +728,7 @@ class DocumentGenerator:
     def _build_sign_off(self, doc: "DocxDocumentType", profile: UserProfile) -> None:
         """Build professional sign-off."""
         doc.add_paragraph(
-            "Sincerely,", style="ResumeBody",
+            "Sincerely,", style="ResumeBody"
         ).paragraph_format.space_after = SPACING_32
         doc.add_paragraph(profile.full_name, style="ResumeBody")
 
@@ -870,7 +860,7 @@ class DocumentGenerator:
         }
 
     def _format_date_range(
-        self, start: datetime | None, end: datetime | None, current: bool,
+        self, start: datetime | None, end: datetime | None, current: bool
     ) -> str:
         """Format date range for display."""
         parts = []
@@ -886,7 +876,7 @@ class DocumentGenerator:
         return " — ".join(parts) if parts else ""
 
     def _add_horizontal_line(
-        self, doc: "DocxDocumentType", color: RGBColor, thickness: Pt = LINE_THICKNESS_DEFAULT,
+        self, doc: "DocxDocumentType", color: RGBColor, thickness: Pt = LINE_THICKNESS_DEFAULT
     ) -> None:
         """Add a horizontal line to the document."""
         para = doc.add_paragraph()
@@ -956,11 +946,11 @@ class DocumentGenerator:
             # Map styles to HTML tags
             if "Heading" in style_name or "SectionHeading" in style_name:
                 html_parts.append(
-                    f'<h2 style="color:#070A40; margin-top:24pt; margin-bottom:12pt;">{text}</h2>',
+                    f'<h2 style="color:#070A40; margin-top:24pt; margin-bottom:12pt;">{text}</h2>'
                 )
             elif "JobTitle" in style_name:
                 html_parts.append(
-                    f'<h3 style="color:#070A40; margin-top:12pt; margin-bottom:4pt;">{text}</h3>',
+                    f'<h3 style="color:#070A40; margin-top:12pt; margin-bottom:4pt;">{text}</h3>'
                 )
             elif "CompanyDate" in style_name:
                 html_parts.append(f'<p style="color:#6B7280; margin-bottom:4pt;">{text}</p>')
@@ -968,15 +958,15 @@ class DocumentGenerator:
                 html_parts.append(f'<li style="margin-left:30px; margin-bottom:4pt;">{text}</li>')
             elif "SkillCategory" in style_name:
                 html_parts.append(
-                    f'<p style="color:#E63946; font-weight:bold; margin-bottom:4pt;">{text}</p>',
+                    f'<p style="color:#E63946; font-weight:bold; margin-bottom:4pt;">{text}</p>'
                 )
             elif "ResumeName" in style_name:
                 html_parts.append(
-                    f'<h1 style="color:#070A40; text-align:center; margin-bottom:8pt;">{text}</h1>',
+                    f'<h1 style="color:#070A40; text-align:center; margin-bottom:8pt;">{text}</h1>'
                 )
             elif "ResumeContact" in style_name:
                 html_parts.append(
-                    f'<p style="color:#6B7280; text-align:center; margin-bottom:24pt;">{text}</p>',
+                    f'<p style="color:#6B7280; text-align:center; margin-bottom:24pt;">{text}</p>'
                 )
             else:
                 html_parts.append(f'<p style="margin-bottom:8pt; line-height:1.15;">{text}</p>')
@@ -1034,10 +1024,7 @@ async def generate_resume(
 
 
 async def generate_cover_letter(
-    profile: UserProfile,
-    job: Job,
-    output_format: str = "docx",
-    template_dir: Path | None = None,
+    profile: UserProfile, job: Job, output_format: str = "docx", template_dir: Path | None = None
 ) -> DocumentOutput:
     """Convenience function to generate a cover letter."""
     generator = DocumentGenerator(template_dir)
@@ -1045,10 +1032,7 @@ async def generate_cover_letter(
 
 
 async def generate_application_package(
-    profile: UserProfile,
-    job: Job,
-    output_format: str = "docx",
-    template_dir: Path | None = None,
+    profile: UserProfile, job: Job, output_format: str = "docx", template_dir: Path | None = None
 ) -> tuple[DocumentOutput, DocumentOutput | None]:
     """Generate both resume and cover letter for a job application."""
     generator = DocumentGenerator(template_dir)
@@ -1082,7 +1066,7 @@ def _create_resume_template_docx(path: Path) -> None:
     # Header
     doc.add_paragraph("[FULL NAME]", style="TemplateName")
     doc.add_paragraph(
-        "[Phone]  |  [Location]  |  [Email]  |  [LinkedIn]  |  [GitHub]", style="TemplateContact",
+        "[Phone]  |  [Location]  |  [Email]  |  [LinkedIn]  |  [GitHub]", style="TemplateContact"
     )
 
     # Horizontal rule
@@ -1096,7 +1080,7 @@ def _create_resume_template_docx(path: Path) -> None:
     doc.add_paragraph("CORE SKILLS", style="TemplateSectionHeading")
     doc.add_paragraph("TECHNICAL", style="TemplateSkillCategory")
     doc.add_paragraph(
-        "[Skill 1]  •  [Skill 2]  •  [Skill 3]  •  [Skill 4]", style="TemplateSkillItem",
+        "[Skill 1]  •  [Skill 2]  •  [Skill 3]  •  [Skill 4]", style="TemplateSkillItem"
     )
     doc.add_paragraph("TOOLS & PLATFORMS", style="TemplateSkillCategory")
     doc.add_paragraph("[Tool 1]  •  [Tool 2]  •  [Tool 3]", style="TemplateSkillItem")
@@ -1121,7 +1105,7 @@ def _create_resume_template_docx(path: Path) -> None:
     doc.add_paragraph("EDUCATION", style="TemplateSectionHeading")
     doc.add_paragraph("[Degree], [Field of Study]", style="TemplateJobTitle")
     doc.add_paragraph(
-        "[Institution]  |  [Location]  |  [Graduation Year]", style="TemplateCompanyDate",
+        "[Institution]  |  [Location]  |  [Graduation Year]", style="TemplateCompanyDate"
     )
 
     # Certifications
@@ -1315,7 +1299,7 @@ def _define_template_styles(doc: "DocxDocumentType") -> None:
         left_indent = config[7] if len(config) > 7 else Inches(0)
 
         _create_template_style(
-            doc, name, font_size, color, bold, alignment, space_before, space_after, left_indent,
+            doc, name, font_size, color, bold, alignment, space_before, space_after, left_indent
         )
 
 

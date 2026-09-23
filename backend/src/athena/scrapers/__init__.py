@@ -14,9 +14,4 @@ def register_all_scrapers():
 # Auto-register on import
 register_all_scrapers()
 
-__all__ = [
-    "BaseScraper",
-    "ScraperRegistry",
-    "scraper_registry",
-    "register_all_scrapers",
-]
+__all__ = ["BaseScraper", "ScraperRegistry", "scraper_registry", "register_all_scrapers"]

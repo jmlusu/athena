@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 # ─── Local Stubs for Decoupled Operation ────────────────────────────
 
+
 class LocalApprovalGate:
     """
     Local approval gate for standalone operation.
@@ -37,19 +38,15 @@ class LocalApprovalGate:
 
     def __init__(self) -> None:
         from ..paths import get_data_root
+
         self.data_dir = get_data_root() / "approvals"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-    def request_and_park(
-        self,
-        task_id: str,
-        agent_id: str,
-        tool: str,
-        args: dict[str, Any],
-    ) -> str:
+    def request_and_park(self, task_id: str, agent_id: str, tool: str, args: dict[str, Any]) -> str:
         """Create an approval request and return its ID."""
         import json
         import uuid
+
         request_id = str(uuid.uuid4())
         request_file = self.data_dir / f"{request_id}.json"
         request_data = {
@@ -68,6 +65,7 @@ class LocalApprovalGate:
     def resume_approved(self, request_id: str) -> bool | None:
         """Check approval status. Returns True if approved, False if rejected, None if pending."""
         import json
+
         request_file = self.data_dir / f"{request_id}.json"
         if not request_file.exists():
             return None
@@ -89,9 +87,12 @@ def get_hitl_gate():
         # Try to import external gate; fall back to local
         try:
             from ...executor.hitl_gate import HITLGate
+
             return HITLGate()
         except ImportError:
-            logger.warning("ATHENA_HITL_EXTERNAL set but external HITLGate not available; using local gate")
+            logger.warning(
+                "ATHENA_HITL_EXTERNAL set but external HITLGate not available; using local gate"
+            )
             return LocalApprovalGate()
     return LocalApprovalGate()
 
@@ -110,8 +111,7 @@ def get_message_bus():
     """Factory to get message bus (always dummy in standalone)."""
     return DummyMessageBus()
 
-
-# ─── Workflow Types ────────────────────────────────────────────────
+    # ─── Workflow Types ────────────────────────────────────────────────
     """Stages of the submission workflow."""
 
     INITIALIZED = "initialized"
@@ -154,7 +154,7 @@ class SubmitConfig:
             ".receipt-number",
             "#confirmationNumber",
             "text=/confirmation|receipt|reference/i",
-        ],
+        ]
     )
 
     # Audit
@@ -205,11 +205,7 @@ class SubmissionResult:
 class ApplicationSubmitter:
     """Handles end-to-end application submission workflow."""
 
-    def __init__(
-        self,
-        browser: AthenaBrowser | None = None,
-        config: SubmitConfig | None = None,
-    ):
+    def __init__(self, browser: AthenaBrowser | None = None, config: SubmitConfig | None = None):
         self.browser = browser
         self.config = config or SubmitConfig()
         self.message_bus = get_message_bus()
@@ -238,10 +234,7 @@ class ApplicationSubmitter:
         return self
 
     async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: Any,
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any
     ) -> None:
         if self.browser:
             await self.browser.stop()
@@ -393,7 +386,7 @@ class ApplicationSubmitter:
                 continue
 
     async def _fill_application_form(
-        self, profile: UserProfile, resume: Document, cover_letter: Document | None,
+        self, profile: UserProfile, resume: Document, cover_letter: Document | None
     ) -> dict[str, bool]:
         """Fill the application form with profile data."""
         resume_path = Path(resume.file_path)
@@ -404,7 +397,7 @@ class ApplicationSubmitter:
 
         # Try multi-step form handling
         results = await self.form_filler.handle_multi_step_form(
-            profile, resume_path, cover_letter_path, max_steps=10,
+            profile, resume_path, cover_letter_path, max_steps=10
         )
 
         # Flatten results
@@ -473,10 +466,7 @@ class ApplicationSubmitter:
 
         # Use non-blocking request_and_park
         request_id = self.hitl_gate.request_and_park(
-            task_id=task_id,
-            agent_id=self.config.approval_agent_id,
-            tool=tool,
-            args=args,
+            task_id=task_id, agent_id=self.config.approval_agent_id, tool=tool, args=args
         )
 
         self._result.approval_request_id = request_id
@@ -496,7 +486,7 @@ class ApplicationSubmitter:
             await asyncio.sleep(2)
 
         logger.warning(
-            "HITL approval timed out after %d minutes", self.config.approval_timeout_minutes,
+            "HITL approval timed out after %d minutes", self.config.approval_timeout_minutes
         )
         return False
 
@@ -556,7 +546,7 @@ class ApplicationSubmitter:
                     # Text-based selector
                     element = await self.browser.page.query_selector(
                         "xpath=//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'confirmation') "
-                        "or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'receipt')]",
+                        "or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'receipt')]"
                     )
                 else:
                     element = await self.browser.page.query_selector(selector)
@@ -634,13 +624,7 @@ class ApplicationSubmitter:
                 import json
 
                 audit_file.write_text(
-                    json.dumps(
-                        {
-                            "result": self._result.to_dict(),
-                            "audit_log": audit_log,
-                        },
-                        indent=2,
-                    ),
+                    json.dumps({"result": self._result.to_dict(), "audit_log": audit_log}, indent=2)
                 )
                 logger.info("Audit trail saved: %s", audit_file)
 

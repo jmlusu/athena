@@ -420,7 +420,7 @@ class FormFiller:
 
         # Get all input, select, textarea elements
         elements = await self.page.query_selector_all(
-            "input:not([type='hidden']):not([type='submit']):not([type='button']), select, textarea",
+            "input:not([type='hidden']):not([type='submit']):not([type='button']), select, textarea"
         )
 
         fields = []
@@ -565,7 +565,7 @@ class FormFiller:
         return input_type
 
     def _calculate_confidence(
-        self, label: str, name: str, id_attr: str, placeholder: str, aria_label: str,
+        self, label: str, name: str, id_attr: str, placeholder: str, aria_label: str
     ) -> float:
         """Calculate confidence score for field identification."""
         score = 0.0
@@ -612,7 +612,7 @@ class FormFiller:
         """Match a detected field to a platform mapping."""
         score = 0.0
         search_text = " ".join(
-            [field.label, field.name, field.placeholder, field.aria_label],
+            [field.label, field.name, field.placeholder, field.aria_label]
         ).lower()
 
         for pattern in self.FIELD_PATTERNS.get(mapping.profile_field, []):
@@ -628,7 +628,7 @@ class FormFiller:
         return min(score, 1.0)
 
     async def fill_form(
-        self, profile: UserProfile, resume_path: Path, cover_letter_path: Path | None = None,
+        self, profile: UserProfile, resume_path: Path, cover_letter_path: Path | None = None
     ) -> dict[str, bool]:
         """Fill form with user profile data."""
         if not self.detected_fields:
@@ -656,7 +656,7 @@ class FormFiller:
         return results
 
     def _build_field_values(
-        self, profile: UserProfile, resume_path: Path, cover_letter_path: Path | None,
+        self, profile: UserProfile, resume_path: Path, cover_letter_path: Path | None
     ) -> dict[str, Any]:
         """Build field values from user profile."""
         values = {
@@ -689,7 +689,7 @@ class FormFiller:
     def _heuristic_match_field(self, field: FormField) -> str | None:
         """Match field to profile field using heuristics."""
         search_text = " ".join(
-            [field.label, field.name, field.placeholder, field.aria_label],
+            [field.label, field.name, field.placeholder, field.aria_label]
         ).lower()
 
         for profile_field, patterns in self.FIELD_PATTERNS.items():
