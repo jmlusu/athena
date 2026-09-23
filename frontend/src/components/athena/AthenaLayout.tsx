@@ -61,14 +61,14 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
   return (
     <div className="min-h-screen bg-ls-grey-light flex">
       {/* Skip link for accessibility */}
-      <a href="#main-content" className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 px-4 py-2 bg-ls-red text-ls-white rounded-lg">
+      <a href="#main-content" className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 px-4 py-2 bg-ls-red text-[#14161A] rounded-lg">
         Skip to main content
       </a>
 
       {/* Left Sidebar - Main Navigation */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen bg-ls-white border-r border-ls-grey-dark/30 flex flex-col transition-all duration-300 ease-in-out',
+          'fixed left-0 top-0 z-40 h-screen bg-ls-white border-r border-white/7 flex flex-col transition-all duration-300 ease-in-out',
           'lg:translate-x-0',
           leftSidebarOpen ? 'w-64' : 'w-20',
           !leftSidebarOpen && 'lg:w-20',
@@ -77,7 +77,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
         aria-label="Main navigation"
       >
         {/* Sidebar Header */}
-        <div className={cn('flex items-center justify-between p-4 border-b border-ls-grey-dark/30', !leftSidebarOpen && 'justify-center')}>
+        <div className={cn('flex items-center justify-between p-4 border-b border-white/7', !leftSidebarOpen && 'justify-center')}>
           {leftSidebarOpen && (
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-9 h-9 rounded-lg bg-ls-red flex items-center justify-center flex-shrink-0">
@@ -98,7 +98,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
           <button
             onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
             className={cn(
-              'p-2 rounded-lg transition-colors lg:hidden',
+              'p-2 rounded-lg transition-colors lg:hidden tactile disabled:opacity-40',
               'text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10'
             )}
             aria-label={leftSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
@@ -115,10 +115,10 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
               key={item.path}
               to={item.path}
               className={({ isActive }) => cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150',
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 border border-transparent',
                 'text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10',
                 isActive
-                  ? 'bg-ls-red/10 text-ls-red border-l border-ls-red'
+                  ? 'bg-ls-red/10 text-ls-red border-ls-red glow-amber'
                   : '',
                 !leftSidebarOpen && 'justify-center px-2'
               )}
@@ -132,7 +132,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
 
           {/* User profile at bottom */}
           {leftSidebarOpen && userProfile && (
-            <div className="pt-4 border-t border-ls-grey-dark/30 mt-auto">
+            <div className="pt-4 border-t border-white/7 mt-auto">
               <div className="flex items-center gap-3 px-3 py-2">
                 <div className="w-8 h-8 rounded-full bg-ls-red flex items-center justify-center text-ls-white font-display font-bold text-sm">
                   {userProfile.name.charAt(0).toUpperCase()}
@@ -150,8 +150,8 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
         <button
           onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
           className={cn(
-            'absolute -right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full',
-            'bg-ls-white border border-ls-grey-dark/30 shadow-lg',
+            'absolute -right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full tactile disabled:opacity-40',
+            'bg-ls-white border border-white/10 raised',
             'text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/5',
             'lg:block hidden',
             !leftSidebarOpen && 'rotate-180'
@@ -183,12 +183,12 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
         tabIndex={-1}
       >
         {/* Top Bar */}
-        <header className="sticky top-0 z-20 bg-ls-white/95 backdrop-blur-sm border-b border-ls-grey-dark/30">
+        <header className="sticky top-0 z-20 bg-ls-white/95 backdrop-blur-sm border-b border-white/7 raised">
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setMobileLeftOpen(true)}
-                className="lg:hidden p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10"
+                className="lg:hidden p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 tactile disabled:opacity-40"
                 aria-label="Open navigation menu"
               >
                 <Menu className="w-6 h-6" />
@@ -209,27 +209,27 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
                 <input
                   type="search"
                   placeholder="Search jobs, companies..."
-                  className="w-64 pl-10 pr-4 py-2 bg-ls-grey-light border border-ls-grey-dark/30 rounded-lg text-sm text-ls-navy placeholder-ls-grey-light-text focus:outline-none focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                  className="w-64 pl-10 pr-4 py-2 sunken rounded-lg border border-white/8 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red"
                   aria-label="Search"
                 />
               </div>
 
               {/* Notifications */}
               <button
-                className="relative p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors"
+                className="relative p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors tactile disabled:opacity-40"
                 aria-label="Notifications"
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-ls-red rounded-full" aria-hidden="true" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-ls-red rounded-full glow-amber" aria-hidden="true" />
               </button>
 
               {/* Right sidebar toggle */}
               <button
                 onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
                 className={cn(
-                  'p-2 rounded-lg transition-colors',
+                  'p-2 rounded-lg transition-colors tactile disabled:opacity-40',
                   'text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10',
-                  rightSidebarOpen && 'lg:bg-ls-red/10 lg:text-ls-red'
+                  rightSidebarOpen && 'bg-ls-red/10 text-ls-red'
                 )}
                 aria-label={rightSidebarOpen ? 'Close right panel' : 'Open right panel'}
                 aria-expanded={rightSidebarOpen}
@@ -240,7 +240,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
               {/* Mobile right sidebar toggle */}
               <button
                 onClick={() => setMobileRightOpen(true)}
-                className="lg:hidden p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10"
+                className="lg:hidden p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 tactile disabled:opacity-40"
                 aria-label="Open filters panel"
               >
                 <Filter className="w-5 h-5" />
@@ -258,7 +258,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
       {/* Right Sidebar - Metrics/Filters/Actions */}
       <aside
         className={cn(
-          'fixed right-0 top-0 z-40 h-screen bg-ls-white border-l border-ls-grey-dark/30 flex flex-col transition-all duration-300 ease-in-out',
+          'fixed right-0 top-0 z-40 h-screen bg-ls-white border-l border-white/7 flex flex-col transition-all duration-300 ease-in-out',
           'lg:translate-x-0',
           rightSidebarOpen ? 'w-80' : 'w-0 lg:w-0',
           !rightSidebarOpen && 'lg:w-0 overflow-hidden',
@@ -267,11 +267,11 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
         aria-label="Metrics and filters"
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b border-ls-grey-dark/30">
+        <div className="flex items-center justify-between p-4 border-b border-white/7">
           <h2 className="font-display font-bold text-lg text-ls-navy">Panel</h2>
           <button
             onClick={() => setRightSidebarOpen(false)}
-            className="p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors lg:hidden"
+            className="p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors tactile disabled:opacity-40 lg:hidden"
             aria-label="Close panel"
           >
             <X className="w-5 h-5" />
@@ -279,16 +279,16 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-ls-grey-dark/30 px-2" role="tablist" aria-label="Right panel tabs">
+        <div className="flex border-b border-white/7 px-2" role="tablist" aria-label="Right panel tabs">
           {RIGHT_SIDEBAR_TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setRightSidebarTab(tab.id as 'metrics' | 'filters' | 'actions')}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-t-lg transition-all duration-150',
+                'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-t-lg transition-all duration-150 disabled:opacity-40',
                 'text-ls-grey-dark hover:text-ls-red',
                 rightSidebarTab === tab.id
-                  ? 'bg-ls-red/10 text-ls-red border-b-2 border-ls-red font-medium'
+                  ? 'bg-ls-red/10 text-ls-red border-b-2 border-ls-red font-medium glow-amber'
                   : 'font-normal',
                 rightSidebarOpen || 'lg:flex-1'
               )}
@@ -315,7 +315,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
           >
             <div className="flex items-center justify-between">
               <h3 className="font-display font-bold text-base text-ls-navy">Quick Stats</h3>
-              <button className="p-1 rounded text-ls-grey-dark hover:text-ls-red" aria-label="Refresh metrics">
+              <button className="p-1 rounded text-ls-grey-dark hover:text-ls-red tactile disabled:opacity-40" aria-label="Refresh metrics">
                 <Download className="w-4 h-4" />
               </button>
             </div>
@@ -348,19 +348,19 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
           >
             <h3 className="font-display font-bold text-base text-ls-navy">Quick Actions</h3>
             <div className="space-y-2" id="actions-content">
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white hover:border-ls-red/30 hover:bg-ls-red/5 transition-all text-left">
+              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark hover:border-ls-red/40 hover:text-ls-red transition-all text-left tactile disabled:opacity-40">
                 <Upload className="w-5 h-5 text-ls-red" aria-hidden="true" />
-                <span className="font-body font-medium text-sm text-ls-navy">Upload Resume</span>
+                <span className="font-body font-medium text-sm">Upload Resume</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white hover:border-ls-red/30 hover:bg-ls-red/5 transition-all text-left">
+              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark hover:border-ls-red/40 hover:text-ls-red transition-all text-left tactile disabled:opacity-40">
                 <Plus className="w-5 h-5 text-ls-cyan" aria-hidden="true" />
-                <span className="font-body font-medium text-sm text-ls-navy">Add Job Manually</span>
+                <span className="font-body font-medium text-sm">Add Job Manually</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white hover:border-ls-red/30 hover:bg-ls-red/5 transition-all text-left">
-                <Download className="w-5 h-5 text-emerald-600" aria-hidden="true" />
-                <span className="font-body font-medium text-sm text-ls-navy">Export Data</span>
+              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark hover:border-ls-red/40 hover:text-ls-red transition-all text-left tactile disabled:opacity-40">
+                <Download className="w-5 h-5 text-emerald-400" aria-hidden="true" />
+                <span className="font-body font-medium text-sm">Export Data</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-ls-red text-ls-white font-bold text-sm hover:bg-ls-red/90 transition-colors">
+              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-all tactile disabled:opacity-40">
                 <Plus className="w-5 h-5" aria-hidden="true" />
                 <span>New Application</span>
               </button>

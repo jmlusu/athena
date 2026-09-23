@@ -46,7 +46,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
 }) => {
   if (!data.length || !keys.length) {
     return (
-      <div className={cn('h-[200px] flex items-center justify-center bg-ls-grey-light/50 rounded-xl border border-ls-grey-dark/30', className)}>
+      <div className={cn('h-[200px] flex items-center justify-center sunken rounded-xl border border-white/7', className)}>
         <span className="font-body text-sm text-ls-grey-light-text">No data available</span>
       </div>
     );
@@ -56,7 +56,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
     if (!active || !payload || !payload.length) return null;
 
     return (
-      <div className="bg-ls-white border border-ls-grey-dark/30 rounded-lg p-3 shadow-lg min-w-[160px]">
+      <div className="bg-ls-white border border-white/10 rounded-lg p-3 raised min-w-[160px]">
         <p className="font-display font-bold text-sm text-ls-navy mb-2">{label}</p>
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center gap-2 text-xs">
@@ -80,7 +80,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
           x={tick.coordinate}
           y={height * 0.4}
           textAnchor="middle"
-          fill="#9CA3AF"
+          fill="#8B857B"
           fontSize={11}
           fontFamily="Arial, sans-serif"
           fontWeight={500}
@@ -99,7 +99,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
             <line
               x1={0}
               x2={width}
-              stroke="#E5E7EB"
+              stroke="#2A2F38"
               strokeDasharray="4 4"
             />
           )}
@@ -107,7 +107,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
             x={-8}
             y={4}
             textAnchor="end"
-            fill="#9CA3AF"
+            fill="#8B857B"
             fontSize={10}
             fontFamily="Arial, sans-serif"
           >
@@ -144,7 +144,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
           {showGrid && (
             <CartesianGrid
               strokeDasharray="4 4"
-              stroke="#E5E7EB"
+              stroke="#2A2F38"
               vertical={false}
               horizontal={true}
             />
@@ -152,7 +152,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
 
           {showXAxis && <XAxis
             dataKey={xKey}
-            tick={{ fill: '#9CA3AF', fontSize: 11, fontFamily: 'Arial, sans-serif', fontWeight: 500 }}
+            tick={{ fill: '#8B857B', fontSize: 11, fontFamily: 'Arial, sans-serif', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             dy={8}
@@ -160,7 +160,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
           />}
 
           {showYAxis && <YAxis
-            tick={{ fill: '#9CA3AF', fontSize: 10, fontFamily: 'Arial, sans-serif' }}
+            tick={{ fill: '#8B857B', fontSize: 10, fontFamily: 'Arial, sans-serif' }}
             axisLine={false}
             tickLine={false}
             width={48}
@@ -197,10 +197,10 @@ export const MountainAreaChart: React.FC<{
   height?: number;
   className?: string;
   colors?: string[];
-}> = ({ data, height = 240, className, colors = ['#FF6B35', '#E63946', '#00BFFF'] }) => {
+}> = ({ data, height = 240, className, colors = ['#FFA928', '#E63946', '#67E8F9'] }) => {
   if (!data.length) {
     return (
-      <div className={cn('h-[240px] flex items-center justify-center bg-ls-grey-light/50 rounded-xl border border-ls-grey-dark/30', className)}>
+      <div className={cn('h-[240px] flex items-center justify-center sunken rounded-xl border border-white/7', className)}>
         <span className="font-body text-sm text-ls-grey-light-text">No ATS score data</span>
       </div>
     );
@@ -238,18 +238,18 @@ export const MountainAreaChart: React.FC<{
             ))}
           </defs>
 
-          <CartesianGrid strokeDasharray="4 4" stroke="#E5E7EB" vertical={false} horizontal={true} />
+          <CartesianGrid strokeDasharray="4 4" stroke="#2A2F38" vertical={false} horizontal={true} />
 
           <XAxis
             dataKey="name"
-            tick={{ fill: '#9CA3AF', fontSize: 11, fontFamily: 'Arial, sans-serif', fontWeight: 500 }}
+            tick={{ fill: '#8B857B', fontSize: 11, fontFamily: 'Arial, sans-serif', fontWeight: 500 }}
             axisLine={false}
             tickLine={false}
             dy={8}
           />
 
           <YAxis
-            tick={{ fill: '#9CA3AF', fontSize: 10, fontFamily: 'Arial, sans-serif' }}
+            tick={{ fill: '#8B857B', fontSize: 10, fontFamily: 'Arial, sans-serif' }}
             axisLine={false}
             tickLine={false}
             width={40}
@@ -262,7 +262,7 @@ export const MountainAreaChart: React.FC<{
             content={({ active, payload, label }) => {
               if (!active || !payload) return null;
               return (
-                <div className="bg-ls-white border border-ls-grey-dark/30 rounded-lg p-3 shadow-lg">
+                <div className="bg-ls-white border border-white/10 rounded-lg p-3 raised">
                   <p className="font-display font-bold text-sm text-ls-navy mb-2">ATS Range: {label}</p>
                   {payload.map((entry, index) => (
                     <div key={index} className="flex items-center gap-2 text-xs">
@@ -306,7 +306,7 @@ export const CircularGaugeChart: React.FC<{
   colors?: string[];
   showValue?: boolean;
   className?: string;
-}> = ({ value, size = 120, strokeWidth = 12, colors = ['#FF6B35', '#E63946'], showValue = true, className }) => {
+}> = ({ value, size = 120, strokeWidth = 12, colors = ['#FFA928', '#E63946'], showValue = true, className }) => {
   const clampedValue = Math.max(0, Math.min(100, value));
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -329,7 +329,7 @@ export const CircularGaugeChart: React.FC<{
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#E5E7EB"
+          stroke="#2A2F38"
           strokeWidth={strokeWidth}
           fill="none"
         />

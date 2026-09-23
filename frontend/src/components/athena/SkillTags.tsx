@@ -22,10 +22,10 @@ interface SkillTagsProps {
 }
 
 const LEVEL_COLORS = {
-  beginner: 'bg-gray-100 text-gray-600 border-gray-200',
-  intermediate: 'bg-blue-100 text-blue-700 border-blue-200',
-  advanced: 'bg-purple-100 text-purple-700 border-purple-200',
-  expert: 'bg-amber-100 text-amber-700 border-amber-200',
+  beginner: 'bg-gray-500/15 text-gray-300 border-gray-500/30',
+  intermediate: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+  advanced: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+  expert: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
 } as const;
 
 const CATEGORY_ICONS = {
@@ -36,9 +36,9 @@ const CATEGORY_ICONS = {
 } as const;
 
 const IMPORTANCE_COLORS = {
-  required: 'bg-red-50 text-red-700 border-red-200',
-  preferred: 'bg-amber-50 text-amber-700 border-amber-200',
-  'nice-to-have': 'bg-gray-50 text-gray-600 border-gray-200',
+  required: 'bg-red-500/15 text-red-300 border-red-500/30',
+  preferred: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  'nice-to-have': 'bg-gray-500/15 text-gray-300 border-gray-500/30',
 } as const;
 
 export const SkillTags: React.FC<SkillTagsProps> = ({
@@ -55,7 +55,7 @@ export const SkillTags: React.FC<SkillTagsProps> = ({
 
   if (!skills.length) {
     return (
-      <div className={cn('p-4 bg-ls-grey-light/50 rounded-lg border border-ls-grey-dark/30', className)}>
+      <div className={cn('p-4 sunken rounded-lg border border-white/7', className)}>
         <p className="font-body text-sm text-ls-grey-light-text text-center py-4">
           No skills data available
         </p>
@@ -88,8 +88,8 @@ export const SkillTags: React.FC<SkillTagsProps> = ({
         {hiddenCount > 0 && (
           <button
             className={cn(
-              'px-3 py-1.5 rounded-lg border border-ls-grey-dark/30 text-ls-grey-dark',
-              'hover:border-ls-red hover:text-ls-red hover:bg-ls-red/5 transition-all',
+              'px-3 py-1.5 rounded-lg border border-white/10 text-ls-grey-dark',
+              'hover:border-ls-red/40 hover:text-ls-red hover:bg-ls-red/5 transition-all tactile disabled:opacity-40',
               variant === 'badges' && 'text-xs',
               variant === 'list' && 'w-full justify-start'
             )}
@@ -123,7 +123,7 @@ const SkillTagItem: React.FC<SkillTagItemProps> = ({ skill, variant, showCategor
       <div
         className={cn(
           'flex items-center justify-between w-full p-3 rounded-lg border',
-          isMatched ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200',
+          isMatched ? 'bg-emerald-500/15 border-emerald-500/30' : 'bg-red-500/15 border-red-500/30',
           baseClasses
         )}
         role="listitem"
@@ -132,7 +132,7 @@ const SkillTagItem: React.FC<SkillTagItemProps> = ({ skill, variant, showCategor
           <span
             className={cn(
               'flex-shrink-0 px-2.5 py-1 rounded-full text-xs font-bold',
-              isMatched ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+              isMatched ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'
             )}
           >
             {isMatched ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
@@ -167,8 +167,8 @@ const SkillTagItem: React.FC<SkillTagItemProps> = ({ skill, variant, showCategor
           'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
           'border',
           isMatched
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : 'bg-red-50 text-red-700 border-red-200'
+            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+            : 'bg-red-500/15 text-red-300 border-red-500/30'
         )}
         role="listitem"
       >
@@ -194,8 +194,8 @@ const SkillTagItem: React.FC<SkillTagItemProps> = ({ skill, variant, showCategor
         'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border',
         'transition-all duration-150 hover:shadow-md',
         isMatched
-          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-          : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100',
+          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
+          : 'bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/25',
         baseClasses
       )}
       role="listitem"
@@ -235,7 +235,7 @@ export const SkillComparison: React.FC<{
   return (
     <div className={cn('grid grid-cols-1 lg:grid-cols-2 gap-6', className)}>
       <div className="space-y-4">
-        <h4 className="font-display font-bold text-sm text-emerald-700 flex items-center gap-2">
+        <h4 className="font-display font-bold text-sm text-emerald-400 flex items-center gap-2">
           <Check className="w-4 h-4" aria-hidden="true" />
           Matching Skills ({matchingSkills.length})
         </h4>
@@ -248,7 +248,7 @@ export const SkillComparison: React.FC<{
       </div>
 
       <div className="space-y-4">
-        <h4 className="font-display font-bold text-sm text-red-700 flex items-center gap-2">
+        <h4 className="font-display font-bold text-sm text-red-400 flex items-center gap-2">
           <X className="w-4 h-4" aria-hidden="true" />
           Missing Skills ({missingSkills.length})
         </h4>

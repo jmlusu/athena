@@ -8,6 +8,13 @@ import { getJob, getATSScore } from '@/lib/athena/api';
 import type { Job, MatchTier, SkillTag } from '@/lib/athena/types';
 import { ChevronDown, ChevronLeft, Download, Upload, FileText, Flag, Share2, ExternalLink, Check, X, Sparkles, Brain, Loader2 } from 'lucide-react';
 
+const TIER_HEX: Record<string, string> = {
+  excellent: '#34D399',
+  good: '#60A5FA',
+  fair: '#FBBF24',
+  poor: '#F87171',
+};
+
 export const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -65,7 +72,7 @@ export const JobDetail: React.FC = () => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <p className="font-body text-ls-grey-dark">Job not found</p>
-          <button onClick={() => navigate('/athena/jobs')} className="mt-4 px-4 py-2 bg-ls-red text-ls-white rounded-lg">
+          <button onClick={() => navigate('/athena/jobs')} className="tactile mt-4 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold hover:brightness-110 transition-colors">
             Back to Jobs
           </button>
         </div>
@@ -104,7 +111,7 @@ export const JobDetail: React.FC = () => {
         <div className="flex items-center gap-4 mb-4">
           <button
             onClick={() => navigate('/athena/jobs')}
-            className="p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors"
+            className="tactile p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors"
             aria-label="Back to job list"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -119,7 +126,7 @@ export const JobDetail: React.FC = () => {
               href={job.application_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-5 py-2.5 rounded-lg bg-ls-red text-ls-white font-bold text-sm hover:bg-ls-red/90 transition-colors flex items-center gap-2"
+              className="tactile px-5 py-2.5 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
               Apply
@@ -132,16 +139,16 @@ export const JobDetail: React.FC = () => {
           <span className={cn('px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider border', getMatchTierColor(job.match_tier))}>
             {getMatchTierLabel(job.match_tier)}
           </span>
-          <span className="px-3 py-1.5 rounded-full bg-ls-grey-light text-ls-grey-dark text-[10px] font-bold tracking-wider border border-ls-grey-dark/30">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
             {getJobSourceLabel(job.source)}
           </span>
-          <span className="px-3 py-1.5 rounded-full bg-ls-grey-light text-ls-grey-dark text-[10px] font-bold tracking-wider border border-ls-grey-dark/30">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
             {getJobTypeLabel(job.job_type)}
           </span>
-          <span className="px-3 py-1.5 rounded-full bg-ls-grey-light text-ls-grey-dark text-[10px] font-bold tracking-wider border border-ls-grey-dark/30">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
             {formatSalary(job.salary_range)}
           </span>
-          <span className="px-3 py-1.5 rounded-full bg-ls-grey-light text-ls-grey-dark text-[10px] font-bold tracking-wider border border-ls-grey-dark/30">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
             Posted {formatDate(job.posted_date)}
           </span>
         </div>
@@ -152,7 +159,7 @@ export const JobDetail: React.FC = () => {
         {/* Left Column - Job Details */}
         <div className="flex-1 lg:w-2/3 space-y-6">
           {/* Description */}
-          <section className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-6">
+          <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6">
             <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
               <FileText className="w-5 h-5 text-ls-red" />
               Description
@@ -165,15 +172,15 @@ export const JobDetail: React.FC = () => {
           {/* Requirements & Responsibilities */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {job.requirements.length > 0 && (
-              <section className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-6">
+              <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6">
                 <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
-                  <Check className="w-5 h-5 text-emerald-600" />
+                  <Check className="w-5 h-5 text-emerald-400" />
                   Requirements
                 </h2>
                 <ul className="space-y-3">
                   {job.requirements.map((req, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-ls-grey-dark p-3 rounded-lg bg-ls-grey-light/50">
-                      <Check className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                       <span>{req}</span>
                     </li>
                   ))}
@@ -182,7 +189,7 @@ export const JobDetail: React.FC = () => {
             )}
 
             {job.responsibilities.length > 0 && (
-              <section className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-6">
+              <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6">
                 <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-ls-cyan" />
                   Responsibilities
@@ -201,14 +208,14 @@ export const JobDetail: React.FC = () => {
 
           {/* Benefits */}
           {job.benefits.length > 0 && (
-            <section className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-6">
+            <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6">
               <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-500" />
+                <Sparkles className="w-5 h-5 text-amber-400" />
                 Benefits
               </h2>
               <div className="flex flex-wrap gap-2">
                 {job.benefits.map((benefit, i) => (
-                  <span key={i} className="px-3 py-1.5 rounded-lg bg-ls-grey-light text-ls-grey-dark text-sm font-medium border border-ls-grey-dark/30">
+                  <span key={i} className="px-3 py-1.5 sunken rounded-lg text-ls-grey-dark text-sm font-medium border border-white/10">
                     {benefit}
                   </span>
                 ))}
@@ -217,7 +224,7 @@ export const JobDetail: React.FC = () => {
           )}
 
           {/* Company Info */}
-          <section className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-6">
+          <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6">
             <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
               <Brain className="w-5 h-5 text-ls-cyan" />
               Company Information
@@ -260,7 +267,7 @@ export const JobDetail: React.FC = () => {
         {/* Right Column - ATS Score & Skills */}
         <div className="lg:w-1/3 space-y-6">
           {/* ATS Score Card */}
-          <section className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-6 sticky top-24">
+          <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6 sticky top-24">
             <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
               <Award className="w-5 h-5 text-ls-red" />
               ATS Analysis
@@ -280,7 +287,7 @@ export const JobDetail: React.FC = () => {
             {/* Tier & Recommendation */}
             <div className="text-center mb-6 p-4 rounded-lg bg-ls-grey-light/50">
               <p className="font-body text-sm text-ls-grey-dark mb-1">Match Tier</p>
-              <p className="font-display font-bold text-2xl" style={{ color: getMatchTierColor(job.match_tier).replace('border-', '').replace('text-', '') }}>
+              <p className="font-display font-bold text-2xl" style={{ color: (job.match_tier && TIER_HEX[job.match_tier]) || '#ECE8E1' }}>
                 {getMatchTierLabel(job.match_tier)}
               </p>
               {atsScore && (
@@ -296,14 +303,14 @@ export const JobDetail: React.FC = () => {
             {atsScore && (
               <div className="space-y-3 mb-6">
                 {[
-                  { label: 'Keyword Match', value: atsScore.keyword_match, color: '#FF6B35' },
+                  { label: 'Keyword Match', value: atsScore.keyword_match, color: '#FFA928' },
                   { label: 'Semantic Similarity', value: atsScore.semantic_similarity, color: '#E63946' },
-                  { label: 'Experience Relevance', value: atsScore.experience_relevance, color: '#00BFFF' },
-                  { label: 'Education Match', value: atsScore.education_match, color: '#10B981' },
+                  { label: 'Experience Relevance', value: atsScore.experience_relevance, color: '#67E8F9' },
+                  { label: 'Education Match', value: atsScore.education_match, color: '#34D399' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-3">
                     <span className="w-36 font-body text-sm text-ls-grey-dark">{item.label}</span>
-                    <div className="flex-1 h-2 bg-ls-grey-light rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 sunken rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${item.value}%`, backgroundColor: item.color }} />
                     </div>
                     <span className="w-10 text-right font-display font-bold text-sm text-ls-navy">{item.value}%</span>
@@ -332,7 +339,7 @@ export const JobDetail: React.FC = () => {
           </section>
 
           {/* Skills Analysis */}
-          <section className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-6 sticky top-24" style={{ top: '320px' }}>
+          <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6 sticky top-24" style={{ top: '320px' }}>
             <SkillComparison
               matchingSkills={matchingSkills}
               missingSkills={missingSkills}
@@ -340,13 +347,13 @@ export const JobDetail: React.FC = () => {
           </section>
 
           {/* Quick Actions */}
-          <section className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-6 sticky top-24" style={{ top: '580px' }}>
+          <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6 sticky top-24" style={{ top: '580px' }}>
             <h2 className="font-display font-bold text-lg text-ls-navy mb-4">Actions</h2>
             <div className="space-y-2">
               <button
                 onClick={() => handleAction('apply')}
                 disabled={actionLoading === 'apply'}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-ls-red text-ls-white font-bold text-sm hover:bg-ls-red/90 transition-colors disabled:opacity-50"
+                className="tactile w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'apply' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 {actionLoading === 'apply' ? 'Applying...' : 'Apply Now'}
@@ -354,7 +361,7 @@ export const JobDetail: React.FC = () => {
               <button
                 onClick={() => handleAction('tailor')}
                 disabled={actionLoading === 'tailor'}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red hover:text-ls-red transition-colors disabled:opacity-50"
+                className="tactile w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'tailor' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                 {actionLoading === 'tailor' ? 'Tailoring...' : 'Tailor Resume'}
@@ -362,7 +369,7 @@ export const JobDetail: React.FC = () => {
               <button
                 onClick={() => handleAction('cover')}
                 disabled={actionLoading === 'cover'}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red hover:text-ls-red transition-colors disabled:opacity-50"
+                className="tactile w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'cover' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                 {actionLoading === 'cover' ? 'Generating...' : 'Generate Cover Letter'}
@@ -370,7 +377,7 @@ export const JobDetail: React.FC = () => {
               <button
                 onClick={() => handleAction('flag')}
                 disabled={actionLoading === 'flag'}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red hover:text-ls-red transition-colors disabled:opacity-50"
+                className="tactile w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'flag' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
                 {actionLoading === 'flag' ? 'Flagging...' : 'Flag for Review'}
@@ -378,7 +385,7 @@ export const JobDetail: React.FC = () => {
               <button
                 onClick={() => handleAction('share')}
                 disabled={actionLoading === 'share'}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red hover:text-ls-red transition-colors disabled:opacity-50"
+                className="tactile w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'share' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
                 {actionLoading === 'share' ? 'Sharing...' : 'Share Job'}

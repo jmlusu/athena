@@ -178,12 +178,12 @@ export const AthenaDashboard: React.FC = () => {
             <button
               onClick={handleScrape}
               disabled={scraping}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark hover:border-ls-red hover:text-ls-red transition-all disabled:opacity-50"
+              className="tactile flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-medium text-sm hover:border-ls-red/40 hover:text-ls-red transition-all disabled:opacity-50"
             >
               <RefreshCw className={cn('w-4 h-4', scraping && 'animate-spin')} aria-hidden="true" />
               <span className="font-body font-medium text-sm">Scrape Jobs</span>
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-ls-red text-ls-white font-bold text-sm hover:bg-ls-red/90 transition-colors">
+            <button className="tactile flex items-center gap-2 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors">
               <Download className="w-4 h-4" aria-hidden="true" />
               <span>Export</span>
             </button>
@@ -237,17 +237,17 @@ export const AthenaDashboard: React.FC = () => {
       <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
         {/* Pipeline Kanban Board */}
         <div className="flex-1 min-w-0 lg:max-w-[calc(100%-320px)]">
-          <div className="bg-ls-white rounded-xl border border-ls-grey-dark/30 overflow-hidden">
+          <div className="bg-ls-white raised border border-white/[0.07] rounded-xl overflow-hidden">
             {/* Pipeline Header */}
-            <div className="px-4 py-3 border-b border-ls-grey-dark/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="px-4 py-3 border-b border-white/[0.07] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h2 className="font-display font-bold text-lg text-ls-navy">Job Pipeline</h2>
               <div className="flex items-center gap-2 text-xs text-ls-grey-dark">
                 {stats && (
                   <>
-                    <span className="px-2 py-0.5 rounded bg-ls-cyan/20 text-ls-cyan font-bold">New: {stats.new}</span>
-                    <span className="px-2 py-0.5 rounded bg-orange/20 text-orange-700 font-bold">Scored: {stats.scored}</span>
-                    <span className="px-2 py-0.5 rounded bg-ls-red/20 text-ls-red font-bold">Applied: {stats.applied}</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald/20 text-emerald-700 font-bold">Offers: {stats.offer}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-ls-cyan/15 text-ls-cyan font-bold">New: {stats.new}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 font-bold">Scored: {stats.scored}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-ls-red/15 text-ls-red font-bold">Applied: {stats.applied}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-bold">Offers: {stats.offer}</span>
                   </>
                 )}
               </div>
@@ -277,18 +277,18 @@ export const AthenaDashboard: React.FC = () => {
         <div className="lg:w-80 flex-shrink-0 hidden lg:block">
           <div className="space-y-6">
             {/* ATS Score Distribution */}
-            <div className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-5">
+            <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-base text-ls-navy">ATS Score Distribution</h3>
               </div>
               <MountainAreaChart
                 data={atsDistribution}
                 height={200}
-                colors={['#FF6B35', '#E63946', '#00BFFF']}
+                colors={['#FFA928', '#E63946', '#67E8F9']}
               />
               <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded" style={{ background: 'linear-gradient(90deg, #FF6B35, #E63946)' }} />
+                  <span className="w-3 h-3 rounded" style={{ background: 'linear-gradient(90deg, #FFA928, #E63946)' }} />
                   <span className="font-body text-ls-grey-dark">High Match</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -299,14 +299,14 @@ export const AthenaDashboard: React.FC = () => {
             </div>
 
             {/* Match Tier Breakdown */}
-            <div className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-5">
+            <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5">
               <h3 className="font-display font-bold text-base text-ls-navy mb-4">Match Tier Breakdown</h3>
               <div className="space-y-3">
                 {([
-                  { tier: 'excellent', label: 'Excellent (90+)', color: '#10B981' },
-                  { tier: 'good', label: 'Good (80-89)', color: '#3B82F6' },
-                  { tier: 'fair', label: 'Fair (70-79)', color: '#F59E0B' },
-                  { tier: 'poor', label: 'Poor (<70)', color: '#EF4444' },
+                  { tier: 'excellent', label: 'Excellent (90+)', color: '#34D399' },
+                  { tier: 'good', label: 'Good (80-89)', color: '#60A5FA' },
+                  { tier: 'fair', label: 'Fair (70-79)', color: '#FBBF24' },
+                  { tier: 'poor', label: 'Poor (<70)', color: '#F87171' },
                 ]).map(({ tier, label, color }) => {
                   const count = matchTierDistribution[tier] || 0;
                   const total = Object.values(matchTierDistribution).reduce((a, b) => a + b, 0) || 1;
@@ -320,7 +320,7 @@ export const AthenaDashboard: React.FC = () => {
                         </span>
                         <span className="font-display font-bold text-ls-navy">{count} ({percentage}%)</span>
                       </div>
-                      <div className="h-1.5 bg-ls-grey-light rounded-full overflow-hidden">
+                      <div className="h-1.5 sunken rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${percentage}%`, backgroundColor: color }}
@@ -333,7 +333,7 @@ export const AthenaDashboard: React.FC = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-5">
+            <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5">
               <h3 className="font-display font-bold text-base text-ls-navy mb-4">Quick Stats</h3>
               <div className="space-y-3">
                 <StatCounter
@@ -341,27 +341,30 @@ export const AthenaDashboard: React.FC = () => {
                   label="Sources Tracked"
                   format="plain"
                   accentColor="cyan"
+                  className="readout [&_span]:font-mono! [&_span]:tabular-nums"
                 />
                 <StatCounter
                   value={stats?.by_type ? Object.keys(stats.by_type).length : 0}
                   label="Job Types"
                   format="plain"
-                  accentColor="purple"
+                  accentColor="amber"
+                  className="readout [&_span]:font-mono! [&_span]:tabular-nums"
                 />
                 <StatCounter
                   value={stats?.total_jobs || 0}
                   label="Total Tracked"
                   format="comma"
                   accentColor="navy"
+                  className="readout [&_span]:font-mono! [&_span]:tabular-nums"
                 />
               </div>
             </div>
 
             {/* Recent Scrapes */}
-            <div className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-5">
+            <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-base text-ls-navy">Recent Scrapes</h3>
-                <button onClick={handleScrape} disabled={scraping} className="text-xs text-ls-cyan hover:text-ls-red font-bold">
+                <button onClick={handleScrape} disabled={scraping} className="tactile rounded-md px-2 py-0.5 text-xs text-ls-cyan hover:text-ls-red font-bold">
                   {scraping ? 'Scraping...' : 'Run Scrape'}
                 </button>
               </div>

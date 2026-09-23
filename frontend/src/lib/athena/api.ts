@@ -188,30 +188,30 @@ export async function getSchedulerStatus(): Promise<{ running: boolean; jobs: Ar
   return fetchJson(`${API_BASE}/scheduler/status`);
 }
 
-// Helper functions for UI
+// Helper functions for UI — dark skeuomorphic chips: bg-{hue}-500/15 text-{hue}-300 border-{hue}-500/30
 export function getJobStatusColor(status: JobStatus): string {
   const colors: Record<JobStatus, string> = {
-    new: 'bg-ls-cyan/20 text-ls-cyan border-ls-cyan/30',
-    fetched: 'bg-blue-100 text-blue-700 border-blue-200',
-    matched: 'bg-purple-100 text-purple-700 border-purple-200',
-    scored: 'bg-orange-100 text-orange-700 border-orange-200',
-    applied: 'bg-ls-red/10 text-ls-red border-ls-red/20',
-    interview: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    offer: 'bg-green-100 text-green-700 border-green-200',
-    rejected: 'bg-gray-100 text-gray-500 border-gray-200',
-    archived: 'bg-slate-100 text-slate-500 border-slate-200',
+    new: 'bg-ls-red/15 text-ls-red border-ls-red/40',
+    fetched: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    matched: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+    scored: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
+    applied: 'bg-ls-red/15 text-ls-red border-ls-red/40',
+    interview: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    offer: 'bg-green-500/15 text-green-300 border-green-500/30',
+    rejected: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
+    archived: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
   };
   return colors[status] || colors.new;
 }
 
 export function getMatchTierColor(tier: MatchTier | undefined): string {
   const colors: Record<MatchTier, string> = {
-    excellent: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    good: 'bg-blue-100 text-blue-700 border-blue-200',
-    fair: 'bg-amber-100 text-amber-700 border-amber-200',
-    poor: 'bg-red-100 text-red-700 border-red-200',
+    excellent: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    good: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    fair: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    poor: 'bg-red-500/15 text-red-300 border-red-500/30',
   };
-  return tier ? colors[tier] : 'bg-gray-100 text-gray-500 border-gray-200';
+  return tier ? colors[tier] : 'bg-gray-500/15 text-gray-400 border-gray-500/30';
 }
 
 export function getMatchTierLabel(tier: MatchTier | undefined): string {

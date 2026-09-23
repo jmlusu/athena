@@ -225,7 +225,7 @@ Sincerely,
         <div className="flex items-center gap-4">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors"
+            className="tactile p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors"
             aria-label="Back"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -248,10 +248,10 @@ Sincerely,
             <button
               onClick={() => setViewMode('editor')}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                'tactile px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                 viewMode === 'editor'
-                  ? 'bg-ls-red text-ls-white'
-                  : 'bg-ls-grey-light text-ls-grey-dark hover:bg-ls-grey-light/80'
+                  ? 'glow-amber bg-ls-red text-[#14161A] font-bold'
+                  : 'bg-ls-grey-light/50 text-ls-grey-dark hover:bg-ls-white'
               )}
             >
               <FileText className="w-4 h-4 mr-1" /> Editor
@@ -259,10 +259,10 @@ Sincerely,
             <button
               onClick={() => setViewMode('split')}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                'tactile px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                 viewMode === 'split'
-                  ? 'bg-ls-red text-ls-white'
-                  : 'bg-ls-grey-light text-ls-grey-dark hover:bg-ls-grey-light/80'
+                  ? 'glow-amber bg-ls-red text-[#14161A] font-bold'
+                  : 'bg-ls-grey-light/50 text-ls-grey-dark hover:bg-ls-white'
               )}
             >
               <RotateCcw className="w-4 h-4 mr-1" /> Split View
@@ -270,10 +270,10 @@ Sincerely,
             <button
               onClick={() => setViewMode('preview')}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                'tactile px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                 viewMode === 'preview'
-                  ? 'bg-ls-red text-ls-white'
-                  : 'bg-ls-grey-light text-ls-grey-dark hover:bg-ls-grey-light/80'
+                  ? 'glow-amber bg-ls-red text-[#14161A] font-bold'
+                  : 'bg-ls-grey-light/50 text-ls-grey-dark hover:bg-ls-white'
               )}
             >
               <Eye className="w-4 h-4 mr-1" /> Preview
@@ -284,7 +284,7 @@ Sincerely,
             <button
               onClick={generateAIContent}
               disabled={loading}
-              className="px-4 py-2 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-medium text-sm hover:border-ls-cyan hover:text-ls-cyan transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="tactile px-4 py-2 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-medium text-sm hover:border-ls-cyan hover:text-ls-cyan transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-ls-cyan" />}
               <span>Generate AI</span>
@@ -292,30 +292,30 @@ Sincerely,
             <button
               onClick={humanizeContent}
               disabled={loading || !aiContent}
-              className="px-4 py-2 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-medium text-sm hover:border-emerald-500 hover:text-emerald-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="tactile px-4 py-2 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-medium text-sm hover:border-emerald-400 hover:text-emerald-400 transition-colors disabled:opacity-50 flex items-center gap-2"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-emerald-600" />}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 text-emerald-400" />}
               <span>Humanize</span>
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-4 py-2 rounded-lg bg-ls-red text-ls-white font-bold text-sm hover:bg-ls-red/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="tactile px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               <span>Save</span>
             </button>
-            <div className="flex items-center gap-1 border border-ls-grey-dark/30 rounded-lg overflow-hidden">
+            <div className="flex items-center gap-1 border border-white/10 rounded-lg overflow-hidden">
               <button
                 onClick={() => handleDownload('docx')}
-                className="px-3 py-2 text-sm font-medium text-ls-grey-dark hover:bg-ls-grey-light transition-colors flex items-center gap-1"
+                className="tactile px-3 py-2 text-sm font-medium text-ls-grey-dark hover:bg-ls-red/10 hover:text-ls-red transition-colors flex items-center gap-1"
               >
                 <Download className="w-4 h-4" />
                 <span>.docx</span>
               </button>
               <button
                 onClick={() => handleDownload('pdf')}
-                className="px-3 py-2 text-sm font-medium text-ls-grey-dark hover:bg-ls-grey-light transition-colors flex items-center gap-1"
+                className="tactile px-3 py-2 text-sm font-medium text-ls-grey-dark border-l border-white/[0.07] hover:bg-ls-red/10 hover:text-ls-red transition-colors flex items-center gap-1"
               >
                 <Image className="w-4 h-4" />
                 <span>.pdf</span>
@@ -325,23 +325,23 @@ Sincerely,
         </div>
 
         {/* Toolbar */}
-        <div className="flex flex-wrap gap-1 mb-3 p-3 bg-ls-white rounded-xl border border-ls-grey-dark/30" role="toolbar" aria-label="Editor toolbar">
+        <div className="flex flex-wrap gap-1 mb-3 p-3 bg-ls-white raised border border-white/[0.07] rounded-xl" role="toolbar" aria-label="Editor toolbar">
           {toolbarActions.map(action => (
             <button
               key={action.key}
               onClick={() => handleToolbarAction(action.key)}
-              className="px-3 py-1.5 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors flex items-center gap-1.5"
+              className="tactile px-3 py-1.5 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors flex items-center gap-1.5"
               aria-label={`${action.label}${action.hotkey ? ` (${action.hotkey})` : ''}`}
             >
               {action.icon}
               <span className="hidden sm:inline font-body text-xs">{action.label}</span>
-              {action.hotkey && <span className="hidden md:inline text-[10px] text-ls-grey-light-text px-1.5 py-0.5 rounded bg-ls-grey-light">{action.hotkey}</span>}
+              {action.hotkey && <span className="hidden md:inline text-[10px] text-ls-grey-light-text px-1.5 py-0.5 sunken rounded">{action.hotkey}</span>}
             </button>
           ))}
-          <div className="w-px h-6 bg-ls-grey-dark/30 mx-2" />
+          <div className="w-px h-6 bg-white/[0.07] mx-2" />
           <button
             onClick={handleCopy}
-            className="px-3 py-1.5 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors flex items-center gap-1.5"
+            className="tactile px-3 py-1.5 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors flex items-center gap-1.5"
             aria-label="Copy content"
           >
             <Copy className="w-4 h-4" />
@@ -349,7 +349,7 @@ Sincerely,
           </button>
           <button
             onClick={() => setShowPreview(!showPreview)}
-            className="px-3 py-1.5 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors flex items-center gap-1.5"
+            className="tactile px-3 py-1.5 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors flex items-center gap-1.5"
             aria-label={showPreview ? 'Hide preview' : 'Show preview'}
           >
             {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -358,14 +358,14 @@ Sincerely,
         </div>
 
         {/* Editor Area */}
-        <div className="flex-1 overflow-hidden bg-ls-white rounded-xl border border-ls-grey-dark/30 flex">
+        <div className="flex-1 overflow-hidden bg-ls-white raised border border-white/[0.07] rounded-xl flex">
           {/* Left Panel - Editor or AI Content */}
           <div className={cn(
             'flex-1 flex flex-col min-w-0',
-            viewMode === 'split' && 'border-r border-ls-grey-dark/30',
+            viewMode === 'split' && 'border-r border-white/[0.07]',
             viewMode === 'preview' && 'hidden'
           )}>
-            <div className="px-4 py-2 border-b border-ls-grey-dark/30 flex items-center justify-between">
+            <div className="px-4 py-2 border-b border-white/[0.07] flex items-center justify-between">
               <h3 className="font-display font-bold text-sm text-ls-navy">
                 {viewMode === 'split' ? 'Your Version' : 'Editor'}
               </h3>
@@ -377,7 +377,7 @@ Sincerely,
               ref={editorRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="flex-1 p-4 font-body text-sm text-ls-navy bg-transparent resize-none focus:outline-none font-mono leading-relaxed"
+              className="flex-1 p-4 font-body text-sm text-ls-navy bg-transparent resize-none placeholder:text-ls-grey-light-text font-mono leading-relaxed"
               placeholder={`Start writing your ${documentType}...`}
               spellCheck={true}
               aria-label={`${documentType} editor`}
@@ -386,13 +386,13 @@ Sincerely,
 
           {/* Right Panel - AI/Humanized or Preview */}
           {viewMode === 'split' && (
-            <div className="flex-1 flex flex-col min-w-0 border-l border-ls-grey-dark/30 bg-ls-grey-light/30">
-              <div className="px-4 py-2 border-b border-ls-grey-dark/30 flex items-center justify-between">
+            <div className="flex-1 flex flex-col min-w-0 border-l border-white/[0.07] bg-ls-grey-light/40">
+              <div className="px-4 py-2 border-b border-white/[0.07] flex items-center justify-between">
                 <h3 className="font-display font-bold text-sm text-ls-navy">AI vs Humanized</h3>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* AI Version */}
-                <div className="bg-ls-white rounded-lg border border-ls-grey-dark/30 p-4">
+                <div className="bg-ls-white raised rounded-lg border border-white/10 p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-display font-bold text-sm text-ls-navy flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-ls-cyan" />
@@ -404,10 +404,10 @@ Sincerely,
                 </div>
 
                 {/* Humanized Version */}
-                <div className="bg-ls-white rounded-lg border border-ls-grey-dark/30 p-4">
+                <div className="bg-ls-white raised rounded-lg border border-white/10 p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-display font-bold text-sm text-ls-navy flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-600" />
+                      <Check className="w-4 h-4 text-emerald-400" />
                       Humanized
                     </h4>
                     <ATSGauge score={atsScore} size={40} strokeWidth={4} showLabel={false} />
@@ -427,14 +427,14 @@ Sincerely,
 
           {viewMode === 'preview' && (
             <div className="flex-1 flex flex-col min-w-0 bg-ls-white">
-              <div className="px-4 py-2 border-b border-ls-grey-dark/30 flex items-center justify-between">
+              <div className="px-4 py-2 border-b border-white/[0.07] flex items-center justify-between">
                 <h3 className="font-display font-bold text-sm text-ls-navy">Live Preview</h3>
                 <div className="flex items-center gap-2">
-                  <button className="p-1 rounded hover:bg-ls-grey-light" aria-label="Zoom in"><ZoomIn className="w-4 h-4" /></button>
-                  <button className="p-1 rounded hover:bg-ls-grey-light" aria-label="Zoom out"><ZoomOut className="w-4 h-4" /></button>
+                  <button className="tactile p-1 rounded hover:bg-ls-red/10 hover:text-ls-red text-ls-grey-dark" aria-label="Zoom in"><ZoomIn className="w-4 h-4" /></button>
+                  <button className="tactile p-1 rounded hover:bg-ls-red/10 hover:text-ls-red text-ls-grey-dark" aria-label="Zoom out"><ZoomOut className="w-4 h-4" /></button>
                 </div>
               </div>
-              <div className="flex-1 p-6 overflow-y-auto" style={{ maxWidth: '210mm', margin: '0 auto', backgroundColor: 'white', boxShadow: '0 0 20px rgba(0,0,0,0.1)' }}>
+              <div className="flex-1 p-6 overflow-y-auto" style={{ maxWidth: '210mm', margin: '0 auto', backgroundColor: 'white', boxShadow: '0 0 24px rgba(0,0,0,0.6)' }}>
                 <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: renderPreview() }} />
               </div>
             </div>

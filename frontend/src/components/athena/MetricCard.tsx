@@ -13,14 +13,14 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 const ACCENT_COLORS = {
-  orange: { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200', icon: 'text-orange-600' },
-  red: { bg: 'bg-red-100', text: 'text-red-600', border: 'border-red-200', icon: 'text-red-600' },
-  cyan: { bg: 'bg-cyan-100', text: 'text-cyan-600', border: 'border-cyan-200', icon: 'text-cyan-600' },
+  orange: { bg: 'bg-orange-500/15', text: 'text-orange-300', border: 'border-orange-500/30', icon: 'text-orange-300' },
+  red: { bg: 'bg-red-500/15', text: 'text-red-300', border: 'border-red-500/30', icon: 'text-red-300' },
+  cyan: { bg: 'bg-cyan-500/15', text: 'text-cyan-300', border: 'border-cyan-500/30', icon: 'text-cyan-300' },
   navy: { bg: 'bg-ls-navy/10', text: 'text-ls-navy', border: 'border-ls-navy/20', icon: 'text-ls-navy' },
-  emerald: { bg: 'bg-emerald-100', text: 'text-emerald-600', border: 'border-emerald-200', icon: 'text-emerald-600' },
-  blue: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200', icon: 'text-blue-600' },
-  purple: { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200', icon: 'text-purple-600' },
-  amber: { bg: 'bg-amber-100', text: 'text-amber-600', border: 'border-amber-200', icon: 'text-amber-600' },
+  emerald: { bg: 'bg-emerald-500/15', text: 'text-emerald-300', border: 'border-emerald-500/30', icon: 'text-emerald-300' },
+  blue: { bg: 'bg-blue-500/15', text: 'text-blue-300', border: 'border-blue-500/30', icon: 'text-blue-300' },
+  purple: { bg: 'bg-purple-500/15', text: 'text-purple-300', border: 'border-purple-500/30', icon: 'text-purple-300' },
+  amber: { bg: 'bg-amber-500/15', text: 'text-amber-300', border: 'border-amber-500/30', icon: 'text-amber-300' },
 } as const;
 
 export const MetricCard: React.FC<MetricCardProps> = ({
@@ -36,11 +36,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   const icon = customIcon || ICON_MAP.default;
 
   const trendIcon = trend === 'up' ? (
-    <TrendingUp className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+    <TrendingUp className="w-4 h-4 text-emerald-400" aria-hidden="true" />
   ) : trend === 'down' ? (
-    <TrendingDown className="w-4 h-4 text-red-600" aria-hidden="true" />
+    <TrendingDown className="w-4 h-4 text-red-400" aria-hidden="true" />
   ) : (
-    <Minus className="w-4 h-4 text-gray-400" aria-hidden="true" />
+    <Minus className="w-4 h-4 text-ls-grey-light-text" aria-hidden="true" />
   );
 
   const trendLabel = trend === 'up' ? 'Increase' : trend === 'down' ? 'Decrease' : 'Stable';
@@ -49,8 +49,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     <article
       className={cn(
         'relative p-5 sm:p-6 rounded-xl border transition-all duration-200',
-        'bg-ls-white',
-        colors.border,
+        'bg-ls-white raised border-white/7',
         'hover:shadow-md hover:border-ls-red/30',
         className
       )}
@@ -68,12 +67,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             >
               {icon}
             </span>
-            <h3 className="font-body text-xs font-bold tracking-widest uppercase text-ls-grey-dark truncate">
+            <h2 className="font-body text-xs font-bold tracking-widest uppercase text-ls-grey-dark truncate">
               {title}
-            </h3>
+            </h2>
           </div>
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-display font-black text-2xl sm:text-3xl text-ls-navy">
+            <span className="readout font-black text-2xl sm:text-3xl text-ls-navy">
               {value}
             </span>
             {subtitle && (
@@ -93,8 +92,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
       {/* Subtle accent bar */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-1 rounded-b-xl"
-        style={{ backgroundColor: `var(--ls-${accentColor === 'navy' ? 'red' : accentColor})` }}
+        className={cn('absolute bottom-0 left-0 right-0 h-1 rounded-b-xl', colors.bg)}
         aria-hidden="true"
       />
     </article>
@@ -126,54 +124,53 @@ export const MetricCardLarge: React.FC<{
   const colors = ACCENT_COLORS[accentColor] || ACCENT_COLORS.navy;
 
   const trendIcon = trend === 'up' ? (
-    <TrendingUp className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+    <TrendingUp className="w-4 h-4 text-emerald-400" aria-hidden="true" />
   ) : trend === 'down' ? (
-    <TrendingDown className="w-4 h-4 text-red-600" aria-hidden="true" />
+    <TrendingDown className="w-4 h-4 text-red-400" aria-hidden="true" />
   ) : (
-    <Minus className="w-4 h-4 text-gray-400" aria-hidden="true" />
+    <Minus className="w-4 h-4 text-ls-grey-light-text" aria-hidden="true" />
   );
 
   return (
     <article
       className={cn(
-        'relative p-6 sm:p-8 rounded-2xl border transition-all duration-200',
-        'bg-ls-white',
-        colors.border,
+        'relative p-5 sm:p-6 rounded-xl border transition-all duration-200',
+        'bg-ls-white raised border-white/7',
         'hover:shadow-lg hover:border-ls-red/30',
         className
       )}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <div className="flex items-center gap-3 min-w-0">
           <span
             className={cn('p-3 rounded-xl flex-shrink-0', colors.bg, colors.icon)}
             aria-hidden="true"
           >
             {icon || <Target className="w-6 h-6" />}
           </span>
-          <div>
-            <h3 className="font-body text-xs font-bold tracking-widest uppercase text-ls-grey-dark">
-              {title}
-            </h3>
-            {description && (
-              <p className="font-body text-sm text-ls-grey-dark mt-1 max-w-xs">
-                {description}
-              </p>
-            )}
-          </div>
+          <h2 className="font-body text-xs font-bold tracking-widest uppercase text-ls-grey-dark">
+            {title}
+          </h2>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {trendIcon}
           {trendValue && (
-            <span className="font-body text-sm font-medium" style={{ color: trend === 'up' ? '#10B981' : trend === 'down' ? '#EF4444' : '#6B7280' }}>
+            <span className="font-body text-sm font-medium" style={{ color: trend === 'up' ? '#34D399' : trend === 'down' ? '#F87171' : '#8B857B' }}>
               {trendValue}
             </span>
           )}
         </div>
       </div>
 
+      {description && (
+        <p className="font-body text-sm text-ls-grey-dark mb-4 max-w-sm">
+          {description}
+        </p>
+      )}
+      {!description && <div className="mb-4" />}
+
       <div className="flex items-baseline gap-3 flex-wrap">
-        <span className="font-display font-black text-4xl sm:text-5xl text-ls-navy">
+        <span className="readout font-black text-4xl sm:text-5xl text-ls-navy">
           {value}
         </span>
         {subtitle && (
@@ -184,8 +181,7 @@ export const MetricCardLarge: React.FC<{
       </div>
 
       <div
-        className="absolute bottom-0 left-0 right-0 h-1.5 rounded-b-2xl"
-        style={{ backgroundColor: `var(--ls-${accentColor === 'navy' ? 'red' : accentColor})` }}
+        className={cn('absolute bottom-0 left-0 right-0 h-1.5 rounded-b-xl', colors.bg)}
         aria-hidden="true"
       />
     </article>
@@ -210,7 +206,7 @@ export const StatCounter: React.FC<{
   return (
     <div className={cn('text-center p-4', className)}>
       <div className="relative inline-block mb-2">
-        <span className={cn('font-display font-black text-3xl sm:text-4xl', colors.text)}>
+        <span className={cn('readout font-black text-3xl sm:text-4xl', colors.text)}>
           {formattedValue}
           {suffix && <span className="font-display font-bold text-xl text-ls-grey-dark ml-1">{suffix}</span>}
         </span>

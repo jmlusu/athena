@@ -127,16 +127,16 @@ export const JobList: React.FC = () => {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg border transition-all',
+                'tactile flex items-center gap-2 px-4 py-2 rounded-lg border transition-all',
                 showFilters
-                  ? 'bg-ls-red/10 border-ls-red text-ls-red'
-                  : 'border-ls-grey-dark/30 text-ls-grey-dark hover:border-ls-red hover:text-ls-red'
+                  ? 'glow-amber bg-ls-red/10 border-ls-red text-ls-red'
+                  : 'bg-ls-white border-white/10 text-ls-grey-dark hover:border-ls-red/40 hover:text-ls-red'
               )}
             >
               <Filter className="w-4 h-4" aria-hidden="true" />
               <span className="font-body font-medium text-sm">Filters</span>
               {hasActiveFilters && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-ls-red text-ls-white">
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-ls-red text-[#14161A]">
                   {Object.values(filters).filter(v => v !== undefined && v !== '' && v !== null).length}
                 </span>
               )}
@@ -144,12 +144,12 @@ export const JobList: React.FC = () => {
             <button
               onClick={handleScrape}
               disabled={scraping}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-ls-red text-ls-white font-bold text-sm hover:bg-ls-red/90 transition-colors disabled:opacity-50"
+              className="tactile flex items-center gap-2 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors disabled:opacity-50"
             >
               <Loader2 className={cn('w-4 h-4', scraping && 'animate-spin')} aria-hidden="true" />
               <span className="font-body font-medium text-sm">Scrape</span>
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark hover:border-ls-red hover:text-ls-red transition-all">
+            <button className="tactile flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-medium text-sm hover:border-ls-red/40 hover:text-ls-red transition-all">
               <Download className="w-4 h-4" aria-hidden="true" />
               <span className="font-body font-medium text-sm">Export</span>
             </button>
@@ -164,13 +164,13 @@ export const JobList: React.FC = () => {
             value={filters.search}
             onChange={(e) => debouncedSearch(e.target.value)}
             placeholder="Search by title, company, description..."
-            className="w-full pl-12 pr-4 py-3 bg-ls-white border border-ls-grey-dark/30 rounded-lg text-ls-navy placeholder-ls-grey-light-text focus:outline-none focus:ring-2 focus:ring-ls-red focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
             aria-label="Search jobs"
           />
           {filters.search && (
             <button
               onClick={() => handleFilterChange('search', '')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-ls-grey-light-text hover:text-ls-red"
+              className="tactile rounded-full absolute right-4 top-1/2 -translate-y-1/2 p-1 text-ls-grey-light-text hover:text-ls-red"
               aria-label="Clear search"
             >
               <X className="w-5 h-5" />
@@ -188,7 +188,7 @@ export const JobList: React.FC = () => {
                   {key.replace(/_/g, ' ')}: {String(value)}
                   <button
                     onClick={() => handleFilterChange(key, undefined)}
-                    className="hover:text-ls-red/70"
+                    className="tactile rounded-md hover:text-ls-red/70"
                     aria-label={`Remove ${key} filter`}
                   >
                     <X className="w-3.5 h-3.5" />
@@ -197,7 +197,7 @@ export const JobList: React.FC = () => {
               ))}
             <button
               onClick={clearFilters}
-              className="px-3 py-1 rounded-full text-sm font-medium text-ls-grey-dark hover:text-ls-red transition-colors"
+              className="tactile px-3 py-1 rounded-full text-sm font-medium text-ls-grey-dark hover:text-ls-red transition-colors"
             >
               Clear all
             </button>
@@ -206,14 +206,14 @@ export const JobList: React.FC = () => {
 
         {/* Advanced Filters Panel */}
         {showFilters && (
-          <div className="bg-ls-white rounded-xl border border-ls-grey-dark/30 p-5 mb-6 animate-in slide-in-from-top-2" role="region" aria-label="Advanced filters">
+          <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5 mb-6 animate-in slide-in-from-top-2" role="region" aria-label="Advanced filters">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="font-body text-xs font-bold tracking-wider uppercase text-ls-grey-dark block mb-1.5">Status</label>
                 <select
                   value={filters.status || ''}
                   onChange={(e) => handleFilterChange('status', e.target.value || undefined)}
-                  className="w-full px-3 py-2 border border-ls-grey-dark/30 rounded-lg bg-ls-white text-sm text-ls-navy focus:outline-none focus:ring-2 focus:ring-ls-red"
+                  className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy focus:ring-2 focus:ring-ls-red focus:border-transparent"
                 >
                   <option value="">All statuses</option>
                   {JOB_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
@@ -225,7 +225,7 @@ export const JobList: React.FC = () => {
                 <select
                   value={filters.source || ''}
                   onChange={(e) => handleFilterChange('source', e.target.value as JobSource || undefined)}
-                  className="w-full px-3 py-2 border border-ls-grey-dark/30 rounded-lg bg-ls-white text-sm text-ls-navy focus:outline-none focus:ring-2 focus:ring-ls-red"
+                  className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy focus:ring-2 focus:ring-ls-red focus:border-transparent"
                 >
                   <option value="">All sources</option>
                   {JOB_SOURCES.map(s => <option key={s} value={s}>{getJobSourceLabel(s)}</option>)}
@@ -237,7 +237,7 @@ export const JobList: React.FC = () => {
                 <select
                   value={filters.job_type || ''}
                   onChange={(e) => handleFilterChange('job_type', e.target.value as JobType || undefined)}
-                  className="w-full px-3 py-2 border border-ls-grey-dark/30 rounded-lg bg-ls-white text-sm text-ls-navy focus:outline-none focus:ring-2 focus:ring-ls-red"
+                  className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy focus:ring-2 focus:ring-ls-red focus:border-transparent"
                 >
                   <option value="">All types</option>
                   {JOB_TYPES.map(t => <option key={t} value={t}>{getJobTypeLabel(t)}</option>)}
@@ -251,7 +251,7 @@ export const JobList: React.FC = () => {
                   value={filters.location}
                   onChange={(e) => handleFilterChange('location', e.target.value)}
                   placeholder="e.g., Lilongwe, Remote"
-                  className="w-full px-3 py-2 border border-ls-grey-dark/30 rounded-lg bg-ls-white text-sm text-ls-navy placeholder-ls-grey-light-text focus:outline-none focus:ring-2 focus:ring-ls-red"
+                  className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
                 />
               </div>
 
@@ -265,7 +265,7 @@ export const JobList: React.FC = () => {
                     value={filters.min_ats_score || ''}
                     onChange={(e) => handleFilterChange('min_ats_score', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Min"
-                    className="w-full px-3 py-2 border border-ls-grey-dark/30 rounded-lg bg-ls-white text-sm text-ls-navy focus:outline-none focus:ring-2 focus:ring-ls-red"
+                    className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
                     aria-label="Minimum ATS score"
                   />
                   <span className="text-ls-grey-light-text">–</span>
@@ -276,7 +276,7 @@ export const JobList: React.FC = () => {
                     value={filters.max_ats_score || ''}
                     onChange={(e) => handleFilterChange('max_ats_score', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Max"
-                    className="w-full px-3 py-2 border border-ls-grey-dark/30 rounded-lg bg-ls-white text-sm text-ls-navy focus:outline-none focus:ring-2 focus:ring-ls-red"
+                    className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
                     aria-label="Maximum ATS score"
                   />
                 </div>
@@ -292,7 +292,7 @@ export const JobList: React.FC = () => {
                     value={filters.min_match_score || ''}
                     onChange={(e) => handleFilterChange('min_match_score', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Min"
-                    className="w-full px-3 py-2 border border-ls-grey-dark/30 rounded-lg bg-ls-white text-sm text-ls-navy focus:outline-none focus:ring-2 focus:ring-ls-red"
+                    className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
                     aria-label="Minimum match score"
                   />
                   <span className="text-ls-grey-light-text">–</span>
@@ -303,15 +303,15 @@ export const JobList: React.FC = () => {
                     value={filters.max_match_score || ''}
                     onChange={(e) => handleFilterChange('max_match_score', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Max"
-                    className="w-full px-3 py-2 border border-ls-grey-dark/30 rounded-lg bg-ls-white text-sm text-ls-navy focus:outline-none focus:ring-2 focus:ring-ls-red"
+                    className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
                     aria-label="Maximum match score"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-ls-grey-dark/30 flex justify-end">
-              <button onClick={clearFilters} className="px-4 py-2 text-sm font-medium text-ls-grey-dark hover:text-ls-red transition-colors">
+            <div className="mt-4 pt-4 border-t border-white/[0.07] flex justify-end">
+              <button onClick={clearFilters} className="tactile px-4 py-2 rounded-lg text-sm font-medium text-ls-grey-dark hover:text-ls-red transition-colors">
                 Clear all filters
               </button>
             </div>
@@ -328,7 +328,7 @@ export const JobList: React.FC = () => {
           </div>
         ) : jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-ls-grey-light flex items-center justify-center mb-4">
+            <div className="w-16 h-16 sunken rounded-full flex items-center justify-center mb-4">
               <Search className="w-8 h-8 text-ls-grey-light-text" aria-hidden="true" />
             </div>
             <h3 className="font-display font-bold text-lg text-ls-navy mb-2">No jobs found</h3>
@@ -338,7 +338,7 @@ export const JobList: React.FC = () => {
             <button
               onClick={handleScrape}
               disabled={scraping}
-              className="mt-4 px-6 py-2.5 rounded-lg bg-ls-red text-ls-white font-bold text-sm hover:bg-ls-red/90 transition-colors"
+              className="tactile mt-4 px-6 py-2.5 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors disabled:opacity-50"
             >
               Scrape for jobs
             </button>
@@ -346,7 +346,7 @@ export const JobList: React.FC = () => {
         ) : (
           <>
             {/* Results Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-ls-grey-dark/30">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-white/[0.07]">
               <p className="font-body text-sm text-ls-grey-dark">
                 Showing <span className="font-bold text-ls-navy">{((page - 1) * pageSize) + 1}</span>–
                 <span className="font-bold text-ls-navy">{Math.min(page * pageSize, total)}</span>
@@ -356,7 +356,7 @@ export const JobList: React.FC = () => {
                 <select
                   value={pageSize}
                   onChange={(e) => { /* pageSize change would need state */ }}
-                  className="px-3 py-1.5 border border-ls-grey-dark/30 rounded-lg text-sm text-ls-navy bg-ls-white focus:outline-none focus:ring-2 focus:ring-ls-red"
+                  className="px-3 py-1.5 sunken rounded-lg border border-white/10 text-sm text-ls-navy focus:ring-2 focus:ring-ls-red focus:border-transparent"
                   aria-label="Items per page"
                 >
                   <option value={20}>20 per page</option>
@@ -385,7 +385,7 @@ export const JobList: React.FC = () => {
                 <button
                   onClick={() => setPage(p => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="p-2 rounded-lg border border-ls-grey-dark/30 text-ls-grey-dark hover:border-ls-red hover:text-ls-red disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="tactile p-2 rounded-lg border border-white/10 text-ls-grey-dark hover:border-ls-red hover:text-ls-red disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   aria-label="Previous page"
                 >
                   <ChevronDown className="w-5 h-5 rotate-180" />
@@ -396,7 +396,7 @@ export const JobList: React.FC = () => {
                 <button
                   onClick={() => setPage(p => Math.min(Math.ceil(total / pageSize), p + 1))}
                   disabled={page >= Math.ceil(total / pageSize)}
-                  className="p-2 rounded-lg border border-ls-grey-dark/30 text-ls-grey-dark hover:border-ls-red hover:text-ls-red disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="tactile p-2 rounded-lg border border-white/10 text-ls-grey-dark hover:border-ls-red hover:text-ls-red disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   aria-label="Next page"
                 >
                   <ChevronDown className="w-5 h-5" />
@@ -409,10 +409,10 @@ export const JobList: React.FC = () => {
 
       {/* Job Detail Modal */}
       {selectedJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 animate-in fade-in" role="dialog" aria-modal="true" aria-labelledby="job-detail-title">
-          <div className="bg-ls-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 slide-in-from-bottom-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-in fade-in" role="dialog" aria-modal="true" aria-labelledby="job-detail-title">
+          <div className="bg-ls-white raised rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 slide-in-from-bottom-2">
             {/* Modal Header */}
-            <div className="flex items-start justify-between p-5 border-b border-ls-grey-dark/30 sticky top-0 bg-ls-white z-10">
+            <div className="flex items-start justify-between p-5 border-b border-white/[0.07] sticky top-0 bg-ls-white z-10">
               <div className="flex-1 mr-4 min-w-0">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span className="font-display font-bold text-lg text-ls-navy truncate">{selectedJob.company}</span>
@@ -430,7 +430,7 @@ export const JobList: React.FC = () => {
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <ATSGauge score={selectedJob.ats_score || 0} size={60} strokeWidth={6} showLabel tier={selectedJob.match_tier} />
-                <button onClick={closeJobDetail} className="p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors" aria-label="Close job detail">
+                <button onClick={closeJobDetail} className="tactile p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors" aria-label="Close job detail">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -491,10 +491,10 @@ export const JobList: React.FC = () => {
                     <ATSGauge score={selectedJob.ats_score} size={80} tier={selectedJob.match_tier} label="Overall" />
                     <div className="md:col-span-3 space-y-3">
                       {[
-                        { label: 'Keyword Match', value: 85, color: '#FF6B35' },
+                        { label: 'Keyword Match', value: 85, color: '#FFA928' },
                         { label: 'Semantic Similarity', value: 78, color: '#E63946' },
-                        { label: 'Experience Relevance', value: 82, color: '#00BFFF' },
-                        { label: 'Education Match', value: 75, color: '#10B981' },
+                        { label: 'Experience Relevance', value: 82, color: '#67E8F9' },
+                        { label: 'Education Match', value: 75, color: '#34D399' },
                       ].map((item) => (
                         <div key={item.label} className="flex items-center gap-3">
                           <span className="w-36 font-body text-sm text-ls-grey-dark">{item.label}</span>
@@ -510,25 +510,25 @@ export const JobList: React.FC = () => {
               )}
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-3 pt-4 border-t border-ls-grey-dark/30">
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-white/[0.07]">
                 <a
                   href={selectedJob.application_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-ls-red text-ls-white font-bold text-sm hover:bg-ls-red/90 transition-colors"
+                  className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors"
                 >
                   <Upload className="w-4 h-4" />
                   Apply Now
                 </a>
-                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red hover:text-ls-red transition-colors">
+                <button className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors">
                   <Download className="w-4 h-4" />
                   Tailor Resume
                 </button>
-                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red hover:text-ls-red transition-colors">
+                <button className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors">
                   <FileText className="w-4 h-4" />
                   Cover Letter
                 </button>
-                <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-ls-grey-dark/30 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red hover:text-ls-red transition-colors">
+                <button className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors">
                   <ChevronDown className="w-4 h-4" />
                   Flag
                 </button>

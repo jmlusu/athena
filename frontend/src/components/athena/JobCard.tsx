@@ -24,10 +24,10 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
     <article
       onClick={onClick}
       className={cn(
-        'relative group cursor-pointer transition-all duration-200',
-        'bg-ls-white border border-ls-grey-dark/30 rounded-xl p-4 sm:p-5',
+        'relative group cursor-pointer transition-all duration-200 tactile',
+        'bg-ls-white raised border border-white/7 rounded-xl p-4 sm:p-5',
         'hover:border-ls-red/40 hover:shadow-lg hover:shadow-ls-red/10 hover:-translate-y-0.5',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ls-red focus-visible:ring-offset-2',
+        'focus-visible:ring-2 focus-visible:ring-ls-red focus-visible:ring-offset-2 disabled:opacity-40',
         compact && 'p-3'
       )}
       tabIndex={0}
@@ -96,7 +96,7 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
         <span
           className={cn(
             'inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold tracking-wider',
-            'bg-ls-grey-light text-ls-grey-dark border border-ls-grey-dark/30'
+            'sunken border border-white/8 text-ls-grey-dark'
           )}
         >
           <span className="w-2 h-2 rounded-full bg-ls-cyan mr-1.5" aria-hidden="true" />
@@ -109,7 +109,7 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="p-2 rounded-lg bg-ls-red/10 text-ls-red hover:bg-ls-red/20 transition-colors"
+            className="p-2 rounded-lg bg-ls-red/10 text-ls-red hover:bg-ls-red/20 transition-colors tactile disabled:opacity-40"
             aria-label={`Apply on ${getJobSourceLabel(job.source)}`}
           >
             <ExternalLink className="w-4 h-4" aria-hidden="true" />
@@ -141,7 +141,7 @@ export const JobCardCompact: React.FC<JobCardProps & { onApplyClick?: (e: React.
   return (
     <div
       onClick={onClick}
-      className="group cursor-pointer flex items-center gap-4 p-3 bg-ls-white border border-ls-grey-dark/30 rounded-lg hover:border-ls-red/40 hover:bg-ls-red/5 transition-all"
+      className="group cursor-pointer flex items-center gap-4 p-3 bg-ls-white raised border border-white/7 rounded-lg hover:border-ls-red/40 hover:bg-ls-red/5 transition-all tactile focus-visible:ring-2 focus-visible:ring-ls-red focus-visible:ring-offset-2 disabled:opacity-40"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -152,7 +152,7 @@ export const JobCardCompact: React.FC<JobCardProps & { onApplyClick?: (e: React.
       role="button"
       aria-label={`View job: ${job.title} at ${job.company}`}
     >
-      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-ls-grey-light flex items-center justify-center">
+      <div className="flex-shrink-0 w-12 h-12 rounded-lg sunken flex items-center justify-center">
         <span className="font-display font-bold text-xl text-ls-navy">
           {job.company.charAt(0).toUpperCase()}
         </span>
@@ -185,7 +185,7 @@ export const JobCardCompact: React.FC<JobCardProps & { onApplyClick?: (e: React.
         {onApplyClick && (
           <button
             onClick={onApplyClick}
-            className="p-2 rounded-lg bg-ls-red/10 text-ls-red hover:bg-ls-red/20 transition-colors"
+            className="p-2 rounded-lg bg-ls-red/10 text-ls-red hover:bg-ls-red/20 transition-colors tactile disabled:opacity-40"
             aria-label="Apply"
           >
             <ExternalLink className="w-4 h-4" aria-hidden="true" />

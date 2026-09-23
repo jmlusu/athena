@@ -17,11 +17,16 @@ interface ATSGaugeProps {
 }
 
 const TIER_COLORS = {
-  excellent: '#10B981', // emerald
-  good: '#3B82F6',      // blue
-  fair: '#F59E0B',      // amber
-  poor: '#EF4444',      // red
+  excellent: '#34D399', // emerald
+  good: '#60A5FA',      // blue
+  fair: '#FBBF24',      // amber
+  poor: '#F87171',      // red
 } as const;
+
+const tierGlow = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `drop-shadow(0 0 4px rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0.35))`;
+};
 
 const TIER_LABELS = {
   excellent: 'Excellent',
@@ -60,10 +65,10 @@ export const ATSGauge: React.FC<ATSGaugeProps> = ({
           <RadialBar
             cx="50%"
             cy="50%"
-            background
+            background={{ fill: '#2A2F38' }}
             dataKey="Remaining"
             strokeWidth={strokeWidth}
-            stroke="#E5E7EB"
+            stroke="#2A2F38"
             fill="none"
             cornerRadius={strokeWidth / 2}
           />
@@ -75,6 +80,7 @@ export const ATSGauge: React.FC<ATSGaugeProps> = ({
             stroke={color}
             fill="none"
             cornerRadius={strokeWidth / 2}
+            style={{ filter: tierGlow(color) }}
           >
             <Cell fill={color} />
           </RadialBar>
@@ -127,7 +133,7 @@ export const MiniATSGauge: React.FC<{
           cx={size / 2}
           cy={size / 2}
           r={size / 2 - 3}
-          stroke="#E5E7EB"
+          stroke="#2A2F38"
           strokeWidth={3}
           fill="none"
         />
@@ -142,6 +148,7 @@ export const MiniATSGauge: React.FC<{
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           className="transition-all duration-500 ease-out"
+          style={{ filter: tierGlow(color) }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -167,13 +174,13 @@ export const HorizontalATSGauge: React.FC<{
 
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <div className="relative flex-1" style={{ width, height }}>
+      <div className="relative flex-1" style={{ width, height, filter: tierGlow(color) }}>
         <div
           className="rounded-full overflow-hidden"
           style={{
             width: '100%',
             height: '100%',
-            backgroundColor: '#E5E7EB',
+            backgroundColor: '#2A2F38',
           }}
         >
           <div
