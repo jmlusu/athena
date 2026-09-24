@@ -10,6 +10,7 @@
     "preinstall": "npx --yes corepack enable",
     "build": "pnpm --filter athena-frontend run build",
     "dev": "pnpm --filter athena-frontend run dev",
+    "dev:preview": "bash scripts/dev-preview.sh",
     "lint": "pnpm --filter athena-frontend run lint",
     "test": "pnpm --filter athena-frontend run test"
   }

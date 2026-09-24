@@ -64,10 +64,11 @@ def security_headers() -> dict[str, str]:
     headers = {
         "Content-Security-Policy": csp,
         "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
         "Referrer-Policy": "strict-origin-when-cross-origin",
         "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
     }
+    if not is_cloud_preview:
+        headers["X-Frame-Options"] = "DENY"
     if hsts_max_age > 0:
         headers["Strict-Transport-Security"] = f"max-age={hsts_max_age}; includeSubDomains"
     return headers
