@@ -64,7 +64,7 @@ jobs:
         continue-on-error: true
         run: |
           set +e
-          uv run ruff check . 2>&1 | tee /tmp/ruff-report.txt
+          uv run ruff check . --output-format=concise 2>&1 | tee /tmp/ruff-report.txt
           exit ${PIPESTATUS[0]}
 
       - name: Mypy (full)
