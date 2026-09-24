@@ -15,11 +15,10 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@/lib/athena/*": ["src/lib/athena/*"],
-      "@/components/athena/*": ["src/components/athena/*"]
+      "@/*": ["./src/*"],
+      "@/lib/athena/*": ["./src/lib/athena/*"],
+      "@/components/athena/*": ["./src/components/athena/*"]
     }
   },
   "include": ["src"]
