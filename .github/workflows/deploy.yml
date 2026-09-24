@@ -1,0 +1,36 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Oracle Cloud
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ${{ vars.OCI_USER }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            cd "${{ vars.OCI_REPO_DIR }}"
+            git fetch --prune origin
+            git checkout main
+            git pull --ff-only origin main
+            bash deploy/oci-deploy.sh
