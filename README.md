@@ -38,6 +38,24 @@ pnpm install
 pnpm dev
 ```
 
+#### AI Studio / Cloud Preview
+
+When running in AI Studio or a cloud sandbox, the app must be framed by `*.google.com`. Use the bundled preview launcher:
+
+```bash
+# From repo root
+pnpm dev:preview
+# or
+bash scripts/dev-preview.sh
+```
+
+What it does:
+- Sets `AISTUDIO_PREVIEW=true`, listens on `0.0.0.0`, and waits for the backend health check.
+- Backend CSP omits `X-Frame-Options` and adds `frame-ancestors 'self' https://*.google.com https://*.aistudio.google.com`.
+- Frontend runs with `HOST=0.0.0.0`, `PORT=1111` (override with `FRONTEND_PORT`), and proxies `/api/v1/athena` to the backend.
+- For local development, use `pnpm dev` (default strict framing: `X-Frame-Options: DENY` and `frame-ancestors 'none'`).
+```
+
 ### Docker
 
 ```bash
