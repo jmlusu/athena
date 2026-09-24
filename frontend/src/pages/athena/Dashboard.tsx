@@ -47,12 +47,14 @@ export const AthenaDashboard: React.FC = () => {
         getScrapingStats(),
       ]);
 
+      const jobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : [];
+
       setStats(statsData);
-      setJobs(jobsData.jobs);
-      setRecentJobs(jobsData.jobs.slice(0, 5));
+      setJobs(jobs);
+      setRecentJobs(jobs.slice(0, 5));
 
       // Calculate ATS score distribution
-      const atsScores = jobsData.jobs.filter(j => j.ats_score !== undefined).map(j => j.ats_score!);
+      const atsScores = jobs.filter(j => j.ats_score !== undefined).map(j => j.ats_score!);
       if (atsScores.length > 0) {
         const distribution = calculateATSDistribution(atsScores);
         setAtsDistribution(distribution);
@@ -60,7 +62,7 @@ export const AthenaDashboard: React.FC = () => {
 
       // Calculate match tier distribution
       const tierDist: Record<string, number> = {};
-      jobsData.jobs.forEach(job => {
+      jobs.forEach(job => {
         if (job.match_tier) {
           tierDist[job.match_tier] = (tierDist[job.match_tier] || 0) + 1;
         }

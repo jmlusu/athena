@@ -120,7 +120,7 @@ export const JobList: React.FC = () => {
           <div>
             <h1 className="font-display font-black text-2xl sm:text-3xl text-ls-navy">Job Search</h1>
             <p className="font-body text-sm text-ls-grey-dark mt-1">
-              {total} job{total !== 1 ? 's' : ''} found • Discover and match opportunities
+              {total ?? 0} job{total !== 1 ? 's' : ''} found • Discover and match opportunities
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -326,7 +326,7 @@ export const JobList: React.FC = () => {
             <Loader2 className="w-8 h-8 animate-spin text-ls-red" aria-hidden="true" />
             <span className="ml-3 font-body text-ls-grey-dark">Loading jobs...</span>
           </div>
-        ) : jobs.length === 0 ? (
+        ) : (jobs ?? []).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
             <div className="w-16 h-16 sunken rounded-full flex items-center justify-center mb-4">
               <Search className="w-8 h-8 text-ls-grey-light-text" aria-hidden="true" />
@@ -349,8 +349,8 @@ export const JobList: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-white/[0.07]">
               <p className="font-body text-sm text-ls-grey-dark">
                 Showing <span className="font-bold text-ls-navy">{((page - 1) * pageSize) + 1}</span>–
-                <span className="font-bold text-ls-navy">{Math.min(page * pageSize, total)}</span>
-                of <span className="font-bold text-ls-navy">{total.toLocaleString()}</span> jobs
+                <span className="font-bold text-ls-navy">{Math.min(page * pageSize, total ?? 0)}</span>
+                of <span className="font-bold text-ls-navy">{(total ?? 0).toLocaleString()}</span> jobs
               </p>
               <div className="flex items-center gap-2">
                 <select
@@ -368,7 +368,7 @@ export const JobList: React.FC = () => {
 
             {/* Job Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="list" aria-label="Job listings">
-              {jobs.map((job) => (
+              {(jobs ?? []).map((job) => (
                 <JobCard
                   key={job.id}
                   job={job}
@@ -448,7 +448,7 @@ export const JobList: React.FC = () => {
 
               {/* Requirements & Responsibilities */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {selectedJob.requirements.length > 0 && (
+                {(selectedJob.requirements?.length ?? 0) > 0 && (
                   <section>
                     <h3 className="font-display font-bold text-base text-ls-navy mb-3 flex items-center gap-2">
                       <ChevronDown className="w-4 h-4 text-ls-red" />
@@ -465,7 +465,7 @@ export const JobList: React.FC = () => {
                   </section>
                 )}
 
-                {selectedJob.responsibilities.length > 0 && (
+                {(selectedJob.responsibilities?.length ?? 0) > 0 && (
                   <section>
                     <h3 className="font-display font-bold text-base text-ls-navy mb-3 flex items-center gap-2">
                       <ChevronDown className="w-4 h-4 text-ls-cyan" />

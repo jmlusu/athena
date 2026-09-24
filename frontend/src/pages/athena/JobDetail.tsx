@@ -46,7 +46,7 @@ export const JobDetail: React.FC = () => {
       setJob(jobData);
       try {
         const profiles = await listProfiles();
-        if (profiles.length > 0) {
+        if ((profiles?.length ?? 0) > 0) {
           const atsData = await getATSScore(id, profiles[0].id);
           setAtsScore(atsData);
         }
@@ -176,7 +176,7 @@ export const JobDetail: React.FC = () => {
 
           {/* Requirements & Responsibilities */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {job.requirements.length > 0 && (
+            {(job.requirements?.length ?? 0) > 0 && (
               <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6">
                 <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
                   <Check className="w-5 h-5 text-emerald-400" />
@@ -193,7 +193,7 @@ export const JobDetail: React.FC = () => {
               </section>
             )}
 
-            {job.responsibilities.length > 0 && (
+            {(job.responsibilities?.length ?? 0) > 0 && (
               <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6">
                 <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-ls-cyan" />
@@ -212,7 +212,7 @@ export const JobDetail: React.FC = () => {
           </div>
 
           {/* Benefits */}
-          {job.benefits.length > 0 && (
+          {(job.benefits?.length ?? 0) > 0 && (
             <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6">
               <h2 className="font-display font-bold text-lg text-ls-navy mb-4 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-amber-400" />

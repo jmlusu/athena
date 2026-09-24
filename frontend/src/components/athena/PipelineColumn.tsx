@@ -146,7 +146,7 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
           </span>
         </div>
         <span className="readout font-bold text-lg text-ls-grey-dark">
-          {jobs.length}
+          {(jobs ?? []).length}
         </span>
       </div>
 
@@ -156,7 +156,7 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
         role="list"
         aria-label={`${label} column`}
       >
-        {jobs.map((job, index) => (
+        {(jobs ?? []).map((job, index) => (
           <div
             key={job.id}
             className="relative"
@@ -189,7 +189,7 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
         ))}
 
         {/* Empty state / Add job trigger */}
-        {jobs.length === 0 && !showAddForm && (
+        {(jobs ?? []).length === 0 && !showAddForm && (
           <div role="listitem">
             <button
               onClick={() => setShowAddForm(true)}
@@ -237,7 +237,7 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
       {/* Column footer actions */}
       <div className="px-4 py-3 border-t border-white/7 flex items-center justify-between">
         <span className="font-body text-xs text-ls-grey-light-text">
-          {jobs.length} job{jobs.length !== 1 ? 's' : ''}
+          {(jobs ?? []).length} job{(jobs ?? []).length !== 1 ? 's' : ''}
         </span>
       </div>
     </div>

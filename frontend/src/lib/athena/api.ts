@@ -38,6 +38,12 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return response.json();
 }
 
+let jobsShapeWarned = false;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 // Job endpoints
 export async function listJobs(filters: JobFilter = {}): Promise<JobListResponse> {
   const params = new URLSearchParams();
@@ -46,7 +52,34 @@ export async function listJobs(filters: JobFilter = {}): Promise<JobListResponse
       params.append(key, String(value));
     }
   });
-  return fetchJson<JobListResponse>(`${API_BASE}/jobs?${params.toString()}`);
+  const url = `${API_BASE}/jobs?${params.toString()}`;
+  const body = await fetchJson<unknown>(url);
+  const jobs: Job[] = Array.isArray(body)
+    ? body
+    : isPlainObject(body) && Array.isArray(body.jobs)
+      ? body.jobs
+      : [];
+  const total = isPlainObject(body) && typeof body.total === 'number' ? body.total : jobs.length;
+  const limit = isPlainObject(body) && typeof body.limit === 'number'
+    ? body.limit
+    : typeof filters.limit === 'number'
+      ? filters.limit
+      : jobs.length;
+  const offset = isPlainObject(body) && typeof body.offset === 'number'
+    ? body.offset
+    : typeof filters.offset === 'number'
+      ? filters.offset
+      : 0;
+  const canonical = isPlainObject(body)
+    && Array.isArray(body.jobs)
+    && typeof body.total === 'number'
+    && typeof body.limit === 'number'
+    && typeof body.offset === 'number';
+  if (!canonical && import.meta.env.DEV && !jobsShapeWarned) {
+    jobsShapeWarned = true;
+    console.warn(`listJobs: unexpected response shape from ${url}`, body);
+  }
+  return { jobs, total, limit, offset };
 }
 
 export async function getJob(jobId: string): Promise<Job> {

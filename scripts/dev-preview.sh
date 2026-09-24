@@ -52,6 +52,21 @@ until curl -fsS "$base/health" >/dev/null 2>&1; do
 done
 echo "Backend healthy at $base/health"
 
+# Shape sanity check — the AI Studio preview environment can serve HTTP 200
+# with a body that lacks the `jobs` key, which white-screens the /jobs route.
+# Surface it up front so the next engineer sees it immediately instead of
+# having to curl manually.
+echo "Sanity-checking /api/v1/athena/jobs shape..."
+jobs_body=$(curl -fsS "$base/api/v1/athena/jobs?limit=1" 2>/dev/null || echo "")
+if echo "$jobs_body" | grep -q '"jobs"'; then
+  echo "jobs endpoint shape OK (contains a 'jobs' key)"
+else
+  echo "WARNING: /api/v1/athena/jobs returned a body without a 'jobs' key." >&2
+  echo "         The /jobs route will white-screen. Confirm the proxy target" >&2
+  echo "         ($base) is serving Athena's backend, not another process." >&2
+  echo "         Body: ${jobs_body}" >&2
+fi
+
 echo "Starting athena frontend on :${FRONTEND_PORT} (proxying /api/v1/athena -> ${base})..."
 (
   cd "$ROOT_DIR/frontend"
