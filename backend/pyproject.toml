@@ -79,16 +79,22 @@ allow_redefinition = false
 local_partial_types = true
 explicit_package_bases = true
 namespace_packages = true
+exclude = [
+    "src/athena/ai/providers",
+]
 
 [[tool.mypy.overrides]]
 module = [
     "athena.api.routes",
+    "athena.api.ai_routes",
     "athena.scrapers.*",
     "athena.automation.*",
     "athena.documents.*",
     "athena.ats.*",
     "athena.matching.*",
     "athena.scheduler.*",
+    "athena.ai.*",
+    "athena.ai.providers.*",
 ]
 ignore_missing_imports = true
 
