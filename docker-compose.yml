@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: athena-backend
+    environment:
+      - ATHENA_API_KEY=${ATHENA_API_KEY:-dev-admin-key}
+      - ATHENA_CORS_ORIGINS=${ATHENA_CORS_ORIGINS:-http://localhost:8530,http://127.0.0.1:8530}
+      - ATHENA_AUTH_MODE=api_key
+      - ATHENA_RATE_LIMIT=${ATHENA_RATE_LIMIT:-100}
+      - ATHENA_DATA_DIR=/app/company/athena
+      - ATHENA_HITL_EXTERNAL=false
+      - ATHENA_LLM_PROVIDER=
+      - ATHENA_SCHEDULER_AUTOSTART=${ATHENA_SCHEDULER_AUTOSTART:-true}
+      - ATHENA_DEFAULT_SCRAPE_QUERY=${ATHENA_DEFAULT_SCRAPE_QUERY:-software engineer}
+      - ATHENA_DEFAULT_SCRAPE_LOCATION=${ATHENA_DEFAULT_SCRAPE_LOCATION:-}
+      - ATHENA_DEFAULT_SCRAPE_MAX=${ATHENA_DEFAULT_SCRAPE_MAX:-50}
+      - AISTUDIO_PREVIEW=${AISTUDIO_PREVIEW:-false}
+      - HOST=${HOST:-0.0.0.0}
+      - PORT=${PORT:-8000}
+    volumes:
+      - athena_data:/app/company/athena
+    ports:
+      - "8520:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - athena-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        - VITE_ATHENA_API_KEY=${ATHENA_API_KEY:-dev-admin-key}
+    container_name: athena-frontend
+    environment:
+      - AISTUDIO_PREVIEW=${AISTUDIO_PREVIEW:-false}
+    ports:
+      - "8530:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - athena-network
+
+volumes:
+  athena_data:
+
+networks:
+  athena-network:
+    driver: bridge
