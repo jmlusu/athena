@@ -120,6 +120,7 @@ def job_to_opportunity(job: Job, profile_data: Optional[dict] = None) -> dict[st
 
     # Map status
     from athena.models.status_mapping import job_to_pipeline_status
+
     pipeline_status = job_to_pipeline_status(job.status)
 
     opp = {
@@ -143,7 +144,9 @@ def job_to_opportunity(job: Job, profile_data: Optional[dict] = None) -> dict[st
         "dehumanizedPitch": job.metadata.get("dehumanized_pitch") if job.metadata else None,
         "autoCreatedDocs": {
             "hasResume": bool(job.metadata.get("tailored_resume_path")) if job.metadata else False,
-            "hasCoverLetter": bool(job.metadata.get("tailored_cover_letter_path")) if job.metadata else False,
+            "hasCoverLetter": bool(job.metadata.get("tailored_cover_letter_path"))
+            if job.metadata
+            else False,
             "hasExecutiveSummary": False,
             "hasProposal": False,
         },

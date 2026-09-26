@@ -66,7 +66,7 @@ class GeminiProvider(AthenaAIProvider):
             return await self._fallback.score_ats(request)
 
         prompt = f"""You are an elite Applicant Tracking System (ATS) algorithmic evaluator and executive hiring partner.
-Analyze this {request.item_type or 'job'} listing against the applicant profile:
+Analyze this {request.item_type or "job"} listing against the applicant profile:
 
 TARGET ROLE / CONSULTANCY:
 Title: {request.job_title}
@@ -133,11 +133,11 @@ Return strict JSON matching this schema:
 Tailor the applicant's resume specifically for this opportunity:
 
 JOB/CONSULTANCY:
-Title: {job.get('title')}
-Company/Client: {job.get('company')}
-Location: {job.get('location')}
-Description: {job.get('description')}
-Required Skills: {json.dumps(job.get('requirements', []))}
+Title: {job.get("title")}
+Company/Client: {job.get("company")}
+Location: {job.get("location")}
+Description: {job.get("description")}
+Required Skills: {json.dumps(job.get("requirements", []))}
 
 APPLICANT RAW BACKGROUND:
 {json.dumps(profile or {})}
@@ -203,11 +203,11 @@ Return JSON with this structure:
 Generate a tailored {doc_type} for:
 
 TARGET:
-Title: {job.get('title')}
-Company: {job.get('company')}
-Location: {job.get('location')}
-Description: {job.get('description')}
-Requirements: {json.dumps(job.get('requirements', []))}
+Title: {job.get("title")}
+Company: {job.get("company")}
+Location: {job.get("location")}
+Description: {job.get("description")}
+Requirements: {json.dumps(job.get("requirements", []))}
 
 CANDIDATE PROFILE:
 {json.dumps(profile or {})}
@@ -261,7 +261,7 @@ Keep it direct, engaging, and professional.
 ORIGINAL TEXT:
 {request.text}
 
-CONTEXT: {request.context or 'Job application / Cover letter'}
+CONTEXT: {request.context or "Job application / Cover letter"}
 
 Return JSON:
 {{
@@ -291,9 +291,9 @@ Return JSON:
             return await self._fallback.synthesize_listings(request)
 
         prompt = f"""Generate 4 realistic and high-precision current job/consultancy listings matching:
-Target location filter: {request.location_filter or 'Lilongwe, Malawi & International Remote'}
-Category: {request.search_type or 'Jobs and Consultancies'}
-Target keywords: {request.keywords or 'Technology, Program Management, Operations, Public Health, Software, Finance'}
+Target location filter: {request.location_filter or "Lilongwe, Malawi & International Remote"}
+Category: {request.search_type or "Jobs and Consultancies"}
+Target keywords: {request.keywords or "Technology, Program Management, Operations, Public Health, Software, Finance"}
 Applicant skills: {json.dumps(request.resume_skills or [])}
 
 Include platforms such as: "LinkedIn", "Upwork", "ReliefWeb/UN Malawi", "Corporate Career Portal", "Devex Malawi".
@@ -340,7 +340,9 @@ Return strict JSON:
     async def dispatch_n8n(self, request: N8nDispatchRequest) -> N8nDispatchResponse:
         return await self._fallback.dispatch_n8n(request)
 
-    async def submit_application(self, request: SubmitApplicationRequest) -> SubmitApplicationResponse:
+    async def submit_application(
+        self, request: SubmitApplicationRequest
+    ) -> SubmitApplicationResponse:
         return await self._fallback.submit_application(request)
 
     async def health_check(self) -> dict[str, Any]:

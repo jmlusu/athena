@@ -1,1 +1,1 @@
-﻿"""AI Studio adapter package."""
+"""AI Studio adapter package."""

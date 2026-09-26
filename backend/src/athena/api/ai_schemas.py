@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 class ATSScoreRequest(BaseModel):
     """Request for AI-powered ATS scoring."""
+
     job_title: str
     company: str
     description: str
@@ -19,6 +20,7 @@ class ATSScoreRequest(BaseModel):
 
 class ATSScoreResponse(BaseModel):
     """Response from AI-powered ATS scoring."""
+
     ats_score: int = Field(ge=0, le=100)
     match_category: Literal["CRITICAL_MATCH", "FLAGGED_REVIEW", "STANDARD"]
     matched_skills: list[str]
@@ -30,6 +32,7 @@ class ATSScoreResponse(BaseModel):
 
 class TailorResumeRequest(BaseModel):
     """Request for resume tailoring."""
+
     job: dict[str, Any]
     applicant_profile: dict[str, Any]
     column_layout: Literal["one-column", "two-column"] = "two-column"
@@ -75,6 +78,7 @@ class TailorResumeResponse(BaseModel):
 
 class TailorDocumentRequest(BaseModel):
     """Request for document tailoring (cover letter, proposal, executive summary)."""
+
     doc_type: Literal["cover-letter", "executive-summary", "consultancy-proposal"]
     job: dict[str, Any]
     applicant_profile: dict[str, Any]
@@ -107,6 +111,7 @@ class TailorDocumentResponse(BaseModel):
 
 class DehumanizeRequest(BaseModel):
     """Request for text dehumanization."""
+
     text: str
     context: Optional[str] = "Job application / Cover letter"
 
@@ -119,7 +124,10 @@ class DehumanizeResponse(BaseModel):
 
 class ScrapeLiveRequest(BaseModel):
     """Request for live job scraping via AI synthesis."""
-    location_filter: Literal["lilongwe-local", "lilongwe-remote", "international-remote", "all"] = "all"
+
+    location_filter: Literal["lilongwe-local", "lilongwe-remote", "international-remote", "all"] = (
+        "all"
+    )
     search_type: Literal["jobs", "consultancies", "all"] = "all"
     keywords: Optional[str] = None
     resume_skills: list[str] = []
@@ -148,6 +156,7 @@ class ScrapeLiveResponse(BaseModel):
 
 class N8nDispatchRequest(BaseModel):
     """Request to dispatch n8n webhook."""
+
     event_type: Optional[str] = "JOB_MATCH_HIGH_ATS"
     payload: dict[str, Any] = {}
     webhook_url: Optional[str] = None
@@ -176,6 +185,7 @@ class N8nDispatchResponse(BaseModel):
 
 class SubmitApplicationRequest(BaseModel):
     """Request for application submission with human authorization."""
+
     application_id: str
     job_title: str
     company: str
@@ -199,6 +209,7 @@ class SubmitApplicationResponse(BaseModel):
 
 class AIHealthResponse(BaseModel):
     """Health check for AI provider."""
+
     status: str
     provider: str
     has_api_key: bool

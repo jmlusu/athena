@@ -99,8 +99,8 @@ class FallbackProvider(AthenaAIProvider):
         resume = {
             "fullName": full_name,
             "title": job.get("title")
-                and f"Principal Consultant & {job['title']}"
-                or "Senior Technology & Operations Specialist",
+            and f"Principal Consultant & {job['title']}"
+            or "Senior Technology & Operations Specialist",
             "contact": {
                 "email": profile.get("email", "chifuniro.phiri@consult-mw.com"),
                 "phone": "+265 99 412 8890",
@@ -151,7 +151,11 @@ class FallbackProvider(AthenaAIProvider):
                     "year": "2015",
                 },
             ],
-            "certifications": ["PMP Certified", "AWS Certified Cloud Practitioner", "Agile Scrum Master"],
+            "certifications": [
+                "PMP Certified",
+                "AWS Certified Cloud Practitioner",
+                "Agile Scrum Master",
+            ],
             "layout": request.column_layout,
         }
 
@@ -234,8 +238,16 @@ class FallbackProvider(AthenaAIProvider):
                     f"with {job.get('company', 'the organization')}."
                 )
 
-            req0 = job.get("requirements", ["technical execution"])[0] if job.get("requirements") else "technical execution"
-            req1 = job.get("requirements", ["stakeholder management"])[1] if len(job.get("requirements", [])) > 1 else "stakeholder management"
+            req0 = (
+                job.get("requirements", ["technical execution"])[0]
+                if job.get("requirements")
+                else "technical execution"
+            )
+            req1 = (
+                job.get("requirements", ["stakeholder management"])[1]
+                if len(job.get("requirements", [])) > 1
+                else "stakeholder management"
+            )
 
             document = {
                 "title": f"Application for {job.get('title', 'Open Position')}",
@@ -304,7 +316,13 @@ class FallbackProvider(AthenaAIProvider):
                 scope="lilongwe-local",
                 platform="ReliefWeb",
                 description="Lead the technical oversight and data synchronization pipeline for digital inventory and national public health indicators.",
-                requirements=["Systems Architecture", "PostgreSQL / DHIS2", "Monitoring & Evaluation", "Malawi Ministry Liaison", "Data Pipelines"],
+                requirements=[
+                    "Systems Architecture",
+                    "PostgreSQL / DHIS2",
+                    "Monitoring & Evaluation",
+                    "Malawi Ministry Liaison",
+                    "Data Pipelines",
+                ],
                 salary_or_budget="$38,000 - $48,000 USD / yr",
                 deadline="2026-10-15",
                 ats_score=94,
@@ -319,7 +337,14 @@ class FallbackProvider(AthenaAIProvider):
                 scope="lilongwe-remote",
                 platform="LinkedIn",
                 description="Build robust fintech merchant settlement engines and mobile money integrations (Airtel Money, TNM Mpamba, Bank APIs).",
-                requirements=["React", "TypeScript", "Node.js", "Payment Gateways", "REST APIs", "Fintech Security"],
+                requirements=[
+                    "React",
+                    "TypeScript",
+                    "Node.js",
+                    "Payment Gateways",
+                    "REST APIs",
+                    "Fintech Security",
+                ],
                 salary_or_budget="MWK 3,200,000 - 4,500,000 / month",
                 deadline="2026-10-02",
                 ats_score=91,
@@ -334,7 +359,13 @@ class FallbackProvider(AthenaAIProvider):
                 scope="international-remote",
                 platform="Corporate",
                 description="Coordinate async development teams and infrastructure automation pipelines across 6 regional timezone nodes.",
-                requirements=["Distributed Systems", "Cloud Infrastructure", "CI/CD Workflows", "Async Team Management", "Technical Documentation"],
+                requirements=[
+                    "Distributed Systems",
+                    "Cloud Infrastructure",
+                    "CI/CD Workflows",
+                    "Async Team Management",
+                    "Technical Documentation",
+                ],
                 salary_or_budget="$7,500 - $9,200 USD / month",
                 deadline="2026-10-20",
                 ats_score=88,
@@ -349,7 +380,12 @@ class FallbackProvider(AthenaAIProvider):
                 scope="lilongwe-local",
                 platform="Devex",
                 description="Draft institutional technical guidelines and regulatory policy recommendations for sovereign digital identity and citizen services.",
-                requirements=["Public Sector Advisory", "Policy Drafting", "Digital Identity Frameworks", "Executive Stakeholder Engagement"],
+                requirements=[
+                    "Public Sector Advisory",
+                    "Policy Drafting",
+                    "Digital Identity Frameworks",
+                    "Executive Stakeholder Engagement",
+                ],
                 salary_or_budget="$18,500 USD (Fixed Consultancy Deliverable)",
                 deadline="2026-10-08",
                 ats_score=95,
@@ -364,7 +400,13 @@ class FallbackProvider(AthenaAIProvider):
                 scope="international-remote",
                 platform="Upwork",
                 description="Design multi-step n8n automation pipelines bridging CRM, document generation, and webhook triggers for international NGO partners.",
-                requirements=["n8n Architecture", "Webhooks & REST APIs", "Workflow Automation", "JavaScript/TypeScript", "Data Verification"],
+                requirements=[
+                    "n8n Architecture",
+                    "Webhooks & REST APIs",
+                    "Workflow Automation",
+                    "JavaScript/TypeScript",
+                    "Data Verification",
+                ],
                 salary_or_budget="$65 - $95 USD / hr ($6,000 Milestone Budget)",
                 deadline="2026-09-30",
                 ats_score=92,
@@ -379,7 +421,13 @@ class FallbackProvider(AthenaAIProvider):
                 scope="lilongwe-local",
                 platform="LinkedIn",
                 description="Manage end-to-end site rollout, supplier contracts, and regulatory approvals with ESCOM and MERA.",
-                requirements=["Project Management (PMP)", "Regulatory Compliance", "Supplier Negotiation", "Budgeting", "Field Coordination"],
+                requirements=[
+                    "Project Management (PMP)",
+                    "Regulatory Compliance",
+                    "Supplier Negotiation",
+                    "Budgeting",
+                    "Field Coordination",
+                ],
                 salary_or_budget="MWK 2,800,000 / month",
                 deadline="2026-10-12",
                 ats_score=82,
@@ -394,7 +442,9 @@ class FallbackProvider(AthenaAIProvider):
         import random
 
         execution_id = f"n8n-exec-{int(datetime.utcnow().timestamp())}-{random.randint(1000, 9999)}"
-        webhook_url = request.webhook_url or "https://n8n.athena-ops.internal/webhook/athena-pipeline-trigger"
+        webhook_url = (
+            request.webhook_url or "https://n8n.athena-ops.internal/webhook/athena-pipeline-trigger"
+        )
 
         return N8nDispatchResponse(
             status="DISPATCHED",
@@ -406,15 +456,23 @@ class FallbackProvider(AthenaAIProvider):
                 {"node": "Webhook Ingress", "status": "success", "time_ms": 42},
                 {"node": "ATS Filter (>90 Trigger)", "status": "success", "time_ms": 18},
                 {"node": "Gemini Document Engine", "status": "success", "time_ms": 820},
-                {"node": "Applicant Notification (WhatsApp/Email)", "status": "queued", "time_ms": 15},
+                {
+                    "node": "Applicant Notification (WhatsApp/Email)",
+                    "status": "queued",
+                    "time_ms": 15,
+                },
             ],
             receipt=N8nReceipt(
-                items_handled=len(request.payload.get("items", [])) if request.payload.get("items") else 1,
+                items_handled=len(request.payload.get("items", []))
+                if request.payload.get("items")
+                else 1,
                 target_action=request.payload.get("action", "AUTO_GENERATE_DOCUMENTS"),
             ),
         )
 
-    async def submit_application(self, request: SubmitApplicationRequest) -> SubmitApplicationResponse:
+    async def submit_application(
+        self, request: SubmitApplicationRequest
+    ) -> SubmitApplicationResponse:
         """Generate receipt (no actual submission)."""
         import base64
         import random
@@ -422,8 +480,9 @@ class FallbackProvider(AthenaAIProvider):
         receipt_id = f"ATH-RCPT-{random.randint(100000, 999999)}"
         confirmation_hash = (
             "SHA256-"
-            + base64.b64encode(f"{request.application_id}:{request.applicant_name}:{datetime.utcnow().timestamp()}".encode())
-            .decode()[:16]
+            + base64.b64encode(
+                f"{request.application_id}:{request.applicant_name}:{datetime.utcnow().timestamp()}".encode()
+            ).decode()[:16]
         )
 
         return SubmitApplicationResponse(
@@ -436,7 +495,9 @@ class FallbackProvider(AthenaAIProvider):
             applicant_name=request.applicant_name,
             authorized_by=request.authorization_signature,
             authorized_at=request.authorized_at or datetime.utcnow(),
-            next_follow_up_date=(datetime.utcnow().replace(day=datetime.utcnow().day + 7)).strftime("%Y-%m-%d"),
+            next_follow_up_date=(datetime.utcnow().replace(day=datetime.utcnow().day + 7)).strftime(
+                "%Y-%m-%d"
+            ),
         )
 
     async def health_check(self) -> dict[str, Any]:

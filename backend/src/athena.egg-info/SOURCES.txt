@@ -7,10 +7,21 @@ src/athena.egg-info/SOURCES.txt
 src/athena.egg-info/dependency_links.txt
 src/athena.egg-info/requires.txt
 src/athena.egg-info/top_level.txt
+src/athena/adapters/__init__.py
+src/athena/adapters/ai_studio.py
+src/athena/ai/__init__.py
+src/athena/ai/providers/__init__.py
+src/athena/ai/providers/base.py
+src/athena/ai/providers/factory.py
+src/athena/ai/providers/fallback.py
+src/athena/ai/providers/gemini.py
 src/athena/api/__init__.py
+src/athena/api/ai_routes.py
+src/athena/api/ai_schemas.py
 src/athena/api/app.py
 src/athena/api/routes.py
 src/athena/api/schemas.py
+src/athena/api/server.py
 src/athena/ats/__init__.py
 src/athena/ats/keywords.py
 src/athena/ats/scorer.py
@@ -28,6 +39,7 @@ src/athena/matching/engine.py
 src/athena/models/__init__.py
 src/athena/models/enums.py
 src/athena/models/jobs.py
+src/athena/models/status_mapping.py
 src/athena/scheduler/__init__.py
 src/athena/scheduler/jobs.py
 src/athena/scrapers/__init__.py
@@ -36,6 +48,7 @@ src/athena/scrapers/consultancy.py
 src/athena/scrapers/lilongwe.py
 src/athena/scrapers/remote.py
 tests/test_athena_api.py
+tests/test_athena_job_actions.py
 tests/test_athena_matching.py
 tests/test_athena_scorer.py
 tests/test_athena_store.py

@@ -70,7 +70,9 @@ class AthenaAIProvider(ABC):
         ...
 
     @abstractmethod
-    async def submit_application(self, request: SubmitApplicationRequest) -> SubmitApplicationResponse:
+    async def submit_application(
+        self, request: SubmitApplicationRequest
+    ) -> SubmitApplicationResponse:
         """Generate submission receipt (no actual submission)."""
         ...
 
