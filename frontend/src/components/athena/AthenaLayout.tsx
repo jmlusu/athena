@@ -1,23 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
+  Compass,
   Briefcase,
   FileText,
+  CheckSquare,
+  Receipt,
+  Workflow,
+  User,
   BarChart2,
   Settings,
-  User,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
   Bell,
   Search,
-  Filter,
-  Download,
-  Upload,
-  Plus,
+  Globe,
+  MapPin,
+  Building,
+  Clock,
+  RotateCw,
+  Zap,
+  Sparkles,
+  AlertTriangle,
+  ShieldCheck,
+  CheckCircle2,
+  ExternalLink,
+  ArrowRight,
+  Sliders,
 } from 'lucide-react';
 import { cn } from '@/lib/athena/utils';
+import { ScopeFilter } from './ScopeFilter';
+import { CronCountdown } from './CronCountdown';
+import { AutomationControls } from './AutomationControls';
+
+export type NavView =
+  | 'dashboard'
+  | 'jobs'
+  | 'applications'
+  | 'documents'
+  | 'form_filler'
+  | 'receipts'
+  | 'n8n'
+  | 'profile'
+  | 'settings';
 
 interface AthenaLayoutProps {
   userProfile?: {
@@ -25,30 +52,73 @@ interface AthenaLayoutProps {
     email: string;
     avatar?: string;
   } | null;
+  cronState?: {
+    jobSecondsRemaining: number;
+    consultancySecondsRemaining: number;
+    lastJobRun: string;
+  };
+  onTriggerCronNow?: () => void;
+  automationSettings?: {
+    autoCreateThreshold: number;
+    flagThresholdMin: number;
+    flagThresholdMax: number;
+    autoCreateResumeCoverLetter: boolean;
+    autoCreateProposalExecSummary: boolean;
+    dehumanizeEnabled: boolean;
+    n8nWebhookUrl: string;
+    n8nActive: boolean;
+    soundAlerts: boolean;
+  };
+  onUpdateAutomationSettings?: (settings: Partial<AthenaLayoutProps['automationSettings']>) => void;
+  pendingAuthorizationsCount?: number;
 }
 
-const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard', icon: BarChart2 },
-  { path: '/jobs', label: 'Jobs', icon: Briefcase },
-  { path: '/applications', label: 'Applications', icon: FileText },
-  { path: '/analytics', label: 'Analytics', icon: BarChart2 },
-  { path: '/settings', label: 'Settings', icon: Settings },
+const NAV_ITEMS: { id: NavView; label: string; icon: React.ComponentType<{ className?: string }>; badge?: string }[] = [
+  { id: 'dashboard', label: 'Pipeline & Command', icon: Compass },
+  { id: 'jobs', label: 'Scraper & Discovery', icon: Briefcase, badge: 'Live' },
+  { id: 'documents', label: 'Pristine Document Studio', icon: FileText, badge: '1/2 Col' },
+  { id: 'form_filler', label: 'Online Forms & Sign-Off', icon: CheckSquare, badge: 'Auth' },
+  { id: 'receipts', label: 'Receipts & Follow-ups', icon: Receipt },
+  { id: 'n8n', label: 'n8n Workflow Nodes', icon: Workflow, badge: 'Plus' },
+  { id: 'profile', label: 'Applicant Skills & Profile', icon: User },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
-const RIGHT_SIDEBAR_TABS = [
-  { id: 'metrics', label: 'Metrics', icon: BarChart2 },
-  { id: 'filters', label: 'Filters', icon: Filter },
-  { id: 'actions', label: 'Actions', icon: Plus },
-];
-
-export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
+export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
+  userProfile,
+  cronState,
+  onTriggerCronNow,
+  automationSettings,
+  onUpdateAutomationSettings,
+  pendingAuthorizationsCount = 0,
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState<NavView>('dashboard');
+  const [selectedScope, setSelectedScope] = useState<'all' | 'lilongwe-local' | 'lilongwe-remote' | 'international-remote'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'job' | 'consultancy'>('all');
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
-  const [rightSidebarTab, setRightSidebarTab] = useState<'metrics' | 'filters' | 'actions'>('metrics');
   const [mobileLeftOpen, setMobileLeftOpen] = useState(false);
   const [mobileRightOpen, setMobileRightOpen] = useState(false);
+
+  // Sync currentView with route
+  useEffect(() => {
+    const path = location.pathname.replace('/athena', '') || '/dashboard';
+    const routeMap: Record<string, NavView> = {
+      '/dashboard': 'dashboard',
+      '/jobs': 'jobs',
+      '/applications': 'applications',
+      '/documents': 'documents',
+      '/form-filler': 'form_filler',
+      '/receipts': 'receipts',
+      '/n8n': 'n8n',
+      '/profile': 'profile',
+      '/settings': 'settings',
+    };
+    const view = routeMap[path] || 'dashboard';
+    setCurrentView(view);
+  }, [location.pathname]);
 
   // Close mobile sidebars on route change
   useEffect(() => {
@@ -56,171 +126,214 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
     setMobileRightOpen(false);
   }, [location.pathname]);
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
+  const handleNavigate = (view: NavView) => {
+    setCurrentView(view);
+    const pathMap: Record<NavView, string> = {
+      dashboard: '/athena/dashboard',
+      jobs: '/athena/jobs',
+      applications: '/athena/applications',
+      documents: '/athena/documents',
+      form_filler: '/athena/form-filler',
+      receipts: '/athena/receipts',
+      n8n: '/athena/n8n',
+      profile: '/athena/profile',
+      settings: '/athena/settings',
+    };
+    navigate(pathMap[view]);
+  };
+
+  const defaultCronState = {
+    jobSecondsRemaining: 14400,
+    consultancySecondsRemaining: 14400,
+    lastJobRun: 'Never',
+  };
+
+  const defaultAutomationSettings = {
+    autoCreateThreshold: 90,
+    flagThresholdMin: 80,
+    flagThresholdMax: 89,
+    autoCreateResumeCoverLetter: true,
+    autoCreateProposalExecSummary: true,
+    dehumanizeEnabled: true,
+    n8nWebhookUrl: 'https://n8n.athena-ops.internal/webhook/athena-pipeline-trigger',
+    n8nActive: false,
+    soundAlerts: false,
+  };
 
   return (
-    <div className="min-h-screen bg-ls-grey-light flex">
+    <div className="min-h-screen bg-bg flex flex-col font-body text-text selection:bg-accent selection:text-white">
       {/* Skip link for accessibility */}
-      <a href="#main-content" className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 px-4 py-2 bg-ls-red text-[#14161A] rounded-lg">
+      <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
 
-      {/* Left Sidebar - Main Navigation */}
-      <aside
-        className={cn(
-          'fixed left-0 top-0 z-40 h-screen bg-ls-white border-r border-white/7 flex flex-col transition-all duration-300 ease-in-out',
-          'lg:translate-x-0',
-          leftSidebarOpen ? 'w-64' : 'w-20',
-          !leftSidebarOpen && 'lg:w-20',
-          mobileLeftOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        )}
-        aria-label="Main navigation"
-      >
-        {/* Sidebar Header */}
-        <div className={cn('flex items-center justify-between p-4 border-b border-white/7', !leftSidebarOpen && 'justify-center')}>
-          {leftSidebarOpen && (
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-ls-red flex items-center justify-center flex-shrink-0">
-                <Briefcase className="w-5 h-5 text-ls-white" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="font-display font-bold text-lg text-ls-navy truncate">Athena</h1>
-                <p className="font-body text-[10px] text-ls-grey-light-text tracking-wider uppercase">Job Platform</p>
-              </div>
-            </div>
-          )}
-          {!leftSidebarOpen && (
-            <div className="w-9 h-9 rounded-lg bg-ls-red flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-ls-white" aria-hidden="true" />
-            </div>
-          )}
+      {/* Toast Notification (placeholder) */}
+      <div id="toast-container" className="fixed top-4 right-4 z-[800] flex flex-col gap-2" />
 
-          <button
-            onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-            className={cn(
-              'p-2 rounded-lg transition-colors lg:hidden tactile disabled:opacity-40',
-              'text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10'
-            )}
-            aria-label={leftSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-            aria-expanded={leftSidebarOpen}
-          >
-            {leftSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1" role="navigation" aria-label="Athena sections">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 border border-transparent',
-                'text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10',
-                isActive
-                  ? 'bg-ls-red/10 text-ls-red border-ls-red glow-amber'
-                  : '',
-                !leftSidebarOpen && 'justify-center px-2'
-              )}
-              aria-current={isActive(item.path) ? 'page' : undefined}
-              title={!leftSidebarOpen ? item.label : undefined}
-            >
-              <item.icon className={cn('w-5 h-5 flex-shrink-0', isActive(item.path) && 'text-ls-red')} aria-hidden="true" />
-              {leftSidebarOpen && <span className="font-body font-medium text-sm truncate">{item.label}</span>}
-            </NavLink>
-          ))}
-
-          {/* User profile at bottom */}
-          {leftSidebarOpen && userProfile && (
-            <div className="pt-4 border-t border-white/7 mt-auto">
-              <div className="flex items-center gap-3 px-3 py-2">
-                <div className="w-8 h-8 rounded-full bg-ls-red flex items-center justify-center text-ls-white font-display font-bold text-sm">
-                  {userProfile.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-body font-medium text-sm text-ls-navy truncate">{userProfile.name}</p>
-                  <p className="font-body text-[10px] text-ls-grey-light-text truncate">{userProfile.email}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </nav>
-
-        {/* Toggle button for desktop */}
-        <button
-          onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
+      {/* Main Structural Frame: Far-Left Sidebar + Fluid Center Body + Far-Right Sidebar */}
+      <div className="flex flex-1 w-full overflow-hidden">
+        {/* Far-Left Vertical Sidebar */}
+        <aside
           className={cn(
-            'absolute -right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full tactile disabled:opacity-40',
-            'bg-ls-white border border-white/10 raised',
-            'text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/5',
-            'lg:block hidden',
-            !leftSidebarOpen && 'rotate-180'
+            'w-68 min-h-screen bg-primary text-white border-r border-border flex flex-col justify-between shrink-0 select-none transition-all duration-300 lg:translate-x-0',
+            leftSidebarOpen ? 'w-68' : 'w-20 lg:w-20',
+            !leftSidebarOpen && 'lg:w-20',
+            mobileLeftOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+            'z-40'
           )}
-          aria-label={leftSidebarOpen ? 'Collapse navigation' : 'Expand navigation'}
-          aria-expanded={leftSidebarOpen}
+          aria-label="Main navigation"
         >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-      </aside>
-
-      {/* Mobile left sidebar overlay */}
-      {mobileLeftOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={() => setMobileLeftOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Main Content Area */}
-      <main
-        id="main-content"
-        className={cn(
-          'flex-1 flex flex-col min-w-0 transition-all duration-300',
-          leftSidebarOpen ? 'lg:ml-64' : 'lg:ml-20',
-          rightSidebarOpen ? 'lg:mr-80' : 'lg:mr-0'
-        )}
-        tabIndex={-1}
-      >
-        {/* Top Bar */}
-        <header className="sticky top-0 z-20 bg-ls-white/95 backdrop-blur-sm border-b border-white/7 raised">
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setMobileLeftOpen(true)}
-                className="lg:hidden p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 tactile disabled:opacity-40"
-                aria-label="Open navigation menu"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-
-              {/* Page title from route */}
-              <div className="hidden sm:block">
-                <h1 className="font-display font-bold text-xl text-ls-navy">
-                  {NAV_ITEMS.find(item => isActive(item.path))?.label || 'Athena'}
-                </h1>
-              </div>
+          <div className="flex-1 overflow-y-auto">
+            {/* Brand Header */}
+            <div className={cn('p-4 border-b border-border flex items-center justify-between', !leftSidebarOpen && 'justify-center')}>
+              {leftSidebarOpen && (
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-red-600 flex items-center justify-center text-white shadow-md font-brand font-bold text-base">
+                    A
+                  </div>
+                  <div className="min-w-0">
+                    <h1 className="font-brand font-bold tracking-wider text-white text-base leading-none truncate">
+                      ATHENA
+                    </h1>
+                    <span className="text-[10px] tracking-widest text-subtle uppercase font-mono">
+                      Auto Job & Consultancy
+                    </span>
+                  </div>
+                </div>
+              )}
+              {!leftSidebarOpen && (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-red-600 flex items-center justify-center text-white shadow-md font-brand font-bold text-base">
+                  A
+                </div>
+              )}
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" title="Engine Online" />
             </div>
 
+            {/* Search Scopes Quick Filters */}
+            {leftSidebarOpen && (
+              <ScopeFilter
+                selectedScope={selectedScope}
+                onSelectScope={setSelectedScope}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
+            )}
+
+            {/* Main Navigation */}
+            <nav className={cn('p-3 space-y-1', leftSidebarOpen ? '' : 'hidden')} role="navigation" aria-label="System modules">
+              <div className="text-[10px] font-semibold text-subtle uppercase tracking-wider mb-2 px-1">
+                System Modules
+              </div>
+              {NAV_ITEMS.map((item) => {
+                const isActive = currentView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNavigate(item.id)}
+                    className={cn(
+                      'w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      isActive
+                        ? 'bg-accent text-white shadow-sm font-semibold'
+                        : 'text-muted hover:bg-muted hover:text-text'
+                    )}
+                    title={!leftSidebarOpen ? item.label : undefined}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <item.icon className={cn('w-4 h-4', isActive ? 'text-white' : 'text-muted')} />
+                      {leftSidebarOpen && <span>{item.label}</span>}
+                    </div>
+                    {item.badge && leftSidebarOpen && (
+                      <span
+                        className={cn(
+                          'text-[9px] font-mono px-1.5 py-0.2 rounded',
+                          isActive ? 'bg-black/20 text-white' : 'bg-muted text-amber-500'
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* 4-Hour Cron Schedules Status Widget */}
+          {leftSidebarOpen && cronState && (
+            <CronCountdown
+              jobSecondsRemaining={cronState.jobSecondsRemaining}
+              consultancySecondsRemaining={cronState.consultancySecondsRemaining}
+              lastJobRun={cronState.lastJobRun}
+              onTriggerNow={onTriggerCronNow || (() => {})}
+            />
+          )}
+
+          {/* Collapsed brand footer */}
+          {!leftSidebarOpen && (
+            <div className="p-3 border-t border-border text-center text-[10px] text-subtle font-mono">
+              ATHENA v2.4
+            </div>
+          )}
+        </aside>
+
+        {/* Mobile left sidebar overlay */}
+        {mobileLeftOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+            onClick={() => setMobileLeftOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Center Fluid Application Canvas */}
+        <main
+          id="main-content"
+          className={cn(
+            'flex-1 min-w-0 overflow-y-auto min-h-screen flex flex-col transition-all duration-300',
+            leftSidebarOpen ? 'lg:ml-68' : 'lg:ml-20'
+          )}
+          tabIndex={-1}
+        >
+          {/* Top Application Bar */}
+          <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border px-6 py-3 flex items-center justify-between shadow-xs">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileLeftOpen(true)}
+              className="lg:hidden p-2 rounded-lg text-muted hover:text-text hover:bg-muted tactile disabled:opacity-40"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
+            {/* Breadcrumb & Scope Pill */}
+            <div className="flex items-center gap-2 text-xs flex-1">
+              <span className="font-brand font-bold text-sm tracking-wider text-text">
+                ATHENA
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-subtle" />
+              <span className="font-semibold text-muted capitalize">
+                {NAV_ITEMS.find((i) => i.id === currentView)?.label || currentView}
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-subtle" />
+              <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-accent border border-orange-200 font-medium">
+                Scope: {selectedScope === 'all' ? 'Lilongwe & Global' : selectedScope}
+              </span>
+            </div>
+
+            {/* Quick Actions & Status */}
             <div className="flex items-center gap-3">
-              {/* Search */}
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ls-grey-light-text" aria-hidden="true" />
-                <input
-                  type="search"
-                  placeholder="Search jobs, companies..."
-                  className="w-64 pl-10 pr-4 py-2 sunken rounded-lg border border-white/8 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red"
-                  aria-label="Search"
-                />
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted font-mono bg-muted px-2.5 py-1 rounded-md border border-border">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Lilongwe Gateway: Active</span>
               </div>
 
-              {/* Notifications */}
               <button
-                className="relative p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors tactile disabled:opacity-40"
-                aria-label="Notifications"
+                onClick={() => handleNavigate('documents')}
+                className="px-3 py-1.5 bg-primary hover:bg-navy text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
               >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-ls-red rounded-full glow-amber" aria-hidden="true" />
+                <FileText className="w-3.5 h-3.5 text-accent" />
+                <span className="hidden sm:inline">Pristine Document Studio</span>
+                <span className="sm:hidden">Studio</span>
               </button>
 
               {/* Right sidebar toggle */}
@@ -228,155 +341,69 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({ userProfile }) => {
                 onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
                 className={cn(
                   'p-2 rounded-lg transition-colors tactile disabled:opacity-40',
-                  'text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10',
-                  rightSidebarOpen && 'bg-ls-red/10 text-ls-red'
+                  'text-muted hover:text-text hover:bg-muted',
+                  rightSidebarOpen && 'bg-muted text-text'
                 )}
                 aria-label={rightSidebarOpen ? 'Close right panel' : 'Open right panel'}
                 aria-expanded={rightSidebarOpen}
               >
-                <Filter className="w-5 h-5" />
+                <Sliders className="w-5 h-5" />
               </button>
 
               {/* Mobile right sidebar toggle */}
               <button
                 onClick={() => setMobileRightOpen(true)}
-                className="lg:hidden p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 tactile disabled:opacity-40"
-                aria-label="Open filters panel"
+                className="lg:hidden p-2 rounded-lg text-muted hover:text-text hover:bg-muted tactile disabled:opacity-40"
+                aria-label="Open automation panel"
               >
-                <Filter className="w-5 h-5" />
+                <Sliders className="w-5 h-5" />
               </button>
             </div>
+          </header>
+
+          {/* Body Content Container */}
+          <div className="p-6 max-w-7xl w-full mx-auto space-y-6 flex-1">
+            <Outlet />
           </div>
-        </header>
+        </main>
 
-        {/* Page Content */}
-        <div className="flex-1 overflow-auto p-4 sm:p-6">
-          <Outlet />
-        </div>
-      </main>
+        {/* Far-Right Vertical Sidebar: Autonomous Rules, Sign-Off Gate, Aggregator Status */}
+        <aside
+          className={cn(
+            'w-72 min-h-screen bg-primary text-white border-l border-border flex flex-col justify-between shrink-0 select-none overflow-y-auto transition-all duration-300 lg:translate-x-0',
+            rightSidebarOpen ? 'w-72' : 'w-0 lg:w-0 overflow-hidden',
+            !rightSidebarOpen && 'lg:w-0 overflow-hidden',
+            mobileRightOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0',
+            'z-40'
+          )}
+          aria-label="Autonomous controls"
+        >
+          {rightSidebarOpen && automationSettings && (
+            <AutomationControls
+              settings={automationSettings}
+              onUpdateSettings={onUpdateAutomationSettings || (() => {})}
+              pendingCount={pendingAuthorizationsCount}
+            />
+          )}
+          {rightSidebarOpen && userProfile && (
+            <div className="p-3 border-t border-border bg-muted/50 flex items-center justify-between text-[10px] text-subtle">
+              <span className="flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Human Protected
+              </span>
+              <span className="font-mono">ATHENA v2.4</span>
+            </div>
+          )}
+        </aside>
 
-      {/* Right Sidebar - Metrics/Filters/Actions */}
-      <aside
-        className={cn(
-          'fixed right-0 top-0 z-40 h-screen bg-ls-white border-l border-white/7 flex flex-col transition-all duration-300 ease-in-out',
-          'lg:translate-x-0',
-          rightSidebarOpen ? 'w-80' : 'w-0 lg:w-0',
-          !rightSidebarOpen && 'lg:w-0 overflow-hidden',
-          mobileRightOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'
+        {/* Mobile right sidebar overlay */}
+        {mobileRightOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+            onClick={() => setMobileRightOpen(false)}
+            aria-hidden="true"
+          />
         )}
-        aria-label="Metrics and filters"
-      >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/7">
-          <h2 className="font-display font-bold text-lg text-ls-navy">Panel</h2>
-          <button
-            onClick={() => setRightSidebarOpen(false)}
-            className="p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors tactile disabled:opacity-40 lg:hidden"
-            aria-label="Close panel"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="flex border-b border-white/7 px-2" role="tablist" aria-label="Right panel tabs">
-          {RIGHT_SIDEBAR_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setRightSidebarTab(tab.id as 'metrics' | 'filters' | 'actions')}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-t-lg transition-all duration-150 disabled:opacity-40',
-                'text-ls-grey-dark hover:text-ls-red',
-                rightSidebarTab === tab.id
-                  ? 'bg-ls-red/10 text-ls-red border-b-2 border-ls-red font-medium glow-amber'
-                  : 'font-normal',
-                rightSidebarOpen || 'lg:flex-1'
-              )}
-              role="tab"
-              aria-selected={rightSidebarTab === tab.id}
-              aria-controls={`panel-${tab.id}`}
-              id={`tab-${tab.id}`}
-            >
-              <tab.icon className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline font-body text-sm">{tab.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Panels */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Metrics Panel */}
-          <div
-            id="panel-metrics"
-            role="tabpanel"
-            aria-labelledby="tab-metrics"
-            hidden={rightSidebarTab !== 'metrics'}
-            className="space-y-4 animate-in fade-in"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-display font-bold text-base text-ls-navy">Quick Stats</h3>
-              <button className="p-1 rounded text-ls-grey-dark hover:text-ls-red tactile disabled:opacity-40" aria-label="Refresh metrics">
-                <Download className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="space-y-3" id="metrics-content">
-              {/* Metrics will be injected by pages */}
-            </div>
-          </div>
-
-          {/* Filters Panel */}
-          <div
-            id="panel-filters"
-            role="tabpanel"
-            aria-labelledby="tab-filters"
-            hidden={rightSidebarTab !== 'filters'}
-            className="space-y-4 animate-in fade-in"
-          >
-            <h3 className="font-display font-bold text-base text-ls-navy">Filters</h3>
-            <div id="filters-content" className="space-y-4">
-              {/* Filters will be injected by pages */}
-            </div>
-          </div>
-
-          {/* Actions Panel */}
-          <div
-            id="panel-actions"
-            role="tabpanel"
-            aria-labelledby="tab-actions"
-            hidden={rightSidebarTab !== 'actions'}
-            className="space-y-4 animate-in fade-in"
-          >
-            <h3 className="font-display font-bold text-base text-ls-navy">Quick Actions</h3>
-            <div className="space-y-2" id="actions-content">
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark hover:border-ls-red/40 hover:text-ls-red transition-all text-left tactile disabled:opacity-40">
-                <Upload className="w-5 h-5 text-ls-red" aria-hidden="true" />
-                <span className="font-body font-medium text-sm">Upload Resume</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark hover:border-ls-red/40 hover:text-ls-red transition-all text-left tactile disabled:opacity-40">
-                <Plus className="w-5 h-5 text-ls-cyan" aria-hidden="true" />
-                <span className="font-body font-medium text-sm">Add Job Manually</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark hover:border-ls-red/40 hover:text-ls-red transition-all text-left tactile disabled:opacity-40">
-                <Download className="w-5 h-5 text-emerald-400" aria-hidden="true" />
-                <span className="font-body font-medium text-sm">Export Data</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-all tactile disabled:opacity-40">
-                <Plus className="w-5 h-5" aria-hidden="true" />
-                <span>New Application</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile right sidebar overlay */}
-      {mobileRightOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={() => setMobileRightOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+      </div>
     </div>
   );
 };

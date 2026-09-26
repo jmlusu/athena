@@ -1,34 +1,48 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════
-   ATHENA — Tactile Hardware Console
-   Skeuomorphic dark mode: matte monolith surfaces, beveled depth,
-   warm amber LED backlighting, industrial modular grid.
-   Every component value must trace back to this block.
-   ═══════════════════════════════════════════════════════════════════ */
+   ATHENA — Brand Design System
+   Typography: Cinzel (wordmark), Lora (headings), Plus Jakarta Sans (body)
+   Colors: Navy #070A40, Red #E63946, Cyan #00BFFF, Orange #F97316, Emerald #10B981, Amber #F59E0B
+   ════════════════════════════════════════════════════════════════════ */
 @theme {
-  /* ── COLOR — Matte Dark Monolith ramp ─────────────────────────────
-     ls-navy      → primary ink (warm white; was dark navy)
-     ls-grey-dark → body ink + border source (steel; was #333)
-     ls-grey-light→ page base + sunken wells (matte black; was #F2F2F2)
-     ls-white     → raised slate surfaces (was #FFF)
-     ls-red       → amber LED accent (primary interaction; was brand red)
-     ls-cyan      → cool indicator LED (softened for dark)            */
-  --color-ls-navy: #ECE8E1;
-  --color-ls-red: #FFA928;
-  --color-ls-cyan: #67E8F9;
-  --color-ls-grey-light: #0F1115;
-  --color-ls-grey-dark: #C4BFB6;
-  --color-ls-white: #1A1D23;
-  --color-ls-grey-light-text: #8B857B;
-  --color-ls-grey-dark-text: #ECE8E1;
+  /* ── COLOR — Athena Brand Palette ────────────────────────────────── */
+  --color-navy: #070A40;
+  --color-red: #E63946;
+  --color-cyan: #00BFFF;
+  --color-orange: #F97316;
+  --color-emerald: #10B981;
+  --color-amber: #F59E0B;
 
-  /* ── TYPE — DIN-style display, UI text, instrument mono ─────────── */
-  --font-family-display: "Bahnschrift", "DIN Alternate", "Segoe UI", Arial, sans-serif;
-  --font-family-body: "Segoe UI", Arial, system-ui, sans-serif;
-  --font-family-mono: "Cascadia Code", "SF Mono", "Fira Code", monospace;
+  /* Semantic aliases */
+  --color-primary: var(--color-navy);
+  --color-primary-contrast: #FFFFFF;
+  --color-accent: var(--color-orange);
+  --color-accent-hover: #EA580C;
+  --color-danger: var(--color-red);
+  --color-danger-hover: #B91C1C;
+  --color-success: var(--color-emerald);
+  --color-warning: var(--color-amber);
+  --color-info: var(--color-cyan);
 
-  /* ── SPACE (4px grid) ───────────────────────────────────────────── */
+  /* UI surfaces */
+  --color-bg: #F4F5F7;
+  --color-bg-white: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-muted: #F4F5F7;
+  --color-border: #E2E8F0;
+  --color-border-strong: #CBD5E1;
+  --color-text: #18181B;
+  --color-text-muted: #64748B;
+  --color-text-subtle: #94A3B8;
+
+  /* ── TYPE — Brand Typography ─────────────────────────────────────── */
+  --font-family-brand: "Cinzel", Georgia, serif;
+  --font-family-heading: "Lora", Georgia, serif;
+  --font-family-body: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+
+  /* ── SPACE (4px grid) ────────────────────────────────────────────── */
   --spacing-1: 4px;
   --spacing-2: 8px;
   --spacing-3: 12px;
@@ -40,26 +54,26 @@
   --spacing-12: 48px;
   --spacing-16: 64px;
 
-  /* ── RADIUS — hardware-tight. No soft consumer rounding. ────────── */
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 6px;
-  --radius-xl: 8px;
+  /* ── RADIUS ──────────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
 
-  /* ── SHADOW — light-from-above skeuomorphic depth ─────────────────
-     Each: 1px white top highlight (bevel) + black drop below.       */
-  --shadow-sm: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 1px 2px rgb(0 0 0 / 0.5);
-  --shadow-md: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 2px 4px rgb(0 0 0 / 0.45), 0 1px 0 rgb(0 0 0 / 0.6);
-  --shadow-lg: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 4px 12px rgb(0 0 0 / 0.55);
-  --shadow-xl: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 8px 24px rgb(0 0 0 / 0.6);
+  /* ── SHADOW ──────────────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
-  /* ── MOTION — fast press, standard travel ───────────────────────── */
-  --transition-fast: 120ms cubic-bezier(0.2, 0, 0, 1);
-  --transition-normal: 200ms cubic-bezier(0.2, 0, 0, 1);
-  --transition-slow: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* ── TRANSITION ──────────────────────────────────────────────────── */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* ── Z-index layers ─────────────────────────────────────────────── */
+  /* ── Z-INDEX ─────────────────────────────────────────────────────── */
   --z-dropdown: 100;
   --z-sticky: 200;
   --z-fixed: 300;
@@ -70,111 +84,23 @@
   --z-toast: 800;
 }
 
-/* ── Skeuomorphic primitives ────────────────────────────────────────
-   Use these classes for depth. Do not invent ad-hoc shadows.        */
-
-/* Raised panel: monolith surface with top bevel + ambient drop */
-.raised {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.06),
-    inset 0 -1px 0 rgb(0 0 0 / 0.35),
-    0 1px 2px rgb(0 0 0 / 0.45),
-    0 4px 12px rgb(0 0 0 / 0.35);
-}
-
-/* Sunken well: inputs, inset channels, empty states */
-.sunken {
-  background: #12141A;
-  box-shadow:
-    inset 0 2px 4px rgb(0 0 0 / 0.55),
-    inset 0 -1px 0 rgb(255 255 255 / 0.04);
-}
-
-/* Amber LED glow — active indicators, illuminated toggles.
-   Defined AFTER .tactile so it wins at rest; includes the bevel so
-   glow+bevel coexist. .tactile:active (higher specificity) still depresses. */
-.glow-amber {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.07),
-    inset 0 -1px 0 rgb(0 0 0 / 0.4),
-    0 0 0 1px rgb(255 169 40 / 0.3),
-    0 0 12px rgb(255 169 40 / 0.35),
-    0 2px 4px rgb(0 0 0 / 0.45);
-}
-
-/* Red LED glow — alert / record states (same bevel+glow contract) */
-.glow-red {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.07),
-    inset 0 -1px 0 rgb(0 0 0 / 0.4),
-    0 0 0 1px rgb(230 57 70 / 0.3),
-    0 0 12px rgb(230 57 70 / 0.35),
-    0 2px 4px rgb(0 0 0 / 0.45);
-}
-
-/* Pressable control: bevel that depresses on :active */
-.tactile {
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.07),
-    inset 0 -1px 0 rgb(0 0 0 / 0.4),
-    0 2px 4px rgb(0 0 0 / 0.45);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-.tactile:active {
-  transform: translateY(1px);
-  box-shadow:
-    inset 0 2px 4px rgb(0 0 0 / 0.55),
-    0 1px 0 rgb(0 0 0 / 0.4);
-}
-
-/* Modular grid divider — segmented panel seam */
-.seam {
-  border-color: rgb(255 255 255 / 0.07);
-}
-
-/* Instrument readout — metric numerals */
-.readout {
-  font-family: var(--font-family-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-/* ── Base styles ──────────────────────────────────────────────────── */
+/* ── Base Styles ──────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
 
 html {
   font-family: var(--font-family-body);
-  background-color: var(--color-ls-grey-light);
+  background-color: var(--color-bg);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
-  color: var(--color-ls-grey-dark-text);
   min-height: 100vh;
-  background-color: var(--color-ls-grey-light);
-  /* Warm amber power-lamp bleed from the top of the rack */
-  background-image: radial-gradient(
-    1200px 420px at 50% -8%,
-    rgb(255 169 40 / 0.05),
-    transparent 62%
-  );
-  background-attachment: fixed;
-}
-
-/* Material texture: fine grain over the whole chassis */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
+  background-color: var(--color-bg);
 }
 
 #root {
@@ -182,7 +108,7 @@ body::after {
   min-height: 100dvh;
 }
 
-/* Reduced motion — hardware panels don't bounce; honor user preference */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -192,18 +118,15 @@ body::after {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .tactile:active {
-    transform: none;
-  }
 }
 
-/* Focus — amber LED ring, never suppressed */
+/* Focus visible */
 :focus-visible {
-  outline: 2px solid var(--color-ls-red);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-/* Skip link for accessibility */
+/* Skip link */
 .skip-link {
   position: absolute;
   top: -100%;
@@ -213,7 +136,7 @@ body::after {
   font-weight: 600;
   text-decoration: none;
   border-radius: var(--radius-md);
-  background: var(--color-ls-red);
+  background: var(--color-accent);
   color: #14161A;
   transition: top var(--transition-fast);
 }
@@ -222,53 +145,260 @@ body::after {
   top: 1rem;
 }
 
-/* Scrollbar — dark channel, amber hover */
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: var(--color-ls-grey-light);
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #2E333B;
+/* Selection */
+::selection {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+/* ── Typography Utilities ─────────────────────────────────────────── */
+.font-brand {
+  font-family: var(--font-family-brand);
+}
+.font-heading {
+  font-family: var(--font-family-heading);
+}
+.font-mono {
+  font-family: var(--font-family-mono);
+}
+
+/* Heading styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-family-heading);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Brand wordmark */
+.wordmark {
+  font-family: var(--font-family-brand);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Color Utilities ──────────────────────────────────────────────── */
+.bg-navy { background-color: var(--color-navy); }
+.bg-red { background-color: var(--color-red); }
+.bg-cyan { background-color: var(--color-cyan); }
+.bg-orange { background-color: var(--color-orange); }
+.bg-emerald { background-color: var(--color-emerald); }
+.bg-amber { background-color: var(--color-amber); }
+.bg-primary { background-color: var(--color-primary); }
+.bg-accent { background-color: var(--color-accent); }
+.bg-danger { background-color: var(--color-danger); }
+.bg-success { background-color: var(--color-success); }
+.bg-warning { background-color: var(--color-warning); }
+.bg-info { background-color: var(--color-info); }
+.bg-card { background-color: var(--color-bg-card); }
+.bg-muted { background-color: var(--color-bg-muted); }
+
+.text-navy { color: var(--color-navy); }
+.text-red { color: var(--color-red); }
+.text-cyan { color: var(--color-cyan); }
+.text-orange { color: var(--color-orange); }
+.text-emerald { color: var(--color-emerald); }
+.text-amber { color: var(--color-amber); }
+.text-primary { color: var(--color-primary); }
+.text-accent { color: var(--color-accent); }
+.text-danger { color: var(--color-danger); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-info { color: var(--color-info); }
+.text-muted { color: var(--color-text-muted); }
+.text-subtle { color: var(--color-text-subtle); }
+
+.border-navy { border-color: var(--color-navy); }
+.border-red { border-color: var(--color-red); }
+.border-cyan { border-color: var(--color-cyan); }
+.border-orange { border-color: var(--color-orange); }
+.border-emerald { border-color: var(--color-emerald); }
+.border-amber { border-color: var(--color-amber); }
+.border-primary { border-color: var(--color-primary); }
+.border-accent { border-color: var(--color-accent); }
+.border-danger { border-color: var(--color-danger); }
+.border-success { border-color: var(--color-success); }
+.border-warning { border-color: var(--color-warning); }
+
+/* ── Print Styles for Documents ───────────────────────────────────── */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .resume-paper, .proposal-paper {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* ── Custom Components ────────────────────────────────────────────── */
+/* Raised card with subtle shadow */
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-hover:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-border-strong);
+}
+
+/* Button variants */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+.btn-primary:hover:not(:disabled) {
+  background: #050730;
+}
+
+.btn-accent {
+  background: var(--color-accent);
+  color: white;
+}
+.btn-accent:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-danger-hover);
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+.btn-outline:hover:not(:disabled) {
+  background: var(--color-bg-muted);
+  border-color: var(--color-border-strong);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-bg-muted);
+}
+
+/* Input styles */
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  transition: all var(--transition-fast);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgb(249 115 22 / 0.2);
+}
+.input::placeholder {
+  color: var(--color-text-subtle);
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   border-radius: var(--radius-full);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ls-red);
+.badge-primary { background: var(--color-navy); color: white; }
+.badge-accent { background: var(--color-orange); color: white; }
+.badge-danger { background: var(--color-red); color: white; }
+.badge-success { background: var(--color-emerald); color: white; }
+.badge-warning { background: var(--color-amber); color: #18181B; }
+.badge-info { background: var(--color-cyan); color: white; }
+.badge-muted { background: var(--color-bg-muted); color: var(--color-text-muted); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: var(--z-toast);
+  padding: 0.75rem 1rem;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: slide-in 0.3s ease-out;
 }
 
-/* Selection — amber backlight, dark ink for contrast */
-::selection {
-  background-color: var(--color-ls-red);
-  color: #14161A;
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
-
-/* Utility classes for brand colors */
-.bg-ls-navy { background-color: var(--color-ls-navy); }
-.bg-ls-red { background-color: var(--color-ls-red); }
-.bg-ls-cyan { background-color: var(--color-ls-cyan); }
-.bg-ls-grey-light { background-color: var(--color-ls-grey-light); }
-.bg-ls-grey-dark { background-color: var(--color-ls-grey-dark); }
-.bg-ls-white { background-color: var(--color-ls-white); }
-
-.text-ls-navy { color: var(--color-ls-navy); }
-.text-ls-red { color: var(--color-ls-red); }
-.text-ls-cyan { color: var(--color-ls-cyan); }
-.text-ls-grey-dark { color: var(--color-ls-grey-dark); }
-.text-ls-grey-light { color: var(--color-ls-grey-light-text); }
-.text-ls-grey-light-text { color: var(--color-ls-grey-light-text); }
-.text-ls-grey-dark-text { color: var(--color-ls-grey-dark-text); }
-.text-ls-white { color: var(--color-ls-white); }
-
-.border-ls-navy { border-color: var(--color-ls-navy); }
-.border-ls-red { border-color: var(--color-ls-red); }
-.border-ls-cyan { border-color: var(--color-ls-cyan); }
-.border-ls-grey-dark { border-color: var(--color-ls-grey-dark); }
-
-.font-display { font-family: var(--font-family-display); }
-.font-body { font-family: var(--font-family-body); }
-.font-mono { font-family: var(--font-family-mono); }
