@@ -236,3 +236,45 @@ export interface ApplicationReceipt {
   status: 'SUBMITTED' | 'ACKNOWLEDGED' | 'INTERVIEW_INVITE' | 'OFFER_EXTENDED';
   notes?: string;
 }
+
+// AI Studio Applicant Profile
+export interface JobPreferences {
+  keywords: string[];
+  excluded_keywords: string[];
+  locations: string[];
+  job_types: string[];
+  min_salary?: number;
+  preferred_sources: string[];
+  remote_only: boolean;
+  visa_sponsorship_required: boolean;
+}
+
+export interface ApplicantProfile {
+  full_name: string;
+  email: string;
+  phone: string;
+  location: string;
+  headline: string;
+  summary: string;
+  skills: string[];
+  experience: {
+    role: string;
+    company: string;
+    period: string;
+    location: string;
+    bullets: string[];
+  }[];
+  education: {
+    degree: string;
+    institution: string;
+    year: string;
+  }[];
+  certifications: string[];
+  hourly_rate_usd: number;
+  expected_monthly_mwk: number;
+  legal_authorized_signer: string;
+  linkedin_url?: string;
+  portfolio_url?: string;
+  github_url?: string;
+  preferences: JobPreferences;
+}

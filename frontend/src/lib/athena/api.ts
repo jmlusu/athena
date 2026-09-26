@@ -16,6 +16,25 @@ import type {
   MatchTier,
 } from './types';
 
+// AI Studio types (from aiTypes.ts)
+import type {
+  ATSScoreRequest,
+  ATSScoreResponse as AIATSScoreResponse,
+  TailorResumeRequest,
+  TailorResumeResponse,
+  TailorDocumentRequest,
+  TailorDocumentResponse,
+  DehumanizeRequest,
+  DehumanizeResponse,
+  ScrapeLiveRequest,
+  ScrapeLiveResponse,
+  N8nDispatchRequest,
+  N8nDispatchResponse,
+  SubmitApplicationRequest,
+  SubmitApplicationResponse,
+  AIHealthResponse,
+} from './aiTypes';
+
 const API_BASE = import.meta.env.VITE_ATHENA_API_BASE || '/api/v1/athena';
 // Athena's admin key — required on all write (POST/PUT/PATCH/DELETE) endpoints.
 // Override via VITE_ATHENA_API_KEY at build time; defaults to the backend dev fallback.
@@ -361,4 +380,59 @@ export function getJobSourceLabel(source: JobSource): string {
     other: 'Other',
   };
   return labels[source] || source;
+}
+
+// AI Studio Integration Endpoints
+
+export async function aiHealth(): Promise<AIHealthResponse> {
+  return fetchJson<AIHealthResponse>(`${API_BASE}/ai/health`);
+}
+
+export async function scoreATS(request: ATSScoreRequest): Promise<AIATSScoreResponse> {
+  return fetchJson<AIATSScoreResponse>(`${API_BASE}/ai/score-ats`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function tailorResumeAI(request: TailorResumeRequest): Promise<TailorResumeResponse> {
+  return fetchJson<TailorResumeResponse>(`${API_BASE}/ai/tailor-resume`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function tailorDocumentAI(request: TailorDocumentRequest): Promise<TailorDocumentResponse> {
+  return fetchJson<TailorDocumentResponse>(`${API_BASE}/ai/tailor-document`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function dehumanizeText(request: DehumanizeRequest): Promise<DehumanizeResponse> {
+  return fetchJson<DehumanizeResponse>(`${API_BASE}/ai/dehumanize`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function scrapeLive(request: ScrapeLiveRequest): Promise<ScrapeLiveResponse> {
+  return fetchJson<ScrapeLiveResponse>(`${API_BASE}/ai/scrape-live`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function dispatchN8n(request: N8nDispatchRequest): Promise<N8nDispatchResponse> {
+  return fetchJson<N8nDispatchResponse>(`${API_BASE}/ai/n8n/dispatch`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function submitApplication(request: SubmitApplicationRequest): Promise<SubmitApplicationResponse> {
+  return fetchJson<SubmitApplicationResponse>(`${API_BASE}/ai/submit-application`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
 }
