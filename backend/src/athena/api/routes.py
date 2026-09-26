@@ -1,7 +1,10 @@
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+
+from athena.documents import DocumentGenerator, DocumentOutput
 
 from ..ats import ats_scorer
 from ..matching import matching_engine
@@ -20,7 +23,11 @@ from .schemas import (
     ApplicationCreate,
     ApplicationListResponse,
     ApplicationResponse,
+    ApplyRequest,
     ATSScoreResponse,
+    CoverLetterRequest,
+    DocumentGenerateResponse,
+    FlagJobRequest,
     JobCreate,
     JobListResponse,
     JobResponse,
@@ -30,6 +37,7 @@ from .schemas import (
     ScrapeJobRequest,
     ScrapeJobResponse,
     ScrapeStatsResponse,
+    TailorResumeRequest,
     UserProfileCreate,
     UserProfileResponse,
 )
@@ -175,6 +183,7 @@ async def update_profile(profile_id: UUID, updates: dict[str, Any]):
         if hasattr(profile, key):
             setattr(profile, key, value)
 
+    profile = UserProfile.model_validate(profile.model_dump())
     return athena_db.update_user_profile(profile)
 
 
@@ -182,7 +191,15 @@ async def update_profile(profile_id: UUID, updates: dict[str, Any]):
 @router.post("/applications", response_model=ApplicationResponse)
 async def create_application(application: ApplicationCreate):
     """Create a new application."""
-    app = Application(**application.model_dump())
+    job = athena_db.get_job(application.job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    app = Application(
+        **application.model_dump(),
+        ats_score=job.ats_score or 0.0,
+        match_score=job.match_score or 0.0,
+    )
     return athena_db.add_application(app)
 
 
@@ -221,6 +238,106 @@ async def update_application(app_id: UUID, updates: dict[str, Any]):
             setattr(app, key, value)
 
     return athena_db.update_application(app)
+
+
+# Job action endpoints
+def _persist_document_output(output: DocumentOutput, job: Job) -> DocumentGenerateResponse:
+    """Write a generated document under the Athena data directory."""
+    out_dir = athena_db.base_dir / "documents" / str(job.id)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = Path(output.filename).name
+    docx_name = Path(filename).with_suffix(".docx")
+    out_dir.joinpath(docx_name).write_bytes(output.docx_bytes)
+    if output.pdf_bytes is not None:
+        out_dir.joinpath(Path(filename).with_suffix(".pdf")).write_bytes(output.pdf_bytes)
+
+    return DocumentGenerateResponse(
+        filename=filename,
+        path=str(out_dir / filename),
+        warnings=list(output.warnings),
+    )
+
+
+@router.post("/jobs/{job_id}/apply", response_model=ApplicationResponse)
+async def apply_to_job(job_id: UUID, request: ApplyRequest) -> ApplicationResponse:
+    """Apply to a job with a tailored resume."""
+    job = athena_db.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    profile = athena_db.get_user_profile(request.user_profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    documents: Any = profile.documents
+    resume_ids = {
+        str(doc.get("id") if isinstance(doc, dict) else doc.id) for doc in documents
+    }
+    if str(request.resume_id) not in resume_ids:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    app = Application(
+        job_id=job.id,
+        user_profile_id=profile.id,
+        resume_id=request.resume_id,
+        cover_letter_id=request.cover_letter_id,
+        ats_score=job.ats_score or 0.0,
+        match_score=job.match_score or 0.0,
+    )
+    created = athena_db.add_application(app)
+
+    job.status = JobStatus.APPLIED
+    athena_db.update_job(job)
+
+    return ApplicationResponse.model_validate(created)
+
+
+@router.post("/jobs/{job_id}/tailor-resume", response_model=DocumentGenerateResponse)
+async def tailor_resume(job_id: UUID, request: TailorResumeRequest) -> DocumentGenerateResponse:
+    """Generate a resume tailored to a job."""
+    job = athena_db.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    profile = athena_db.get_user_profile(request.user_profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    output = await DocumentGenerator().generate_resume(profile, job, request.output_format)
+    return _persist_document_output(output, job)
+
+
+@router.post("/jobs/{job_id}/cover-letter", response_model=DocumentGenerateResponse)
+async def generate_job_cover_letter(
+    job_id: UUID,
+    request: CoverLetterRequest,
+) -> DocumentGenerateResponse:
+    """Generate a cover letter for a job."""
+    job = athena_db.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    profile = athena_db.get_user_profile(request.user_profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    output = await DocumentGenerator().generate_cover_letter(profile, job, request.output_format)
+    return _persist_document_output(output, job)
+
+
+@router.post("/jobs/{job_id}/flag", response_model=JobResponse)
+async def flag_job(job_id: UUID, request: FlagJobRequest | None = None) -> JobResponse:
+    """Flag a job for review."""
+    job = athena_db.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    job.status = JobStatus.FLAGGED
+    if request is not None and request.reason:
+        job.metadata["flag_reason"] = request.reason
+
+    return JobResponse.model_validate(athena_db.update_job(job))
 
 
 # Scraping endpoints

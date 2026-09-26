@@ -25,6 +25,10 @@ const STATUS_COLORS: Record<JobStatus, { chip: string; header: string }> = {
     chip: 'bg-red-500/15 text-red-300 border border-red-500/30',
     header: 'bg-red-500/10 border-b border-red-500/20',
   },
+  flagged: {
+    chip: 'bg-amber-500/15 text-amber-300 border border-amber-500/30',
+    header: 'bg-amber-500/10 border-b border-amber-500/20',
+  },
   interview: {
     chip: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30',
     header: 'bg-emerald-500/10 border-b border-emerald-500/20',
@@ -49,6 +53,7 @@ const STATUS_LABELS: Record<JobStatus, string> = {
   matched: 'Matched',
   scored: 'Scored',
   applied: 'Applied',
+  flagged: 'Flagged',
   interview: 'Interview',
   offer: 'Offer',
   rejected: 'Rejected',

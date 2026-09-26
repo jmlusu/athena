@@ -4,8 +4,8 @@ import { ATSGauge } from '@/components/athena/ATSGauge';
 import { AreaChart } from '@/components/athena/AreaChart';
 import { SkillTags, SkillComparison } from '@/components/athena/SkillTags';
 import { cn, formatSalary, formatDate, getJobTypeLabel, getJobSourceLabel, getMatchTierColor, getMatchTierLabel } from '@/lib/athena/utils';
-import { getJob, getATSScore, listProfiles } from '@/lib/athena/api';
-import type { Job, MatchTier, SkillTag } from '@/lib/athena/types';
+import { getJob, getATSScore, listProfiles, applyToJob, tailorResume, generateCoverLetter, flagJob } from '@/lib/athena/api';
+import type { Job, MatchTier, SkillTag, UserProfile } from '@/lib/athena/types';
 import { ChevronDown, ChevronLeft, Download, Upload, FileText, Flag, Share2, ExternalLink, Check, X, Sparkles, Brain, Loader2 } from 'lucide-react';
 
 const TIER_HEX: Record<string, string> = {
@@ -32,6 +32,8 @@ export const JobDetail: React.FC = () => {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -45,9 +47,10 @@ export const JobDetail: React.FC = () => {
       const jobData = await getJob(id);
       setJob(jobData);
       try {
-        const profiles = await listProfiles();
-        if ((profiles?.length ?? 0) > 0) {
-          const atsData = await getATSScore(id, profiles[0].id);
+        const profileList = await listProfiles();
+        setProfiles(profileList ?? []);
+        if ((profileList?.length ?? 0) > 0) {
+          const atsData = await getATSScore(id, profileList[0].id);
           setAtsScore(atsData);
         }
       } catch (atsErr) {
@@ -102,11 +105,68 @@ export const JobDetail: React.FC = () => {
   const missingSkills = jobSkills.filter(s => !userSkills.includes(s.name));
 
   const handleAction = async (action: string) => {
+    if (!id) return;
     setActionLoading(action);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setActionLoading(null);
-    // Would trigger actual API calls here
+    setActionFeedback(null);
+    try {
+      if (action === 'share') {
+        const url = window.location.href;
+        if (typeof navigator.share === 'function') {
+          try {
+            await navigator.share({ title: job?.title ?? 'Athena job', url });
+            setActionFeedback({ type: 'success', message: 'Job shared.' });
+            return;
+          } catch (shareErr) {
+            if (shareErr instanceof DOMException && shareErr.name === 'AbortError') {
+              return;
+            }
+          }
+        }
+        await navigator.clipboard.writeText(url);
+        setActionFeedback({ type: 'success', message: 'Job link copied to clipboard.' });
+        return;
+      }
+
+      const profile = profiles[0];
+      if (action === 'apply') {
+        if (!profile) throw new Error('No user profile found. Create one first.');
+        const resume = profile.documents?.find(d => d.type === 'resume');
+        if (!resume) throw new Error('No resume found in your profile.');
+        await applyToJob(id, { user_profile_id: profile.id, resume_id: resume.id });
+        setJob(prev => (prev ? { ...prev, status: 'applied' } : prev));
+        setActionFeedback({ type: 'success', message: 'Application recorded — this job is now marked as applied.' });
+        return;
+      }
+
+      if (!profile) throw new Error('No user profile found. Create one first.');
+      if (action === 'tailor') {
+        const result = await tailorResume(id, { user_profile_id: profile.id });
+        const warnings = result.warnings?.length ? ` Warnings: ${result.warnings.join('; ')}` : '';
+        setActionFeedback({ type: 'success', message: `Resume tailored: ${result.filename}.${warnings}` });
+        return;
+      }
+      if (action === 'cover') {
+        const result = await generateCoverLetter(id, { user_profile_id: profile.id });
+        const warnings = result.warnings?.length ? ` Warnings: ${result.warnings.join('; ')}` : '';
+        setActionFeedback({ type: 'success', message: `Cover letter generated: ${result.filename}.${warnings}` });
+        return;
+      }
+      if (action === 'flag') {
+        await flagJob(id);
+        setJob(prev => (prev ? { ...prev, status: 'flagged' } : prev));
+        setActionFeedback({ type: 'success', message: 'Job flagged for review.' });
+      }
+    } catch (error) {
+      console.error(`Job action "${action}" failed:`, error);
+      setActionFeedback({
+        type: 'error',
+        message: error instanceof Error && error.message
+          ? error.message
+          : 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
@@ -396,6 +456,19 @@ export const JobDetail: React.FC = () => {
                 {actionLoading === 'share' ? 'Sharing...' : 'Share Job'}
               </button>
             </div>
+            {actionFeedback && (
+              <p
+                role={actionFeedback.type === 'success' ? 'status' : 'alert'}
+                className={cn(
+                  'mt-3 px-3 py-2 rounded-lg border font-body text-sm',
+                  actionFeedback.type === 'success'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-red-500/10 border-red-500/30 text-red-300'
+                )}
+              >
+                {actionFeedback.message}
+              </p>
+            )}
           </section>
         </div>
       </div>

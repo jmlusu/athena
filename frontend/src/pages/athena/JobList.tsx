@@ -3,12 +3,12 @@ import { Search, Filter, X, ChevronDown, Download, Upload, Plus, Loader2, FileTe
 import { JobCard } from '@/components/athena/JobCard';
 import { ATSGauge, MiniATSGauge } from '@/components/athena/ATSGauge';
 import { cn, formatSalary, formatDate, getJobTypeLabel, getJobSourceLabel, getMatchTierColor, getMatchTierLabel, debounce } from '@/lib/athena/utils';
-import { listJobs, triggerScrape } from '@/lib/athena/api';
-import type { Job, JobFilter, JobSource, JobType, JobStatus, MatchTier } from '@/lib/athena/types';
+import { listJobs, triggerScrape, listProfiles, applyToJob, tailorResume, generateCoverLetter, flagJob } from '@/lib/athena/api';
+import type { Job, JobFilter, JobSource, JobType, JobStatus, MatchTier, UserProfile } from '@/lib/athena/types';
 
 const JOB_SOURCES: JobSource[] = ['linkedin', 'indeed', 'glassdoor', 'company_career', 'malawi_jobs', 'malawi_work', 'jobs_malawi', 'remote_ok', 'we_work_remotely', 'other'];
 const JOB_TYPES: JobType[] = ['full_time', 'part_time', 'contract', 'consultancy', 'freelance', 'internship', 'temporary'];
-const JOB_STATUSES: JobStatus[] = ['new', 'fetched', 'matched', 'scored', 'applied', 'interview', 'offer', 'rejected', 'archived'];
+const JOB_STATUSES: JobStatus[] = ['new', 'fetched', 'matched', 'scored', 'flagged', 'applied', 'interview', 'offer', 'rejected', 'archived'];
 const MATCH_TIERS: MatchTier[] = ['excellent', 'good', 'fair', 'poor'];
 
 export const JobList: React.FC = () => {
@@ -36,6 +36,8 @@ export const JobList: React.FC = () => {
 
   const [showFilters, setShowFilters] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [modalAction, setModalAction] = useState<string | null>(null);
+  const [modalFeedback, setModalFeedback] = useState<{ type: 'success' | 'error'; message: string; url?: string } | null>(null);
 
   // Debounced search
   const debouncedSearch = useMemo(
@@ -106,10 +108,75 @@ export const JobList: React.FC = () => {
 
   const handleJobClick = (job: Job) => {
     setSelectedJob(job);
+    setModalFeedback(null);
+    setModalAction(null);
   };
 
   const closeJobDetail = () => {
     setSelectedJob(null);
+    setModalFeedback(null);
+    setModalAction(null);
+  };
+
+  const resolveProfile = async (): Promise<{ profile: UserProfile; resume?: UserProfile['documents'][number] }> => {
+    const list = await listProfiles();
+    const profile = list?.[0];
+    if (!profile) throw new Error('No user profile found. Create one first.');
+    return { profile, resume: profile.documents?.find(d => d.type === 'resume') };
+  };
+
+  const updateJobStatus = (jobId: string, status: JobStatus) => {
+    setSelectedJob(prev => (prev && prev.id === jobId ? { ...prev, status } : prev));
+    setJobs(prev => prev.map(j => (j.id === jobId ? { ...j, status } : j)));
+  };
+
+  const handleModalAction = async (action: 'apply' | 'tailor' | 'cover' | 'flag') => {
+    if (!selectedJob) return;
+    setModalAction(action);
+    setModalFeedback(null);
+    try {
+      if (action === 'apply') {
+        const { profile, resume } = await resolveProfile();
+        if (!resume) throw new Error('No resume found in your profile.');
+        await applyToJob(selectedJob.id, { user_profile_id: profile.id, resume_id: resume.id });
+        updateJobStatus(selectedJob.id, 'applied');
+        setModalFeedback({
+          type: 'success',
+          message: 'Application recorded — this job is now marked as applied.',
+          url: selectedJob.application_url,
+        });
+        return;
+      }
+
+      const { profile } = await resolveProfile();
+      if (action === 'tailor') {
+        const result = await tailorResume(selectedJob.id, { user_profile_id: profile.id });
+        const warnings = result.warnings?.length ? ` Warnings: ${result.warnings.join('; ')}` : '';
+        setModalFeedback({ type: 'success', message: `Resume tailored: ${result.filename}.${warnings}` });
+        return;
+      }
+      if (action === 'cover') {
+        const result = await generateCoverLetter(selectedJob.id, { user_profile_id: profile.id });
+        const warnings = result.warnings?.length ? ` Warnings: ${result.warnings.join('; ')}` : '';
+        setModalFeedback({ type: 'success', message: `Cover letter generated: ${result.filename}.${warnings}` });
+        return;
+      }
+      if (action === 'flag') {
+        await flagJob(selectedJob.id);
+        updateJobStatus(selectedJob.id, 'flagged');
+        setModalFeedback({ type: 'success', message: 'Job flagged for review.' });
+      }
+    } catch (error) {
+      console.error(`Job action "${action}" failed:`, error);
+      setModalFeedback({
+        type: 'error',
+        message: error instanceof Error && error.message
+          ? error.message
+          : 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setModalAction(null);
+    }
   };
 
   return (
@@ -510,28 +577,64 @@ export const JobList: React.FC = () => {
               )}
 
               {/* Actions */}
-              <div className="flex flex-wrap gap-3 pt-4 border-t border-white/[0.07]">
-                <a
-                  href={selectedJob.application_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors"
-                >
-                  <Upload className="w-4 h-4" />
-                  Apply Now
-                </a>
-                <button className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors">
-                  <Download className="w-4 h-4" />
-                  Tailor Resume
-                </button>
-                <button className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors">
-                  <FileText className="w-4 h-4" />
-                  Cover Letter
-                </button>
-                <button className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors">
-                  <ChevronDown className="w-4 h-4" />
-                  Flag
-                </button>
+              <div className="pt-4 border-t border-white/[0.07] space-y-3">
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => handleModalAction('apply')}
+                    disabled={modalAction !== null}
+                    className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors disabled:opacity-50"
+                  >
+                    {modalAction === 'apply' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {modalAction === 'apply' ? 'Applying...' : 'Apply Now'}
+                  </button>
+                  <button
+                    onClick={() => handleModalAction('tailor')}
+                    disabled={modalAction !== null}
+                    className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
+                  >
+                    {modalAction === 'tailor' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                    {modalAction === 'tailor' ? 'Tailoring...' : 'Tailor Resume'}
+                  </button>
+                  <button
+                    onClick={() => handleModalAction('cover')}
+                    disabled={modalAction !== null}
+                    className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
+                  >
+                    {modalAction === 'cover' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                    {modalAction === 'cover' ? 'Generating...' : 'Cover Letter'}
+                  </button>
+                  <button
+                    onClick={() => handleModalAction('flag')}
+                    disabled={modalAction !== null}
+                    className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
+                  >
+                    {modalAction === 'flag' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
+                    {modalAction === 'flag' ? 'Flagging...' : 'Flag'}
+                  </button>
+                </div>
+                {modalFeedback && (
+                  <p
+                    role={modalFeedback.type === 'success' ? 'status' : 'alert'}
+                    className={cn(
+                      'px-3 py-2 rounded-lg border font-body text-sm',
+                      modalFeedback.type === 'success'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                        : 'bg-red-500/10 border-red-500/30 text-red-300'
+                    )}
+                  >
+                    {modalFeedback.message}
+                    {modalFeedback.url && (
+                      <a
+                        href={modalFeedback.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 font-bold underline hover:opacity-80"
+                      >
+                        Open posting
+                      </a>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           </div>

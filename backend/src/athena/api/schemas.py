@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
@@ -251,3 +251,29 @@ class ScrapeStatsResponse(BaseModel):
     total_jobs_scraped: int
     total_new_jobs: int
     last_scrape_at: datetime | None
+
+
+class ApplyRequest(BaseModel):
+    user_profile_id: UUID
+    resume_id: UUID
+    cover_letter_id: UUID | None = None
+
+
+class TailorResumeRequest(BaseModel):
+    user_profile_id: UUID
+    output_format: Literal["docx", "pdf", "both"] = "docx"
+
+
+class CoverLetterRequest(BaseModel):
+    user_profile_id: UUID
+    output_format: Literal["docx", "pdf", "both"] = "docx"
+
+
+class FlagJobRequest(BaseModel):
+    reason: str | None = None
+
+
+class DocumentGenerateResponse(BaseModel):
+    filename: str
+    path: str | None
+    warnings: list[str]

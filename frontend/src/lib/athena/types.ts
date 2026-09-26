@@ -31,6 +31,7 @@ export type JobStatus =
   | 'matched'
   | 'scored'
   | 'applied'
+  | 'flagged'
   | 'interview'
   | 'offer'
   | 'rejected'
@@ -167,6 +168,12 @@ export interface Application {
   notes: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface DocumentGenerateResponse {
+  filename: string;
+  path: string | null;
+  warnings: string[];
 }
 
 export interface UserProfile {

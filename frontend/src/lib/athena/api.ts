@@ -9,6 +9,7 @@ import type {
   PipelineStatsResponse,
   ScrapeJob,
   MatchJobsResponse,
+  DocumentGenerateResponse,
   JobSource,
   JobType,
   JobStatus,
@@ -102,6 +103,44 @@ export async function updateJob(jobId: string, updates: Partial<Job>): Promise<J
 
 export async function deleteJob(jobId: string): Promise<void> {
   await fetch(`${API_BASE}/jobs/${jobId}`, { method: 'DELETE' });
+}
+
+// Job action endpoints
+export async function applyToJob(
+  jobId: string,
+  payload: { user_profile_id: string; resume_id: string; cover_letter_id?: string },
+): Promise<Application> {
+  return fetchJson<Application>(`${API_BASE}/jobs/${jobId}/apply`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function tailorResume(
+  jobId: string,
+  payload: { user_profile_id: string; output_format?: 'docx' | 'pdf' | 'both' },
+): Promise<DocumentGenerateResponse> {
+  return fetchJson<DocumentGenerateResponse>(`${API_BASE}/jobs/${jobId}/tailor-resume`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function generateCoverLetter(
+  jobId: string,
+  payload: { user_profile_id: string; output_format?: 'docx' | 'pdf' | 'both' },
+): Promise<DocumentGenerateResponse> {
+  return fetchJson<DocumentGenerateResponse>(`${API_BASE}/jobs/${jobId}/cover-letter`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function flagJob(jobId: string, payload?: { reason?: string }): Promise<Job> {
+  return fetchJson<Job>(`${API_BASE}/jobs/${jobId}/flag`, {
+    method: 'POST',
+    body: JSON.stringify(payload ?? {}),
+  });
 }
 
 // User Profile endpoints
@@ -237,6 +276,7 @@ export function getJobStatusColor(status: JobStatus): string {
     matched: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
     scored: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
     applied: 'bg-ls-red/15 text-ls-red border-ls-red/40',
+    flagged: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
     interview: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
     offer: 'bg-green-500/15 text-green-300 border-green-500/30',
     rejected: 'bg-gray-500/15 text-gray-400 border-gray-500/30',

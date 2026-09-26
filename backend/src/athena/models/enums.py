@@ -36,6 +36,7 @@ class JobStatus(str, Enum):
     MATCHED = "matched"
     SCORED = "scored"
     APPLIED = "applied"
+    FLAGGED = "flagged"
     INTERVIEW = "interview"
     OFFER = "offer"
     REJECTED = "rejected"
