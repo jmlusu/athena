@@ -21,3 +21,5 @@ coverage
 Thumbs.db
 .idea
 .vscode
+docs
+.playwright-cli
