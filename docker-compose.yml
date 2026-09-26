@@ -14,6 +14,9 @@ services:
       - ATHENA_DATA_DIR=/app/company/athena
       - ATHENA_HITL_EXTERNAL=false
       - ATHENA_LLM_PROVIDER=
+      - ATHENA_AI_PROVIDER=${ATHENA_AI_PROVIDER:-fallback}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ATHENA_N8N_WEBHOOK_URL=${ATHENA_N8N_WEBHOOK_URL:-https://n8n.athena-ops.internal/webhook/athena-pipeline-trigger}
       - ATHENA_SCHEDULER_AUTOSTART=${ATHENA_SCHEDULER_AUTOSTART:-true}
       - ATHENA_DEFAULT_SCRAPE_QUERY=${ATHENA_DEFAULT_SCRAPE_QUERY:-software engineer}
       - ATHENA_DEFAULT_SCRAPE_LOCATION=${ATHENA_DEFAULT_SCRAPE_LOCATION:-}
