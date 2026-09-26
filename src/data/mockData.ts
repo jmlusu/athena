@@ -1,0 +1,517 @@
+import { ApplicantProfile, Opportunity, AutomationSettings, CronScheduleState } from "../types";
+
+export const initialApplicantProfile: ApplicantProfile = {
+  fullName: "Chifuniro Phiri",
+  headline: "Principal Systems Consultant & Technical Program Director",
+  email: "chifuniro.phiri@consult-mw.com",
+  phone: "+265 99 412 8890",
+  location: "Area 10, Lilongwe, Malawi (Open to Local & Global Remote)",
+  summary:
+    "Pragmatic technology leader and senior consultant with 10+ years directing complex digital systems, institutional workflows, and multi-country grant initiatives across Malawi, SADC, and international partners. Direct expertise working with ministries, UN agencies, USAID contractors, and venture-backed remote engineering hubs.",
+  skills: [
+    "Program Architecture & Technical Roadmaps",
+    "Full-Stack Development (React, TypeScript, Node.js)",
+    "n8n & Workflow Automation",
+    "PostgreSQL & Health/MIS Data Pipelines",
+    "Monitoring & Evaluation (M&E) Frameworks",
+    "Malawi Regulatory & Public Sector Procurement",
+    "Multilateral Donor Reporting (USAID, UNDP, EU)",
+    "Distributed Team Leadership & Agile Execution",
+  ],
+  experience: [
+    {
+      role: "Lead Technical Advisor & Systems Director",
+      company: "Malawi Digital Impact Consortium",
+      period: "2022 - Present",
+      location: "Lilongwe, Malawi",
+      bullets: [
+        "Spearheaded enterprise modernization for regional healthcare and supply chain tracking, serving 2.4M citizens across central and northern Malawi.",
+        "Engineered automated compliance dashboards with n8n and REST pipelines, cutting donor audit reconciliation time from 3 weeks to 36 hours.",
+        "Managed an operational portfolio of $3.2M USD across 4 simultaneous partner programs.",
+      ],
+    },
+    {
+      role: "Senior Engineering & Operations Consultant",
+      company: "Kachere Global Distributed Ventures",
+      period: "2019 - 2022",
+      location: "Lilongwe (Remote / UK Clients)",
+      bullets: [
+        "Architected scalable web and mobile payment gateways bridging international settlement rails with local Airtel Money and TNM Mpamba channels.",
+        "Supervised 12 remote software engineers and technical business analysts across 4 time zones with 99.4% SLA uptime.",
+      ],
+    },
+    {
+      role: "Systems Specialist & Data Lead",
+      company: "Southern Africa Development Advisory",
+      period: "2016 - 2019",
+      location: "Blantyre / Lilongwe, Malawi",
+      bullets: [
+        "Designed national monitoring platforms and trained over 180 ministerial field coordinators on data validation procedures.",
+      ],
+    },
+  ],
+  education: [
+    {
+      degree: "Master of Science in Information Systems & Strategic Management",
+      institution: "University of Malawi / Chancellor College Partner",
+      year: "2018",
+    },
+    {
+      degree: "Bachelor of Science in Computer Science & Mathematics",
+      institution: "Malawi University of Science and Technology (MUST)",
+      year: "2015",
+    },
+  ],
+  certifications: [
+    "Project Management Professional (PMP®)",
+    "AWS Certified Solutions Architect",
+    "Certified ScrumMaster (CSM)",
+    "PRINCE2 Practitioner",
+  ],
+  hourlyRateUsd: 85,
+  expectedMonthlyMwk: 4500000,
+  legalAuthorizedSigner: "Chifuniro Phiri",
+};
+
+export const initialOpportunities: Opportunity[] = [
+  {
+    id: "ath-opp-01",
+    title: "Chief of Party & Digital Systems Architect",
+    company: "USAID Malawi / Health Information Systems",
+    location: "Lilongwe, Malawi (Hybrid - City Centre)",
+    category: "job",
+    scope: "lilongwe-local",
+    platform: "ReliefWeb",
+    description:
+      "Direct the national rollout of resilient digital health records and ministerial reporting systems. Liaison with Ministry of Health and multilateral donor representatives.",
+    requirements: [
+      "Program Architecture & Technical Roadmaps",
+      "Malawi Regulatory & Public Sector Procurement",
+      "Multilateral Donor Reporting (USAID, UNDP, EU)",
+      "PostgreSQL & Health/MIS Data Pipelines",
+      "Stakeholder Management",
+    ],
+    salaryOrBudget: "$42,000 - $55,000 USD / yr",
+    deadline: "2026-10-18",
+    atsScore: 96,
+    postedDate: "1 hour ago",
+    status: "tailored",
+    isFlagged: false,
+    matchedSkills: [
+      "Program Architecture & Technical Roadmaps",
+      "Malawi Regulatory & Public Sector Procurement",
+      "Multilateral Donor Reporting (USAID, UNDP, EU)",
+      "PostgreSQL & Health/MIS Data Pipelines",
+    ],
+    missingSkills: ["DHIS2 National Server Admin"],
+    dehumanizedPitch:
+      "I have directly deployed health data systems in Lilongwe with 99.8% field uptime and managed compliance reporting for $3M+ USAID-funded portfolios.",
+    autoCreatedDocs: {
+      hasResume: true,
+      hasCoverLetter: true,
+    },
+    tailoredResume: {
+      fullName: "Chifuniro Phiri",
+      title: "Chief of Party & Principal Systems Architect",
+      contact: {
+        email: "chifuniro.phiri@consult-mw.com",
+        phone: "+265 99 412 8890",
+        location: "Lilongwe, Malawi",
+        linkedin: "linkedin.com/in/chifuniro-phiri-mw",
+      },
+      summary:
+        "Field-tested technology executive with 10+ years driving nationwide systems architecture, donor compliance, and ministerial digital transformation in Lilongwe. Proven track record managing multi-million-dollar USAID portfolios and high-reliability data infrastructure.",
+      skills: [
+        "USAID & Multilateral Compliance",
+        "Public Health Data Pipelines & MIS",
+        "Senior Ministry Stakeholder Negotiation",
+        "Distributed Team Mentorship",
+        "Enterprise Architecture",
+      ],
+      experience: [
+        {
+          role: "Lead Technical Advisor & Systems Director",
+          company: "Malawi Digital Impact Consortium",
+          period: "2022 - Present",
+          location: "Lilongwe, Malawi",
+          bullets: [
+            "Delivered national healthcare tracking software deployed across 40+ districts, cutting report lag by 78%.",
+            "Directed $3.2M portfolio with flawless donor audit ratings over 3 consecutive review cycles.",
+          ],
+        },
+      ],
+      education: [
+        {
+          degree: "M.Sc. in Information Systems & Strategic Management",
+          institution: "University of Malawi",
+          year: "2018",
+        },
+      ],
+      certifications: ["PMP® Certified", "AWS Solutions Architect"],
+      layout: "two-column",
+    },
+    tailoredCoverLetter: {
+      docType: "cover-letter",
+      title: "Application: Chief of Party & Digital Systems Architect",
+      recipient: "USAID Malawi / Health Information Systems Technical Committee",
+      date: "September 18, 2026",
+      greeting: "Dear Members of the Selection Committee,",
+      paragraphs: [
+        "I am writing to submit my formal application for the Chief of Party & Digital Systems Architect role in Lilongwe. Having spent the last several years working directly with the Ministry of Health and international donor agencies, I understand the concrete infrastructure challenges and institutional coordination required to deliver lasting digital transformation.",
+        "In my recent appointment at the Malawi Digital Impact Consortium, I led the technical strategy for systems serving over two million citizens. My focus has consistently been operational reliability: establishing hardened data pipelines, ensuring strict regulatory compliance, and mentoring local engineering leads.",
+        "I welcome the opportunity to discuss how my hands-on knowledge of Lilongwe's public sector digital environment can accelerate your project's 2026-2027 performance milestones.",
+      ],
+      closing: "With highest regards,",
+      signature: "Chifuniro Phiri",
+      layout: "one-column",
+      dehumanized: true,
+    },
+    formFields: {
+      fullName: "Chifuniro Phiri",
+      email: "chifuniro.phiri@consult-mw.com",
+      phone: "+265 99 412 8890",
+      location: "Lilongwe, Malawi",
+      citizenship: "Malawian Citizen",
+      yearsOfExperience: "10+",
+      salaryExpectation: "$48,000 USD / year",
+      noticePeriod: "2 Weeks",
+      screeningQuestion1:
+        "Over the past 5 years I have led digital infrastructure partnerships with 3 separate ministries in Lilongwe, navigating both cabinet clearances and grassroots district implementations.",
+    },
+  },
+  {
+    id: "ath-opp-02",
+    title: "Lead Digital Policy & Interoperability Consultant",
+    company: "UNDP Malawi / Ministry of Information & Digitization",
+    location: "Lilongwe, Malawi (Hybrid)",
+    category: "consultancy",
+    scope: "lilongwe-local",
+    platform: "Devex",
+    description:
+      "Develop the 2027-2030 National Digital Interoperability Blueprint for government-to-citizen (G2C) and government-to-business (G2B) service delivery.",
+    requirements: [
+      "Public Sector Advisory",
+      "Malawi Regulatory & Public Sector Procurement",
+      "Program Architecture & Technical Roadmaps",
+      "Enterprise Architecture",
+    ],
+    salaryOrBudget: "$24,000 USD (Lump-Sum Deliverables Contract)",
+    deadline: "2026-10-05",
+    atsScore: 94,
+    postedDate: "2 hours ago",
+    status: "awaiting_signoff",
+    isFlagged: false,
+    matchedSkills: [
+      "Program Architecture & Technical Roadmaps",
+      "Malawi Regulatory & Public Sector Procurement",
+      "Enterprise Architecture",
+    ],
+    missingSkills: ["Legal Drafting for ICT Bills"],
+    dehumanizedPitch:
+      "Brings direct advisory experience in Lilongwe drafting interoperability standards that balance high security with local network bandwidth constraints.",
+    autoCreatedDocs: {
+      hasExecutiveSummary: true,
+      hasProposal: true,
+    },
+    tailoredProposal: {
+      docType: "consultancy-proposal",
+      title: "Technical & Financial Proposal: National Digital Interoperability Blueprint",
+      recipient: "UNDP Country Office Malawi / Ministry of Information & Digitization, Lilongwe",
+      date: "September 18, 2026",
+      executiveSummary:
+        "This proposal provides an actionable, 12-week roadmap to formulate Malawi's National Interoperability Framework. By building upon existing open standards (e.g. OpenHIE and X-Road adaptations) and aligning with SADC digital economy goals, the resulting blueprint will guarantee immediate inter-agency adoption without vendor lock-in.",
+      sections: [
+        {
+          heading: "1. Understanding of the Terms of Reference (ToR)",
+          body: "The Government of Malawi requires a cohesive technical architecture connecting disparate databases across Immigration, MRA, Health, and National Registration (NRB). Our proposed engagement addresses the dual imperatives of strict data protection and low-bandwidth resilience.",
+        },
+        {
+          heading: "2. Phased Delivery Methodology",
+          body: "Phase I (Weeks 1-3): Baseline Audit & Ministerial Stakeholder Consultations in Capital Hill, Lilongwe.\nPhase II (Weeks 4-8): Draft Technical Interoperability Architecture & API Specifications.\nPhase III (Weeks 9-12): Stakeholder Validation Workshop, Executive Cabinet Policy Brief & Final Handover.",
+        },
+        {
+          heading: "3. Deliverables Matrix & Milestone Schedule",
+          body: "Deliverable 1: Inception Report & Stakeholder Matrix (20%)\nDeliverable 2: Draft Interoperability Blueprint & Security Standard (40%)\nDeliverable 3: Final Blueprint, Policy Roadmap & Validation Consensus (40%).",
+        },
+        {
+          heading: "4. Professional Financial Schedule",
+          body: "Total Contract Value: $24,000 USD inclusive of all technical workshops, stakeholder sessions, and executive documentation.",
+        },
+      ],
+      closing: "Submitted by,",
+      signature: "Chifuniro Phiri (Principal Consultant)",
+      layout: "two-column",
+      dehumanized: true,
+    },
+    formFields: {
+      consultantName: "Chifuniro Phiri",
+      businessRegistration: "MW-CON-2021-884",
+      dailyConsultancyRate: "$500 USD / day",
+      availability: "Immediate",
+      conflictOfInterestStatement: "None. No current direct public sector employment.",
+    },
+  },
+  {
+    id: "ath-opp-03",
+    title: "Senior Remote Automation Engineer (n8n & Enterprise Pipelines)",
+    company: "OmniFlow Systems (International Remote - US/Europe Timezones)",
+    location: "International Remote (Anywhere / Lilongwe)",
+    category: "job",
+    scope: "international-remote",
+    platform: "LinkedIn",
+    description:
+      "Design complex multi-service automation pipelines using n8n, Node.js, and webhooks to synchronize CRM, billing, and transactional fulfillment for 200k daily events.",
+    requirements: [
+      "n8n & Workflow Automation",
+      "Full-Stack Development (React, TypeScript, Node.js)",
+      "Distributed Team Leadership & Agile Execution",
+    ],
+    salaryOrBudget: "$6,500 - $8,200 USD / month",
+    deadline: "2026-10-25",
+    atsScore: 92,
+    postedDate: "3 hours ago",
+    status: "tailored",
+    isFlagged: false,
+    matchedSkills: [
+      "n8n & Workflow Automation",
+      "Full-Stack Development (React, TypeScript, Node.js)",
+      "Distributed Team Leadership",
+    ],
+    missingSkills: ["Kafka Event Streaming"],
+    dehumanizedPitch:
+      "Expert n8n pipeline architect having deployed high-throughput webhook orchestrations handling automated data flows without manual intervention.",
+    autoCreatedDocs: {
+      hasResume: true,
+      hasCoverLetter: true,
+    },
+    tailoredResume: {
+      fullName: "Chifuniro Phiri",
+      title: "Senior Workflow Automation & Systems Engineer",
+      contact: {
+        email: "chifuniro.phiri@consult-mw.com",
+        phone: "+265 99 412 8890",
+        location: "Lilongwe, Malawi (Full Remote Workstation)",
+        linkedin: "linkedin.com/in/chifuniro-phiri-mw",
+      },
+      summary:
+        "High-performance systems engineer specialized in n8n pipeline automation, TypeScript services, and asynchronous event flows. Proven capacity delivering clean, self-healing automation architectures for global remote teams.",
+      skills: [
+        "n8n Self-Hosted & Cloud Infrastructure",
+        "TypeScript & Node.js Microservices",
+        "Webhook Event Routing & Error Recovery",
+        "PostgreSQL Optimization",
+        "CI/CD Pipelines",
+      ],
+      experience: [
+        {
+          role: "Lead Technical Advisor & Systems Director",
+          company: "Malawi Digital Impact Consortium",
+          period: "2022 - Present",
+          location: "Lilongwe / Remote",
+          bullets: [
+            "Constructed 28 core n8n automation pipelines eliminating manual spreadsheet reconciliations.",
+            "Integrated secure webhooks connecting mobile money APIs and audit registries with 99.9% delivery rate.",
+          ],
+        },
+      ],
+      education: [
+        {
+          degree: "B.Sc. in Computer Science",
+          institution: "MUST",
+          year: "2015",
+        },
+      ],
+      certifications: ["AWS Certified Solutions Architect"],
+      layout: "one-column",
+    },
+    formFields: {
+      fullName: "Chifuniro Phiri",
+      email: "chifuniro.phiri@consult-mw.com",
+      phone: "+265 99 412 8890",
+      workLocation: "Remote (Lilongwe, Malawi - GMT+2)",
+      internetRedundancy: "Dual Fiber + Starlink Satellite Backup",
+      salaryExpectationUsd: "$7,500 / month",
+    },
+  },
+  {
+    id: "ath-opp-04",
+    title: "Upwork Enterprise: Cross-Border Fintech Workflow Consultant",
+    company: "Kibo Financial Hub (via Upwork Enterprise)",
+    location: "International Remote",
+    category: "consultancy",
+    scope: "international-remote",
+    platform: "Upwork",
+    description:
+      "Technical consultant required to architect payment bridging logic between Southern African remittance corridors and European merchant accounts.",
+    requirements: [
+      "Full-Stack Development (React, TypeScript, Node.js)",
+      "n8n & Workflow Automation",
+      "Malawi Regulatory & Public Sector Procurement",
+    ],
+    salaryOrBudget: "$75 - $110 USD / hr ($8,000 Milestone Contract)",
+    deadline: "2026-09-30",
+    atsScore: 90,
+    postedDate: "45 mins ago",
+    status: "tailored",
+    isFlagged: false,
+    matchedSkills: [
+      "Full-Stack Development (React, TypeScript, Node.js)",
+      "n8n & Workflow Automation",
+    ],
+    missingSkills: ["SWIFT ISO 20022 messaging"],
+    dehumanizedPitch:
+      "Hands-on background interfacing local clearinghouses and mobile money settlement protocols with modern REST APIs.",
+    autoCreatedDocs: {
+      hasExecutiveSummary: true,
+      hasProposal: true,
+    },
+  },
+  {
+    id: "ath-opp-05",
+    title: "Regional Telecommunications Operations Specialist",
+    company: "TNM Malawi (Telekom Networks Malawi)",
+    location: "Lilongwe, Malawi (Area 3)",
+    category: "job",
+    scope: "lilongwe-local",
+    platform: "Corporate",
+    description:
+      "Manage service continuity, core billing infrastructure, and enterprise client provisioning across the central region.",
+    requirements: [
+      "Enterprise Architecture",
+      "PostgreSQL & Health/MIS Data Pipelines",
+      "Distributed Team Leadership & Agile Execution",
+    ],
+    salaryOrBudget: "MWK 3,800,000 - 4,600,000 / month",
+    deadline: "2026-10-14",
+    atsScore: 84,
+    postedDate: "4 hours ago",
+    status: "evaluated",
+    isFlagged: true, // ATS 80-89 AUTO-FLAGGED!
+    matchedSkills: [
+      "Enterprise Architecture",
+      "Distributed Team Leadership",
+    ],
+    missingSkills: ["SS7 Signaling Protocols", "Fiber Optic Routing"],
+    dehumanizedPitch:
+      "Experienced leader in enterprise telecommunications and high-volume billing verification across Lilongwe.",
+  },
+  {
+    id: "ath-opp-06",
+    title: "Consultancy: Evaluation of Digital Literacy Interventions",
+    company: "Save the Children Malawi",
+    location: "Lilongwe, Malawi (Hybrid)",
+    category: "consultancy",
+    scope: "lilongwe-local",
+    platform: "ReliefWeb",
+    description:
+      "Conduct mid-term independent evaluation of primary school tablet learning initiatives across 35 pilot rural zones.",
+    requirements: [
+      "Monitoring & Evaluation (M&E) Frameworks",
+      "Multilateral Donor Reporting (USAID, UNDP, EU)",
+    ],
+    salaryOrBudget: "$12,000 USD (30-day consultancy)",
+    deadline: "2026-10-09",
+    atsScore: 86,
+    postedDate: "5 hours ago",
+    status: "evaluated",
+    isFlagged: true, // ATS 80-89 AUTO-FLAGGED!
+    matchedSkills: [
+      "Monitoring & Evaluation (M&E) Frameworks",
+      "Multilateral Donor Reporting (USAID, UNDP, EU)",
+    ],
+    missingSkills: ["Early Childhood Literacy Pedagogy"],
+  },
+  {
+    id: "ath-opp-07",
+    title: "International Remote Solutions Architect (Cloud Infrastructure)",
+    company: "Veloce Cloud Labs (San Francisco / Global Remote)",
+    location: "International Remote (Anywhere)",
+    category: "job",
+    scope: "international-remote",
+    platform: "LinkedIn",
+    description:
+      "Design multi-tenant AWS environments, Kubernetes orchestrations, and automated deployment pipelines.",
+    requirements: [
+      "Enterprise Architecture",
+      "Full-Stack Development (React, TypeScript, Node.js)",
+    ],
+    salaryOrBudget: "$110,000 - $135,000 USD / yr",
+    deadline: "2026-10-31",
+    atsScore: 81,
+    postedDate: "6 hours ago",
+    status: "evaluated",
+    isFlagged: true, // ATS 80-89 AUTO-FLAGGED!
+    matchedSkills: ["Full-Stack Development", "Enterprise Architecture"],
+    missingSkills: ["Terraform Enterprise", "SOC2 Type II Audit Lead"],
+  },
+  {
+    id: "ath-opp-08",
+    title: "Senior Full-Stack Developer (Remote Lilongwe Branch)",
+    company: "Baobab Health Tech",
+    location: "Lilongwe, Malawi (100% Remote)",
+    category: "job",
+    scope: "lilongwe-remote",
+    platform: "Corporate",
+    description:
+      "Build touch-screen clinical work-stations and offline-first clinic synchronization systems for district hospitals.",
+    requirements: [
+      "Full-Stack Development (React, TypeScript, Node.js)",
+      "PostgreSQL & Health/MIS Data Pipelines",
+      "Distributed Team Leadership & Agile Execution",
+    ],
+    salaryOrBudget: "MWK 3,500,000 / month",
+    deadline: "2026-10-10",
+    atsScore: 93,
+    postedDate: "1 day ago",
+    status: "submitted",
+    isFlagged: false,
+    matchedSkills: [
+      "Full-Stack Development (React, TypeScript, Node.js)",
+      "PostgreSQL & Health/MIS Data Pipelines",
+    ],
+    missingSkills: ["Offline CouchDB Sync"],
+    autoCreatedDocs: {
+      hasResume: true,
+      hasCoverLetter: true,
+    },
+    receipt: {
+      receiptId: "ATH-RCPT-882194",
+      confirmationHash: "SHA256-BAOBAB-8821-MWK",
+      submittedAt: "2026-09-17T15:42:10Z",
+      jobTitle: "Senior Full-Stack Developer (Remote Lilongwe Branch)",
+      company: "Baobab Health Tech",
+      applicantName: "Chifuniro Phiri",
+      authorizedBy: "Chifuniro Phiri (Digital Authorization Signed)",
+      authorizedAt: "2026-09-17T15:41:45Z",
+      portalName: "Baobab Careers Portal / Greenhouse",
+      followUpDate: "2026-09-24",
+      status: "SUBMITTED",
+      notes: "Application confirmed by Baobab Talent Acquisition. Interview round anticipated within 7 business days.",
+    },
+  },
+];
+
+export const defaultSettings: AutomationSettings = {
+  autoCreateThreshold: 90,
+  flagThresholdMin: 80,
+  flagThresholdMax: 89,
+  jobScheduleHours: 4,
+  consultancyScheduleHours: 4,
+  autoCreateResumeCoverLetter: true,
+  autoCreateProposalExecSummary: true,
+  dehumanizeEnabled: true,
+  n8nWebhookUrl: "https://n8n.athena-core.internal/webhook/athena-autonomous-pipeline",
+  n8nActive: true,
+  soundAlerts: false,
+};
+
+export const initialCronState: CronScheduleState = {
+  lastJobRun: "10:00 AM",
+  nextJobRun: "02:00 PM",
+  jobSecondsRemaining: 7420,
+  lastConsultancyRun: "10:00 AM",
+  nextConsultancyRun: "02:00 PM",
+  consultancySecondsRemaining: 9840,
+  isSchedulerActive: true,
+  totalAutomationsToday: 14,
+};

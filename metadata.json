@@ -1,0 +1,7 @@
+{
+  "name": "Athena - AI Job & Consultancy Pipeline",
+  "description": "Autonomous job and consultancy search, ATS scoring, document tailoring, and application submission platform for Lilongwe, Malawi and International remote opportunities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
