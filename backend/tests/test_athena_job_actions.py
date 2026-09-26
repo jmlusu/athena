@@ -164,7 +164,11 @@ def test_create_application_unknown_job(client, sample_profile, resume_document)
 
 
 def test_apply_to_job_with_dict_documents(
-    client, temp_db, sample_job, sample_profile, resume_document,
+    client,
+    temp_db,
+    sample_job,
+    sample_profile,
+    resume_document,
 ):
     profile = temp_db.get_user_profile(sample_profile.id)
     profile.documents = [json.loads(resume_document.model_dump_json())]

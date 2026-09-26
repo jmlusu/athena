@@ -271,9 +271,7 @@ async def apply_to_job(job_id: UUID, request: ApplyRequest) -> ApplicationRespon
         raise HTTPException(status_code=404, detail="Profile not found")
 
     documents: Any = profile.documents
-    resume_ids = {
-        str(doc.get("id") if isinstance(doc, dict) else doc.id) for doc in documents
-    }
+    resume_ids = {str(doc.get("id") if isinstance(doc, dict) else doc.id) for doc in documents}
     if str(request.resume_id) not in resume_ids:
         raise HTTPException(status_code=404, detail="Resume not found")
 
