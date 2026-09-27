@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Opportunity, ApplicationReceipt } from "../../types";
+import { LinkedInExportModal } from "../modals/LinkedInExportModal";
 
 interface ReceiptsViewProps {
   opportunities: Opportunity[];
@@ -28,6 +29,12 @@ export const ReceiptsView: React.FC<ReceiptsViewProps> = ({ opportunities }) => 
   );
   const [showFollowUpDraft, setShowFollowUpDraft] = useState(false);
   const [copiedDraft, setCopiedDraft] = useState(false);
+  const [showLinkedInModal, setShowLinkedInModal] = useState(false);
+
+  // Match corresponding opportunity for selected receipt
+  const matchedOpportunity = opportunities.find(
+    (o) => o.receipt?.receiptId === selectedReceipt?.receiptId || o.title === selectedReceipt?.jobTitle
+  ) || opportunities[0] || null;
 
   const handleCopyDraft = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -199,13 +206,22 @@ export const ReceiptsView: React.FC<ReceiptsViewProps> = ({ opportunities }) => 
                     Athena automatically schedules follow-up outreach 7 days after submission to maximize callback rates.
                   </p>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => setShowFollowUpDraft(!showFollowUpDraft)}
-                      className="px-3 py-1.5 bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5"
+                      className="px-3.5 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs"
                     >
                       <Mail className="w-3.5 h-3.5" />
                       <span>{showFollowUpDraft ? "Hide Follow-Up Draft" : "Generate Professional Follow-Up Email"}</span>
+                    </button>
+
+                    <button
+                      onClick={() => setShowLinkedInModal(true)}
+                      className="px-3.5 py-2 bg-[#F0F7FD] hover:bg-[#E1EFFB] text-[#0A66C2] border border-[#B8D7F2] text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs"
+                      title="Export verified submission draft to LinkedIn"
+                    >
+                      <span className="font-bold bg-[#0A66C2] text-white w-4 h-4 rounded text-[10px] flex items-center justify-center leading-none">in</span>
+                      <span>Export to LinkedIn</span>
                     </button>
                   </div>
 
@@ -245,6 +261,13 @@ ${selectedReceipt.applicantName}`}
             ) : null}
           </div>
         </div>
+      )}
+      {showLinkedInModal && matchedOpportunity && (
+        <LinkedInExportModal
+          opportunity={matchedOpportunity}
+          receipt={selectedReceipt}
+          onClose={() => setShowLinkedInModal(false)}
+        />
       )}
     </div>
   );
