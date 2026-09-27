@@ -11,6 +11,7 @@ __pycache__/
 *$py.class
 
 # Build outputs
+dist/
 frontend/dist/
 frontend/.vite/
 
@@ -50,3 +51,4 @@ company/athena/
 # Misc
 *.tmp
 *.temp
+build/
