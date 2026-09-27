@@ -11,10 +11,12 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 from urllib.parse import urlparse
+
+from athena.timeutils import ensure_utc
 
 try:
     from playwright.async_api import Browser as PlaywrightBrowser
@@ -98,8 +100,8 @@ class BrowserSession:
     def from_dict(cls, data: dict[str, Any]) -> BrowserSession:
         return cls(
             id=data["id"],
-            created_at=datetime.fromisoformat(data["created_at"]),
-            updated_at=datetime.fromisoformat(data["updated_at"]),
+            created_at=ensure_utc(datetime.fromisoformat(data["created_at"])),
+            updated_at=ensure_utc(datetime.fromisoformat(data["updated_at"])),
             cookies=data.get("cookies", []),
             local_storage=data.get("local_storage", {}),
             session_storage=data.get("session_storage", {}),
@@ -344,8 +346,8 @@ class AthenaBrowser:
 
             session = BrowserSession(
                 id=self._session.id if self._session else str(uuid.uuid4()),
-                created_at=self._session.created_at if self._session else datetime.now(),
-                updated_at=datetime.now(),
+                created_at=self._session.created_at if self._session else datetime.now(UTC),
+                updated_at=datetime.now(UTC),
                 cookies=cookies,
                 local_storage=json.loads(local_storage) if local_storage else {},
                 session_storage=json.loads(session_storage) if session_storage else {},
@@ -369,7 +371,7 @@ class AthenaBrowser:
         self._audit_log.append(
             {
                 "type": "request",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "url": request.url,
                 "method": request.method,
                 "headers": dict(request.headers),
@@ -384,7 +386,7 @@ class AthenaBrowser:
         self._audit_log.append(
             {
                 "type": "response",
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "url": response.url,
                 "status": response.status,
                 "headers": dict(response.headers),
@@ -399,7 +401,7 @@ class AthenaBrowser:
         try:
             self.config.audit_dir.mkdir(parents=True, exist_ok=True)
             audit_file = (
-                self.config.audit_dir / f"audit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl"
+                self.config.audit_dir / f"audit_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.jsonl"
             )
             lines = [json.dumps(entry) for entry in self._audit_log]
             audit_file.write_text("\n".join(lines))
@@ -427,7 +429,7 @@ class AthenaBrowser:
             return Path()
 
         self.config.audit_dir.mkdir(parents=True, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         filename = f"{timestamp}_{name}.png"
         path = self.config.audit_dir / "screenshots" / filename
         path.parent.mkdir(parents=True, exist_ok=True)

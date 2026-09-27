@@ -1,6 +1,6 @@
 """Deterministic fallback AI provider - no API key required."""
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from athena.api.ai_schemas import (
@@ -186,7 +186,7 @@ class FallbackProvider(AthenaAIProvider):
             document = {
                 "title": f"Technical & Financial Proposal: {job.get('title', 'Strategic Consultancy')}",
                 "recipient": f"{job.get('company', 'Hiring Committee')}, Lilongwe / International Secretariat",
-                "date": datetime.now().strftime("%B %d, %Y"),
+                "date": datetime.now(UTC).strftime("%B %d, %Y"),
                 "executive_summary": exec_summary,
                 "sections": [
                     {
@@ -252,7 +252,7 @@ class FallbackProvider(AthenaAIProvider):
             document = {
                 "title": f"Application for {job.get('title', 'Open Position')}",
                 "recipient": f"Hiring Manager, {job.get('company', 'Company')}",
-                "date": datetime.now().strftime("%B %d, %Y"),
+                "date": datetime.now(UTC).strftime("%B %d, %Y"),
                 "greeting": f"Dear Hiring Team at {job.get('company', 'the organization')},",
                 "paragraphs": [
                     para1,
@@ -435,13 +435,13 @@ class FallbackProvider(AthenaAIProvider):
             ),
         ]
 
-        return ScrapeLiveResponse(listings=default_listings, timestamp=datetime.utcnow())
+        return ScrapeLiveResponse(listings=default_listings, timestamp=datetime.now(UTC))
 
     async def dispatch_n8n(self, request: N8nDispatchRequest) -> N8nDispatchResponse:
         """Stub n8n dispatcher."""
         import random
 
-        execution_id = f"n8n-exec-{int(datetime.utcnow().timestamp())}-{random.randint(1000, 9999)}"
+        execution_id = f"n8n-exec-{int(datetime.now(UTC).timestamp())}-{random.randint(1000, 9999)}"
         webhook_url = (
             request.webhook_url or "https://n8n.athena-ops.internal/webhook/athena-pipeline-trigger"
         )
@@ -449,7 +449,7 @@ class FallbackProvider(AthenaAIProvider):
         return N8nDispatchResponse(
             status="DISPATCHED",
             execution_id=execution_id,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             webhook_url=webhook_url,
             event=request.event_type or "JOB_MATCH_HIGH_ATS",
             nodes_processed=[
@@ -481,7 +481,7 @@ class FallbackProvider(AthenaAIProvider):
         confirmation_hash = (
             "SHA256-"
             + base64.b64encode(
-                f"{request.application_id}:{request.applicant_name}:{datetime.utcnow().timestamp()}".encode()
+                f"{request.application_id}:{request.applicant_name}:{datetime.now(UTC).timestamp()}".encode()
             ).decode()[:16]
         )
 
@@ -489,15 +489,13 @@ class FallbackProvider(AthenaAIProvider):
             status="SUBMITTED",
             receipt_id=receipt_id,
             confirmation_hash=confirmation_hash,
-            submitted_at=datetime.utcnow(),
+            submitted_at=datetime.now(UTC),
             job_title=request.job_title,
             company=request.company,
             applicant_name=request.applicant_name,
             authorized_by=request.authorization_signature,
-            authorized_at=request.authorized_at or datetime.utcnow(),
-            next_follow_up_date=(datetime.utcnow().replace(day=datetime.utcnow().day + 7)).strftime(
-                "%Y-%m-%d"
-            ),
+            authorized_at=request.authorized_at or datetime.now(UTC),
+            next_follow_up_date=(datetime.now(UTC) + timedelta(days=7)).strftime("%Y-%m-%d"),
         )
 
     async def health_check(self) -> dict[str, Any]:
@@ -505,5 +503,5 @@ class FallbackProvider(AthenaAIProvider):
             "status": "ok",
             "provider": self.name,
             "has_api_key": False,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }

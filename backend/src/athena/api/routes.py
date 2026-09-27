@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 
 from athena.documents import DocumentGenerator, DocumentOutput
+from athena.timeutils import sort_key_utc
 
 from ..ats import ats_scorer
 from ..matching import matching_engine
@@ -100,7 +101,7 @@ async def list_jobs(
         ]
 
     total = len(jobs)
-    jobs.sort(key=lambda j: j.scraped_at, reverse=True)
+    jobs.sort(key=lambda j: sort_key_utc(j.scraped_at), reverse=True)
     jobs = jobs[offset : offset + limit]
 
     return JobListResponse(
@@ -276,8 +277,8 @@ async def list_receipts(
             )
             receipts.append(receipt)
     
-    # Sort by submitted_at descending
-    receipts.sort(key=lambda r: r.submitted_at, reverse=True)
+    # Sort by submitted_at descending (tolerates legacy naive timestamps)
+    receipts.sort(key=lambda r: sort_key_utc(r.submitted_at), reverse=True)
     total = len(receipts)
     receipts = receipts[offset:offset + limit]
     

@@ -15,7 +15,7 @@ import { cn } from '@/lib/athena/utils';
 
 export type ToastVariant = 'info' | 'success' | 'error' | 'warning';
 
-interface Toast {
+export interface Toast {
   id: string;
   message: string;
   variant: ToastVariant;
@@ -44,7 +44,7 @@ export const useToast = () => {
 };
 
 // Toast container props
-interface ToastContainerProps {
+export interface ToastContainerProps {
   className?: string;
   'data-testid'?: string;
   maxToasts?: number;
@@ -206,7 +206,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
 };
 
 // Toast Provider - wrapper for app-level toast management
-interface ToastProviderProps {
+export interface ToastProviderProps {
   children: React.ReactNode;
   maxToasts?: number;
   position?: ToastContainerProps['position'];

@@ -5,6 +5,27 @@ import {
   Cell,
 } from 'recharts';
 import { cn } from '@/lib/athena/utils';
+import type { MatchTier } from '@/lib/athena/types';
+
+type GaugeTier = 'critical' | 'flagged' | 'standard';
+
+/**
+ * Call sites pass either the gauge's own tiers (from ATS thresholds) or a
+ * `MatchTier` from `Job.match_tier` / `Opportunity.match_tier`. Normalise both
+ * here so consumers don't need per-call-site conversions.
+ */
+const toGaugeTier = (tier: GaugeTier | MatchTier): GaugeTier => {
+  switch (tier) {
+    case 'excellent':
+    case 'critical':
+      return 'critical';
+    case 'good':
+    case 'flagged':
+      return 'flagged';
+    default: // fair | poor | standard
+      return 'standard';
+  }
+};
 
 interface ATSGaugeProps {
   score: number;
@@ -13,7 +34,7 @@ interface ATSGaugeProps {
   showLabel?: boolean;
   label?: string;
   className?: string;
-  tier?: 'critical' | 'flagged' | 'standard';
+  tier?: GaugeTier | MatchTier;
 }
 
 const TIER_COLORS = {
@@ -45,7 +66,9 @@ export const ATSGauge: React.FC<ATSGaugeProps> = ({
   const clampedScore = Math.max(0, Math.min(100, Math.round(score)));
   
   // Determine tier from score if not provided
-  const effectiveTier = tier || (clampedScore >= 90 ? 'critical' : clampedScore >= 80 ? 'flagged' : 'standard');
+  const effectiveTier = tier
+    ? toGaugeTier(tier)
+    : (clampedScore >= 90 ? 'critical' : clampedScore >= 80 ? 'flagged' : 'standard');
   const color = TIER_COLORS[effectiveTier];
   const tierLabel = TIER_LABELS[effectiveTier];
 

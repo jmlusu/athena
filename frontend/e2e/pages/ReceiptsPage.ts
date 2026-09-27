@@ -16,7 +16,7 @@ export class ReceiptsPage {
   }
 
   async goto() {
-    await this.page.goto('/athena/receipts');
+    await this.page.goto('/receipts');
     await this.page.waitForLoadState('networkidle');
   }
 

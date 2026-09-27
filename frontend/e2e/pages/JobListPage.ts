@@ -18,7 +18,7 @@ export class JobListPage {
   }
 
   async goto() {
-    await this.page.goto('/athena/jobs');
+    await this.page.goto('/jobs');
     await this.page.waitForLoadState('networkidle');
     await this.jobCards.first().waitFor({ state: 'visible', timeout: 10000 });
   }

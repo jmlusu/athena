@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Generic, TypeVar
@@ -17,6 +17,7 @@ from .models import (
     ScrapeJob,
     UserProfile,
 )
+from .timeutils import ensure_utc, sort_key_utc
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -50,7 +51,11 @@ class AthenaStore(Generic[T]):
                     if line.strip():
                         try:
                             data = json.loads(line)
-                            obj = self.model_class(**data)
+                            # Explicitly revive persisted JSON timestamps/UUIDs
+                            # before model validation (naive timestamps are
+                            # normalized to aware UTC by _deserialize and again
+                            # by the models' UTCDateTime fields).
+                            obj = self.model_class(**self._deserialize(data))
                             items[str(getattr(obj, self.id_field))] = obj
                         except Exception as e:  # noqa: BLE001
                             print(f"Error loading {self.model_class.__name__}: {e}")
@@ -73,7 +78,8 @@ class AthenaStore(Generic[T]):
         if isinstance(data, UUID):
             return str(data)
         if isinstance(data, datetime):
-            return data.isoformat()
+            # Persist aware UTC even if a naive value was assigned post-validation
+            return ensure_utc(data).isoformat()
         if hasattr(data, "__str__") and type(data).__name__ == "HttpUrl":
             return str(data)
         if isinstance(data, dict):
@@ -102,7 +108,7 @@ class AthenaStore(Generic[T]):
             ):
                 if isinstance(v, str):
                     try:
-                        result[k] = datetime.fromisoformat(v)
+                        result[k] = ensure_utc(datetime.fromisoformat(v))
                     except ValueError:
                         result[k] = v
                 else:
@@ -205,8 +211,8 @@ class AthenaDB:
             jobs = [j for j in jobs if j.status == status]
         if source:
             jobs = [j for j in jobs if j.source == source]
-        # Sort by scraped_at desc
-        jobs.sort(key=lambda j: j.scraped_at, reverse=True)
+        # Sort by scraped_at desc (tolerates any legacy naive timestamps)
+        jobs.sort(key=lambda j: sort_key_utc(j.scraped_at), reverse=True)
         return jobs[offset : offset + limit]
 
     def update_job(self, job: Job) -> Job:
@@ -246,7 +252,7 @@ class AthenaDB:
             apps = [a for a in apps if a.job_id == job_id]
         if status:
             apps = [a for a in apps if a.status == status]
-        apps.sort(key=lambda a: a.created_at, reverse=True)
+        apps.sort(key=lambda a: sort_key_utc(a.created_at), reverse=True)
         return apps
 
     def update_application(self, app: Application) -> Application:
@@ -279,7 +285,7 @@ class AthenaDB:
 
     def get_recent_scrape_jobs(self, limit: int = 50) -> list[ScrapeJob]:
         jobs = self.scrape_jobs.get_all()
-        jobs.sort(key=lambda j: j.created_at, reverse=True)
+        jobs.sort(key=lambda j: sort_key_utc(j.created_at), reverse=True)
         return jobs[:limit]
 
     def update_scrape_job(self, scrape_job: ScrapeJob) -> ScrapeJob:

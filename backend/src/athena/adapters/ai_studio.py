@@ -1,12 +1,13 @@
 """Adapter for converting between AI Studio Opportunity and OpenCode Job models."""
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
 from athena.models.enums import JobSource, JobStatus, JobType
 from athena.models.jobs import Job, SalaryRange
 from athena.models.status_mapping import pipeline_to_job_status
+from athena.timeutils import ensure_utc
 
 
 def opportunity_to_job(opp: dict[str, Any], profile_id: Optional[UUID] = None) -> Job:
@@ -214,13 +215,14 @@ def _parse_posted_date(posted_str: str) -> datetime:
         value = int(match.group(1))
         unit = match.group(2)
         if unit == "hour":
-            return now.replace(hour=now.hour - value)
-        elif unit == "day":
-            return now.replace(day=now.day - value)
-        elif unit == "week":
-            return now.replace(day=now.day - value * 7)
-        elif unit == "month":
-            return now.replace(month=now.month - value)
+            return now - timedelta(hours=value)
+        if unit == "day":
+            return now - timedelta(days=value)
+        if unit == "week":
+            return now - timedelta(weeks=value)
+        if unit == "month":
+            # Approximation: a month is treated as 30 days.
+            return now - timedelta(days=30 * value)
 
     return now
 
@@ -230,6 +232,6 @@ def _parse_deadline(deadline_str: str) -> Optional[datetime]:
     if not deadline_str:
         return None
     try:
-        return datetime.fromisoformat(deadline_str)
+        return ensure_utc(datetime.fromisoformat(deadline_str))
     except ValueError:
         return None

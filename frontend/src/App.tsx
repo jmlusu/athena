@@ -1,5 +1,5 @@
 import React, { Suspense, useState, useEffect } from 'react';
-import { createBrowserRouter, Navigate, RouterProvider, useLoaderData, useNavigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider, useNavigate, useParams } from 'react-router-dom';
 import { AthenaLayout } from '@/components/athena/AthenaLayout';
 import { AthenaDashboard as Dashboard } from '@/pages/athena/Dashboard';
 import { JobList } from '@/pages/athena/JobList';
@@ -11,11 +11,11 @@ import { N8nIntegration } from '@/pages/athena/N8nIntegration';
 import { FormFillerModal } from '@/pages/athena/FormFillerModal';
 import { ApplicantProfile } from '@/pages/athena/ApplicantProfile';
 import { Settings } from '@/pages/athena/Settings';
-import { DesignTokensTest } from '@/pages/athena/DesignTokensTest';
 import { RouteError } from '@/components/athena/RouteError';
-import { Opportunity, Job } from '@/lib/athena/types';
+import { Job } from '@/lib/athena/types';
 import { ApplicantProfile as AIApplicantProfile } from '@/lib/athena/aiTypes';
-import { getJob, listJobs } from '@/lib/athena/api';
+import { getJob, listJobs, listProfiles } from '@/lib/athena/api';
+import { jobToOpportunity, userProfileToApplicantProfile } from '@/lib/athena/mappers';
 import { CheckSquare, Briefcase, Search, Filter, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/athena/utils';
 
@@ -178,26 +178,114 @@ const FormFillerLanding: React.FC = () => {
 
 // Wrapper that shows either the landing page or the modal for a specific job
 const FormFillerModalWrapper: React.FC = () => {
-  const { jobId } = useLoaderData<{ jobId?: string }>();
+  const { jobId } = useParams<{ jobId?: string }>();
   const navigate = useNavigate();
+  const [job, setJob] = useState<Job | null>(null);
+  const [applicantProfile, setApplicantProfile] = useState<AIApplicantProfile | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!jobId) return;
+    let cancelled = false;
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const [jobData, profiles] = await Promise.all([
+          getJob(jobId),
+          listProfiles().catch(() => []),
+        ]);
+        if (profiles.length === 0) {
+          throw new Error('No applicant profile found. Add one on the Profile page first.');
+        }
+        if (cancelled) return;
+        setJob(jobData);
+        setApplicantProfile(userProfileToApplicantProfile(profiles[0]));
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load opportunity');
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [jobId]);
 
   if (!jobId) {
     return <FormFillerLanding />;
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (error || !job || !applicantProfile) {
+    return (
+      <div className="p-6 text-center text-red-600">
+        <p>Error: {error ?? 'Opportunity not found'}</p>
+      </div>
+    );
+  }
+
   return (
     <FormFillerModal
-      opportunity={{ id: jobId, title: "Position", company: "Company", location: "Lilongwe, Malawi", category: "job", scope: "lilongwe-local", platform: "LinkedIn", description: "", requirements: [], salaryOrBudget: "", deadline: "", atsScore: 0, postedDate: "", status: "awaiting_signoff", isFlagged: false }}
-      applicantProfile={{ full_name: "", email: "", phone: "", location: "", headline: "", summary: "", skills: [], experience: [], education: [], certifications: [], hourly_rate_usd: 0, expected_monthly_mwk: 0, legal_authorized_signer: "", linkedin_url: "", portfolio_url: "", github_url: "", preferences: { keywords: [], excluded_keywords: [], locations: [], job_types: [], min_salary: undefined, preferred_sources: [], remote_only: false, visa_sponsorship_required: false } }}
+      opportunity={jobToOpportunity(job)}
+      applicantProfile={applicantProfile}
       onClose={() => navigate('/form-filler')}
-      onSubmitSuccess={() => navigate('/form-filler')}
+      onSubmitSuccess={() => navigate('/receipts')}
     />
   );
 };
 
 const ApplicantProfileWrapper: React.FC = () => {
-  const { profile } = useLoaderData<{ profile: AIApplicantProfile }>();
-  
+  const [profile, setProfile] = useState<AIApplicantProfile | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    listProfiles()
+      .then((profiles) => {
+        if (cancelled) return;
+        if (profiles.length === 0) {
+          throw new Error('No applicant profile found.');
+        }
+        setProfile(userProfileToApplicantProfile(profiles[0]));
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load profile');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (error) {
+    return (
+      <div className="p-6 text-center text-red-600">
+        <p>Error: {error}</p>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent" />
+      </div>
+    );
+  }
+
   return <ApplicantProfile profile={profile} onUpdateProfile={() => {}} />;
 };
 
@@ -221,7 +309,6 @@ export const App: React.FC = () => {
           { path: 'n8n', element: <N8nIntegrationRoute />, errorElement: routeErrorElement },
           { path: 'profile', element: <ApplicantProfileWrapper />, errorElement: routeErrorElement },
           { path: 'settings', element: <SettingsRoute />, errorElement: routeErrorElement },
-          { path: 'design-tokens-test', element: <DesignTokensTest />, errorElement: routeErrorElement },
           { path: '*', element: <Navigate to="/dashboard" replace /> },
         ],
       },

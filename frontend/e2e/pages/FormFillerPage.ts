@@ -94,10 +94,11 @@ export class FormFillerPage {
   }
 
   async submit() {
-    await this.submitButton.click();
-    await this.page.waitForResponse(response => 
+    const responsePromise = this.page.waitForResponse(response =>
       response.url().includes('/submit-application') && response.status() === 200
     );
+    await this.submitButton.click();
+    await responsePromise;
   }
 
   async cancel() {

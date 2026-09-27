@@ -44,8 +44,7 @@ export type NavView =
   | 'receipts'
   | 'n8n'
   | 'profile'
-  | 'settings'
-  | 'design-tokens-test';
+  | 'settings';
 
 interface AthenaLayoutProps {
   userProfile?: {
@@ -83,7 +82,6 @@ const NAV_ITEMS: { id: NavView; label: string; icon: React.ComponentType<{ class
   { id: 'n8n', label: 'n8n Workflow Nodes', icon: Workflow, badge: 'Plus' },
   { id: 'profile', label: 'Applicant Skills & Profile', icon: User },
   { id: 'settings', label: 'Settings', icon: Settings },
-  { id: 'design-tokens-test', label: 'Design Tokens Test', icon: Sliders, badge: 'Dev' },
 ];
 
 export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
@@ -117,7 +115,6 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
       '/n8n': 'n8n',
       '/profile': 'profile',
       '/settings': 'settings',
-      '/design-tokens-test': 'design-tokens-test',
     };
     const view = routeMap[path] || 'dashboard';
     setCurrentView(view);
@@ -141,7 +138,6 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
       n8n: '/n8n',
       profile: '/profile',
       settings: '/settings',
-      'design-tokens-test': '/design-tokens-test',
     };
     navigate(pathMap[view]);
   };

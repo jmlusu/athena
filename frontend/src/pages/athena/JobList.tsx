@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Search, Filter, X, ChevronDown, Download, Upload, Plus, Loader2, FileText, Globe, MapPin, Building, Briefcase, CheckCircle2, AlertCircle, Clock, Sparkles, Zap } from 'lucide-react';
+import { Search, Filter, X, ChevronDown, Download, Upload, Plus, Loader2, FileText, Globe, MapPin, Building, Briefcase, CheckCircle2, AlertCircle, Clock, Sparkles, Zap, Flag } from 'lucide-react';
 import { JobCard } from '@/components/athena/JobCard';
 import { ATSGauge, MiniATSGauge } from '@/components/athena/ATSGauge';
 import { Badge, StatusPill } from '@/components/athena/ui/Badge';
@@ -595,7 +595,7 @@ export const JobList: React.FC = () => {
                           'px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono border',
                           job.job_type === 'consultancy' ? 'tint-consultancy' : 'tint-job'
                         )}>
-                          {job.category.toUpperCase()}
+                          {getJobTypeLabel(job.job_type).toUpperCase()}
                         </span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono bg-surface-muted border border-slate text-text-secondary">
                           {getJobSourceLabel(job.source)}

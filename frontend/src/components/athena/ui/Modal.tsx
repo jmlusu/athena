@@ -212,7 +212,7 @@ export const Modal: React.FC<ModalProps> = ({
 };
 
 // Confirmation modal variant
-interface ConfirmModalProps {
+export interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -277,7 +277,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 };
 
 // Form modal with built-in form handling
-interface FormModalProps extends Omit<ModalProps, 'children' | 'footer'> {
+export interface FormModalProps extends Omit<ModalProps, 'children' | 'footer'> {
   onSubmit: (data: FormData) => Promise<void> | void;
   children: (register: (name: string) => React.InputHTMLAttributes<HTMLInputElement>) => React.ReactNode;
   submitLabel?: string;

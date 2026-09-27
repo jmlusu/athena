@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Minus, Target, Users, DollarSign, Clock, Award, RefreshCw, Download, FileText } from 'lucide-react';
 import { MetricCardLarge, StatCounter } from '@/components/athena/MetricCard';
 import { LayeredMountainChart } from '@/components/athena/charts/LayeredMountainChart';
 import { MetricsAndBarChart } from '@/components/athena/charts/MetricsAndBarChart';
 import { PipelineKanbanBoard } from '@/components/athena/pipeline/PipelineKanbanBoard';
 import { cn, formatRelativeTime, groupBy, sortBy } from '@/lib/athena/utils';
-import { listJobs, getPipelineStats, getScrapingStats, triggerScrape } from '@/lib/athena/api';
+import { listJobs, getPipelineStats, getScrapingStats, triggerScrape, listProfiles, submitApplication } from '@/lib/athena/api';
+import { jobToOpportunity } from '@/lib/athena/mappers';
 import type { Job, JobStatus, PipelineStatsResponse } from '@/lib/athena/types';
+import { OpportunityDetailModal } from './OpportunityDetailModal';
+import { LinkedInExportModal } from './LinkedInExportModal';
+import { SignOffModal } from './SignOffModal';
 
 export const AthenaDashboard: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<PipelineStatsResponse | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
@@ -20,6 +25,12 @@ export const AthenaDashboard: React.FC = () => {
   const [scraping, setScraping] = useState(false);
   const [pipelineSources, setPipelineSources] = useState<Array<{ name: string; globalRemote: number; lilongweHub: number; consultancies: number }>>([]);
   const [skillsData, setSkillsData] = useState<Array<{ skill: string; compatibility: number; category: 'technical' | 'soft' | 'language' }>>([]);
+  const [applicantName, setApplicantName] = useState('Applicant');
+  const [activeJob, setActiveJob] = useState<Job | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [signOffOpen, setSignOffOpen] = useState(false);
+  const [signOffSubmitting, setSignOffSubmitting] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -28,10 +39,11 @@ export const AthenaDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, jobsData, scrapeData] = await Promise.all([
+      const [statsData, jobsData, scrapeData, profiles] = await Promise.all([
         getPipelineStats(),
         listJobs({ limit: 100 }),
         getScrapingStats(),
+        listProfiles().catch(() => []),
       ]);
 
       const jobsList = Array.isArray(jobsData?.jobs) ? jobsData.jobs : [];
@@ -39,6 +51,9 @@ export const AthenaDashboard: React.FC = () => {
       setStats(statsData);
       setJobs(jobsList);
       setRecentJobs(jobsList.slice(0, 5));
+      if (profiles.length > 0 && profiles[0].full_name) {
+        setApplicantName(profiles[0].full_name);
+      }
 
       // ATS score distribution
       const atsScores = jobsList.filter(j => j.ats_score !== undefined).map(j => j.ats_score!);
@@ -134,7 +149,29 @@ export const AthenaDashboard: React.FC = () => {
   };
 
   const handleJobClick = (job: Job) => {
-    console.log('Job clicked:', job);
+    setActiveJob(job);
+    setDetailOpen(true);
+  };
+
+  const handleSignOff = async (signature: string) => {
+    if (!activeJob) return;
+    setSignOffSubmitting(true);
+    try {
+      await submitApplication({
+        application_id: activeJob.id,
+        job_title: activeJob.title,
+        company: activeJob.company,
+        applicant_name: applicantName,
+        authorization_signature: signature,
+        authorized_at: new Date().toISOString(),
+      });
+      await handleJobStatusChange(activeJob.id, 'applied');
+      setSignOffOpen(false);
+    } catch (error) {
+      console.error('Application sign-off failed:', error);
+    } finally {
+      setSignOffSubmitting(false);
+    }
   };
 
   const handleScrape = async () => {
@@ -149,8 +186,7 @@ export const AthenaDashboard: React.FC = () => {
     }
   };
 
-  const handleMetricFilter = (metric: string) => {
-    console.log('Filter pipeline by metric:', metric);
+  const handleMetricFilter = (_metric: string) => {
     // Could integrate with PipelineKanbanBoard filter logic
   };
 
@@ -234,9 +270,6 @@ export const AthenaDashboard: React.FC = () => {
               <LayeredMountainChart
                 data={pipelineSources}
                 height={260}
-                onDataPointClick={(point, layer) => {
-                  console.log('Source clicked:', point.name, layer);
-                }}
               />
               <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                 <div className="flex items-center gap-2">
@@ -388,6 +421,51 @@ export const AthenaDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Job detail + export + sign-off modals (stacked one at a time) */}
+      {activeJob && (
+        <>
+          <OpportunityDetailModal
+            isOpen={detailOpen}
+            onClose={() => setDetailOpen(false)}
+            opportunity={jobToOpportunity(activeJob)}
+            onExportLinkedIn={() => {
+              setDetailOpen(false);
+              setExportOpen(true);
+            }}
+            onInspectDocuments={() => {
+              setDetailOpen(false);
+              navigate('/documents');
+            }}
+            onSignOff={() => {
+              setDetailOpen(false);
+              setSignOffOpen(true);
+            }}
+          />
+          <LinkedInExportModal
+            isOpen={exportOpen}
+            onClose={() => setExportOpen(false)}
+            opportunity={jobToOpportunity(activeJob)}
+            applicantName={applicantName}
+            onOpenLinkedIn={() =>
+              window.open(
+                activeJob.application_url || 'https://www.linkedin.com/jobs/',
+                '_blank',
+                'noopener,noreferrer',
+              )
+            }
+          />
+          <SignOffModal
+            isOpen={signOffOpen}
+            onClose={() => setSignOffOpen(false)}
+            onSubmit={handleSignOff}
+            opportunityTitle={activeJob.title}
+            opportunityCompany={activeJob.company}
+            applicantName={applicantName}
+            isSubmitting={signOffSubmitting}
+          />
+        </>
+      )}
     </div>
   );
 };

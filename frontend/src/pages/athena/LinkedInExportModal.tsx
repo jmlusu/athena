@@ -3,7 +3,7 @@ import { X, Download, Copy, ExternalLink, FileText, Code, CheckCircle2 } from "l
 import { Opportunity } from "../../lib/athena/types";
 import { cn } from "../../lib/athena/utils";
 import Modal from "@/components/athena/ui/Modal";
-import { PrimaryButton, GhostButton, AccentButton, OutlineButton, DangerButton } from "@/components/athena/ui/Button";
+import { Button, PrimaryButton, GhostButton, AccentButton, OutlineButton, DangerButton } from "@/components/athena/ui/Button";
 import { Badge } from "@/components/athena/ui/Badge";
 
 interface LinkedInExportModalProps {

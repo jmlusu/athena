@@ -24,7 +24,7 @@ export class N8nIntegrationPage {
   }
 
   async goto() {
-    await this.page.goto('/athena/n8n');
+    await this.page.goto('/n8n');
     await this.page.waitForLoadState('networkidle');
     await this.topologyCanvas.waitFor({ state: 'visible', timeout: 10000 });
   }
@@ -56,10 +56,13 @@ export class N8nIntegrationPage {
   }
 
   async executeWebhook() {
-    await this.executeButton.click();
-    await this.page.waitForResponse(response => 
+    // Register the waiter BEFORE clicking — route.fulfill resolves instantly,
+    // so a click-then-wait sequence can miss the response (flaky race).
+    const responsePromise = this.page.waitForResponse(response =>
       response.url().includes('/n8n/dispatch') && response.status() === 200
     );
+    await this.executeButton.click();
+    await responsePromise;
   }
 
   async getExecutionResponse() {

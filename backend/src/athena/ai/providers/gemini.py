@@ -2,7 +2,7 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 from google import genai
@@ -330,7 +330,7 @@ Return strict JSON:
             if data.get("listings") and isinstance(data["listings"], list):
                 return ScrapeLiveResponse(
                     listings=[ScrapeLiveListing(**l) for l in data["listings"]],
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(UTC),
                 )
         except Exception as e:
             print(f"Gemini scraper error: {e}")
@@ -351,5 +351,5 @@ Return strict JSON:
             "provider": self.name,
             "has_api_key": self.is_available,
             "model": self._model,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }

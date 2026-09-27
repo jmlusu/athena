@@ -194,7 +194,6 @@ Sincerely,
 
   const handleDownload = (format: 'docx' | 'pdf') => {
     // Would generate and download document
-    console.log(`Download as ${format.toUpperCase()}`);
   };
 
   const handleCopy = () => {

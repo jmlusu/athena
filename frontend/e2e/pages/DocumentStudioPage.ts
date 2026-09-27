@@ -28,7 +28,7 @@ export class DocumentStudioPage {
   }
 
   async goto(jobId?: string) {
-    const url = jobId ? `/athena/documents/${jobId}` : '/athena/documents';
+    const url = jobId ? `/documents/${jobId}` : '/documents';
     await this.page.goto(url);
     await this.page.waitForLoadState('networkidle');
     await this.resumeTab.waitFor({ state: 'visible', timeout: 10000 });
@@ -65,18 +65,21 @@ export class DocumentStudioPage {
   async toggleDehumanize(enabled: boolean) {
     const isChecked = await this.dehumanizeToggle.isChecked();
     if (isChecked !== enabled) {
-      await this.dehumanizeToggle.click();
-      await this.page.waitForResponse(response => 
+      // Register the waiter before the click — the response can resolve first.
+      const responsePromise = this.page.waitForResponse(response =>
         response.url().includes('/tailor-resume') || response.url().includes('/tailor-document')
       );
+      await this.dehumanizeToggle.click();
+      await responsePromise;
     }
   }
 
   async regenerate() {
-    await this.regenerateButton.click();
-    await this.page.waitForResponse(response => 
+    const responsePromise = this.page.waitForResponse(response =>
       (response.url().includes('/tailor-resume') || response.url().includes('/tailor-document')) && response.status() === 200
     );
+    await this.regenerateButton.click();
+    await responsePromise;
   }
 
   async print() {

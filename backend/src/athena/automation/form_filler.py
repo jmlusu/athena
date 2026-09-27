@@ -10,7 +10,7 @@ import asyncio
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, cast
@@ -726,7 +726,7 @@ class FormFiller:
         total_months = 0
         for exp in profile.experience:
             start = exp.start_date
-            end = exp.end_date if not exp.current else datetime.now()
+            end = exp.end_date if not exp.current else datetime.now(UTC)
             if start and end:
                 months = (end.year - start.year) * 12 + (end.month - start.month)
                 total_months += max(0, months)

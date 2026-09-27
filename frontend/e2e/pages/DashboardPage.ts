@@ -22,7 +22,9 @@ export class DashboardPage {
   }
 
   async goto() {
-    await this.page.goto('/athena/dashboard');
+    // Router is unprefixed (src/App.tsx): /athena/* 404s into the wildcard
+    // redirect, which only *looks* like it works by landing on /dashboard.
+    await this.page.goto('/dashboard');
     await this.page.waitForLoadState('networkidle');
   }
 
@@ -31,7 +33,9 @@ export class DashboardPage {
   }
 
   async getJobCardsInColumn(status: string) {
-    const column = this.pipelineColumns.filter({ hasText: status });
+    // Column headers render human labels ("4. Awaiting Sign-Off"), not raw status
+    // keys — locate the column via its data-status attribute instead of text.
+    const column = this.page.locator(`[data-testid="pipeline-column"][data-status="${status}"]`);
     return column.locator('[data-testid="job-card"]');
   }
 
@@ -48,17 +52,19 @@ export class DashboardPage {
   }
 
   async triggerScrape() {
-    await this.scrapeButton.click();
-    await this.page.waitForResponse(response => 
+    const responsePromise = this.page.waitForResponse(response =>
       response.url().includes('/scrape') && response.status() === 200
     );
+    await this.scrapeButton.click();
+    await responsePromise;
   }
 
   async processJobs() {
-    await this.processButton.click();
-    await this.page.waitForResponse(response => 
+    const responsePromise = this.page.waitForResponse(response =>
       response.url().includes('/process') && response.status() === 200
     );
+    await this.processButton.click();
+    await responsePromise;
   }
 
   async getCronCountdownText() {

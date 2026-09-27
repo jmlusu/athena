@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, GripVertical, Trash2, Edit, ChevronRight } from 'lucide-react';
 import { JobCard } from './JobCard';
 import { cn } from '@/lib/athena/utils';
-import type { Job, JobStatus, PipelineColumnProps } from '@/lib/athena/types';
+import type { JobStatus, PipelineColumnProps } from '@/lib/athena/types';
 
 // AI Studio 6-stage Kanban: Discovered, ATS Evaluated, Tailored, Awaiting Sign-Off, Submitted, Interview & Award
 const KANBAN_STAGES: Array<{ status: JobStatus; title: string; order: number }> = [
@@ -104,26 +104,6 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
     e.preventDefault();
     if (!newJobTitle.trim()) return;
 
-    const newJob: Job = {
-      id: `temp-${Date.now()}`,
-      source: 'other',
-      title: newJobTitle,
-      company: 'New Company',
-      location: 'Remote',
-      job_type: 'full_time',
-      description: '',
-      requirements: [],
-      responsibilities: [],
-      keywords: [],
-      application_url: '#',
-      benefits: [],
-      status,
-      scraped_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      metadata: {},
-    };
-
-    console.log('Add job:', newJob);
     setNewJobTitle('');
     setShowAddForm(false);
   };

@@ -17,6 +17,7 @@ import { Opportunity, ApplicationReceipt } from "../../lib/athena/types";
 import { cn } from "../../lib/athena/utils";
 import { Button, GhostButton, AccentButton, OutlineButton } from "@/components/athena/ui/Button";
 import { Badge } from "@/components/athena/ui/Badge";
+import { LinkedInExportModal } from "./LinkedInExportModal";
 
 interface ReceiptsProps {
   opportunities?: Opportunity[];
@@ -31,6 +32,8 @@ export const Receipts: React.FC<ReceiptsProps> = ({ opportunities = [] }) => {
   );
   const [showFollowUpDraft, setShowFollowUpDraft] = useState(false);
   const [copiedDraft, setCopiedDraft] = useState(false);
+  const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(() => submittedItems[0] ?? null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const handleCopyDraft = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -103,6 +106,7 @@ export const Receipts: React.FC<ReceiptsProps> = ({ opportunities = [] }) => {
                   key={opp.id}
                   onClick={() => {
                     setSelectedReceipt(rcpt);
+                    setSelectedOpp(opp);
                     setShowFollowUpDraft(false);
                   }}
                   className={cn(
@@ -152,9 +156,15 @@ export const Receipts: React.FC<ReceiptsProps> = ({ opportunities = [] }) => {
                     <p className="text-xs text-text-secondary">Client/Employer: {selectedReceipt.company}</p>
                   </div>
 
-                  <div className="text-right font-mono text-xs">
-                    <div className="text-text-secondary text-[10px]">RECEIPT ID</div>
-                    <div className="font-bold text-ink text-sm">{selectedReceipt.receiptId}</div>
+                  <div className="text-right space-y-2">
+                    <div className="font-mono text-xs">
+                      <div className="text-text-secondary text-[10px]">RECEIPT ID</div>
+                      <div className="font-bold text-ink text-sm">{selectedReceipt.receiptId}</div>
+                    </div>
+                    <OutlineButton size="sm" onClick={() => setExportOpen(true)}>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Export to LinkedIn</span>
+                    </OutlineButton>
                   </div>
                 </div>
 
@@ -257,6 +267,19 @@ ${selectedReceipt.applicantName}`}
             ) : null}
           </div>
         </div>
+      )}
+
+      {selectedOpp && (
+        <LinkedInExportModal
+          isOpen={exportOpen}
+          onClose={() => setExportOpen(false)}
+          opportunity={selectedOpp}
+          applicantName={selectedReceipt?.applicantName ?? "Applicant"}
+          receiptId={selectedReceipt?.receiptId}
+          onOpenLinkedIn={() =>
+            window.open("https://www.linkedin.com/jobs/", "_blank", "noopener,noreferrer")
+          }
+        />
       )}
     </div>
   );

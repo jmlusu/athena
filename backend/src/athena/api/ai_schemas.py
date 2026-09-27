@@ -1,10 +1,11 @@
 """Pydantic schemas for AI endpoints."""
 
-from datetime import datetime
 from typing import Any, Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, HttpUrl
+
+from athena.timeutils import UTCDateTime
 
 
 class ATSScoreRequest(BaseModel):
@@ -151,7 +152,7 @@ class ScrapeLiveListing(BaseModel):
 
 class ScrapeLiveResponse(BaseModel):
     listings: list[ScrapeLiveListing]
-    timestamp: datetime
+    timestamp: UTCDateTime
 
 
 class N8nDispatchRequest(BaseModel):
@@ -176,7 +177,7 @@ class N8nReceipt(BaseModel):
 class N8nDispatchResponse(BaseModel):
     status: str
     execution_id: str
-    timestamp: datetime
+    timestamp: UTCDateTime
     webhook_url: str
     event: str
     nodes_processed: list[N8nNodeProcessed]
@@ -191,19 +192,19 @@ class SubmitApplicationRequest(BaseModel):
     company: str
     applicant_name: str
     authorization_signature: str
-    authorized_at: Optional[datetime] = None
+    authorized_at: Optional[UTCDateTime] = None
 
 
 class SubmitApplicationResponse(BaseModel):
     status: Literal["SUBMITTED"]
     receipt_id: str
     confirmation_hash: str
-    submitted_at: datetime
+    submitted_at: UTCDateTime
     job_title: str
     company: str
     applicant_name: str
     authorized_by: str
-    authorized_at: datetime
+    authorized_at: UTCDateTime
     next_follow_up_date: str
 
 
@@ -213,4 +214,4 @@ class AIHealthResponse(BaseModel):
     status: str
     provider: str
     has_api_key: bool
-    timestamp: datetime
+    timestamp: UTCDateTime

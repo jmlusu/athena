@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from ..matching import matching_engine
@@ -301,9 +302,7 @@ class ATSScorer:
             if exp.end_date:
                 years = (exp.end_date - exp.start_date).days / 365.25
             else:
-                from datetime import datetime
-
-                years = (datetime.utcnow() - exp.start_date).days / 365.25
+                years = (datetime.now(UTC) - exp.start_date).days / 365.25
 
             total_years += years
 
