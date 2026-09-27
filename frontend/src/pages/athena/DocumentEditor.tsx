@@ -335,7 +335,7 @@ Sincerely,
             >
               {action.icon}
               <span className="hidden sm:inline font-body text-xs">{action.label}</span>
-              {action.hotkey && <span className="hidden md:inline text-[10px] text-ls-grey-light-text px-1.5 py-0.5 sunken rounded">{action.hotkey}</span>}
+              {action.hotkey && <span className="hidden md:inline text-[10px] text-white px-1.5 py-0.5 sunken rounded">{action.hotkey}</span>}
             </button>
           ))}
           <div className="w-px h-6 bg-white/[0.07] mx-2" />

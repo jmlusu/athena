@@ -337,6 +337,26 @@ export interface ApplicationReceipt {
   notes?: string;
 }
 
+export interface ReceiptResponse {
+  receipt_id: string;
+  confirmation_hash: string;
+  submitted_at: string;
+  job_title: string;
+  company: string;
+  applicant_name: string;
+  authorized_by: string;
+  authorized_at: string;
+  portal_name: string;
+  follow_up_date: string;
+  status: string;
+  notes?: string;
+}
+
+export interface ReceiptListResponse {
+  receipts: ReceiptResponse[];
+  total: number;
+}
+
 export interface Opportunity {
   id: string;
   title: string;

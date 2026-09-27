@@ -32,6 +32,8 @@ import {
   dehumanizeText,
 } from "../../lib/athena/api";
 import { cn } from "../../lib/athena/utils";
+import { Button, AccentButton, OutlineButton, GhostButton, PrimaryButton } from "@/components/athena/ui/Button";
+import { Badge, StatusPill } from "@/components/athena/ui/Badge";
 
 interface DocumentStudioProps {
   selectedOpportunity?: Opportunity | null;
@@ -162,7 +164,6 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
   // Load opportunity from jobId param if not already set
   useEffect(() => {
     if (jobId && !currentOpp) {
-      // Try to find in opportunities list
       const opp = opportunities.find((o) => o.id === jobId);
       if (opp) {
         setCurrentOpp(opp);
@@ -214,7 +215,6 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
           dehumanize: isDehumanized,
         });
         if (res.tailored_resume) {
-          // Cast the AI response to our internal type
           setResumeData(res.tailored_resume as unknown as TailoredResume);
         }
       } else {
@@ -227,7 +227,6 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
           dehumanize: isDehumanized,
         });
         if (res.document) {
-          // Cast the AI response to our internal type
           const doc = res.document as unknown as TailoredDocument;
           if (activeTab === "proposal") {
             setProposalData(doc);
@@ -266,23 +265,20 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
 
     navigator.clipboard.writeText(content);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   if (!currentOpp) {
     return (
-      <div className="bg-card border border-border rounded-xl p-12 text-center space-y-4">
-        <FileText className="w-12 h-12 text-accent mx-auto" />
-        <h3 className="text-lg font-bold font-heading text-text">No Opportunity Selected</h3>
-        <p className="text-muted max-w-md mx-auto">
+      <div className="bg-surface-white border border-slate rounded-xl p-12 text-center space-y-4">
+        <FileText className="w-12 h-12 text-brand-orange mx-auto" />
+        <h3 className="font-heading text-lg font-bold text-ink">No Opportunity Selected</h3>
+        <p className="text-body max-w-md mx-auto">
           Select an opportunity from the pipeline or scraper view to generate tailored documents.
         </p>
-        <button
-          onClick={() => navigate("/athena/jobs")}
-          className="px-4 py-2 bg-primary hover:bg-navy text-white text-sm font-semibold rounded-lg shadow-sm"
-        >
+        <Button variant="accent" onClick={() => navigate("/jobs")}>
           Browse Opportunities
-        </button>
+        </Button>
       </div>
     );
   }
@@ -290,23 +286,23 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
   return (
     <div className="space-y-4">
       {/* Control Deck */}
-      <div className="bg-card border border-border p-4 rounded-xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
+      <div className="bg-surface-white border border-slate p-4 rounded-xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 no-print">
         {/* Target Opportunity Selector */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary text-accent flex items-center justify-center font-bold">
+          <div className="w-9 h-9 rounded-lg bg-brand-orange/15 text-brand-orange flex items-center justify-center font-bold">
             <FileText className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-heading text-base font-bold text-text">
+              <h3 className="font-heading text-base font-bold text-ink">
                 Pristine Document Studio
               </h3>
-              <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              <Badge variant="submitted" size="micro">
                 Pristine Typography
-              </span>
+              </Badge>
             </div>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs text-muted">Tailored for:</span>
+              <span className="text-xs text-text-secondary">Tailored for:</span>
               <select
                 value={currentOpp.id}
                 onChange={(e) => {
@@ -316,7 +312,8 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                     onSelectOpportunity?.(opp);
                   }
                 }}
-                className="text-xs font-semibold bg-muted border border-border rounded-md px-2 py-1 text-text focus:outline-none focus:ring-2 focus:ring-accent"
+                data-testid="job-selector"
+                className="text-xs font-semibold bg-surface-muted border border-slate rounded-md px-2 py-1 text-ink focus:outline-none focus:ring-2 focus:ring-brand-orange"
               >
                 {opportunities.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -331,144 +328,123 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Column Layout Switcher */}
-          <div className="flex items-center bg-muted p-1 rounded-lg border border-border text-xs">
-            <button
+          <div className="flex items-center bg-surface-muted p-1 rounded-lg border border-slate text-xs" data-testid="layout-toggle" data-layout={columnLayout}>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setColumnLayout("one-column")}
-              className={cn(
-                "px-2.5 py-1 rounded font-medium transition-colors",
-                columnLayout === "one-column"
-                  ? "bg-primary text-white"
-                  : "text-muted"
-              )}
+              className={cn(columnLayout === "one-column" && "bg-brand-orange text-white")}
             >
               1 Column
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setColumnLayout("two-column")}
-              className={cn(
-                "px-2.5 py-1 rounded font-medium transition-colors",
-                columnLayout === "two-column"
-                  ? "bg-primary text-white"
-                  : "text-muted"
-              )}
+              className={cn(columnLayout === "two-column" && "bg-brand-orange text-white")}
             >
               2 Columns
-            </button>
+            </Button>
           </div>
 
           {/* Dehumanizer Filter Toggle */}
-          <button
+          <Button
+            variant={isDehumanized ? "accent" : "ghost"}
+            size="sm"
             onClick={() => setIsDehumanized(!isDehumanized)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition-colors",
-              isDehumanized
-                ? "bg-orange-50 border-accent text-accent"
-                : "bg-muted border-border text-muted"
-            )}
+            data-testid="dehumanize-toggle"
             title="Purge AI tropes like 'delve', 'spearhead', 'testament'"
           >
-            <Zap className="w-3.5 h-3.5 text-accent" />
+            <Zap className="w-3.5 h-3.5" />
             <span>Dehumanized ({isDehumanized ? "Active" : "Off"})</span>
-          </button>
+          </Button>
 
           {/* Regenerate */}
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRegenerateDocument}
             disabled={isGenerating || aiStatus === "unavailable"}
-            className={cn(
-              "px-3 py-1.5 text-xs font-medium rounded-lg border flex items-center gap-1.5 transition-colors disabled:opacity-50",
-              aiStatus === "available"
-                ? "bg-muted hover:bg-border text-text border-border"
-                : "bg-muted/50 text-muted border-transparent cursor-not-allowed"
-            )}
+            data-testid="regenerate-btn"
             title={aiStatus === "available" ? "Regenerate with Gemini AI" : "AI provider not configured"}
           >
-            <RotateCw className={`w-3.5 h-3.5 text-muted ${isGenerating ? "animate-spin" : ""}`} />
+            <RotateCw className={`w-3.5 h-3.5 text-text-secondary ${isGenerating ? "animate-spin" : ""}`} />
             <span>{isGenerating ? "Generating..." : "Regenerate with AI"}</span>
-          </button>
+          </Button>
 
           {/* Copy Markdown */}
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleCopyMarkdown}
-            className="px-3 py-1.5 bg-muted hover:bg-border text-text text-xs font-medium rounded-lg border border-border flex items-center gap-1.5 transition-colors"
+            data-testid="copy-markdown-btn"
           >
-            <Copy className="w-3.5 h-3.5 text-muted" />
+            <Copy className="w-3.5 h-3.5 text-text-secondary" />
             <span>{copied ? "Copied!" : "Copy Markdown"}</span>
-          </button>
+          </Button>
 
           {/* Print / PDF Export */}
-          <button
+          <PrimaryButton
             onClick={handlePrint}
-            className="px-3 py-1.5 bg-primary hover:bg-navy text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors shadow-xs"
+            size="sm"
+            data-testid="print-btn"
           >
-            <Printer className="w-3.5 h-3.5 text-accent" />
+            <Printer className="w-3.5 h-3.5 text-brand-orange" />
             <span>Print / PDF</span>
-          </button>
+          </PrimaryButton>
         </div>
       </div>
 
       {/* Document Type Tabs */}
-      <div className="flex items-center gap-2 border-b border-border pb-1 no-print text-xs">
-        <button
+      <div className="flex items-center gap-2 border-b border-slate pb-1 no-print text-xs">
+        <Button
+          variant={activeTab === "resume" ? "accent" : "ghost"}
+          size="sm"
           onClick={() => setActiveTab("resume")}
-          className={cn(
-            "px-4 py-2 font-semibold transition-colors border-b-2 flex items-center gap-2",
-            activeTab === "resume"
-              ? "border-accent text-text"
-              : "border-transparent text-muted hover:text-text"
-          )}
+          data-testid="tab-resume"
+          className="px-4 py-2"
         >
           <span>Pristine Tailored Resume</span>
-          <span className="text-[10px] font-mono text-accent bg-orange-50 px-1.5 py-0.2 rounded">
-            {columnLayout}
-          </span>
-        </button>
+          <Badge variant="critical" size="micro">{columnLayout}</Badge>
+        </Button>
 
-        <button
+        <Button
+          variant={activeTab === "cover_letter" ? "accent" : "ghost"}
+          size="sm"
           onClick={() => setActiveTab("cover_letter")}
-          className={cn(
-            "px-4 py-2 font-semibold transition-colors border-b-2 flex items-center gap-2",
-            activeTab === "cover_letter"
-              ? "border-accent text-text"
-              : "border-transparent text-muted hover:text-text"
-          )}
+          data-testid="tab-cover-letter"
+          className="px-4 py-2"
         >
           <span>Tailored Cover Letter</span>
-          <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded">
-            Humanized
-          </span>
-        </button>
+          <Badge variant="job" size="micro">Humanized</Badge>
+        </Button>
 
         {currentOpp.category === "consultancy" && (
-          <button
+          <Button
+            variant={activeTab === "proposal" ? "danger" : "ghost"}
+            size="sm"
             onClick={() => setActiveTab("proposal")}
-            className={cn(
-              "px-4 py-2 font-semibold transition-colors border-b-2 flex items-center gap-2",
-              activeTab === "proposal"
-                ? "border-red-500 text-text"
-                : "border-transparent text-muted hover:text-text"
-            )}
+            data-testid="tab-proposal"
+            className="px-4 py-2"
           >
             <span>Consultancy Proposal & Executive Summary</span>
-            <span className="text-[10px] font-mono text-red-600 bg-red-50 px-1.5 py-0.2 rounded">
-              ≥90 Auto-Gen
-            </span>
-          </button>
+            <Badge variant="signoff" size="micro">≥90 Auto-Gen</Badge>
+          </Button>
         )}
       </div>
 
       {/* Document Canvas (Pristine Upscale White-Collar Paper) */}
-      <div className="bg-card border border-border rounded-xl p-8 sm:p-12 shadow-sm max-w-4xl mx-auto resume-paper transition-all">
+      <div className="bg-surface-white border border-slate rounded-xl p-8 sm:p-12 shadow-sm max-w-4xl mx-auto resume-paper transition-all" data-testid="document-content">
         {/* ================= RESUME VIEW ================= */}
         {activeTab === "resume" && (
-          <div className="space-y-6 text-text">
+          <div className="space-y-6 text-ink">
             {/* Header / Contact Banner */}
-            <div className="border-b-2 border-text pb-4">
+            <div className="border-b-2 border-ink pb-4">
               <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-                <h1 className="text-2xl sm:text-3xl font-bold font-heading tracking-tight text-text">
+                <h1 className="text-2xl sm:text-3xl font-bold font-heading tracking-tight text-ink">
                   {resumeData.fullName}
                 </h1>
-                <div className="text-xs font-mono text-muted space-x-2">
+                <div className="text-xs font-mono text-text-secondary space-x-2">
                   <span>{resumeData.contact.location}</span>
                   <span>•</span>
                   <span>{resumeData.contact.phone}</span>
@@ -476,17 +452,17 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                   <span>{resumeData.contact.email}</span>
                 </div>
               </div>
-              <div className="text-sm font-semibold uppercase tracking-widest text-accent mt-1 font-mono">
+              <div className="text-sm font-semibold uppercase tracking-widest text-brand-orange mt-1 font-mono">
                 {resumeData.title}
               </div>
             </div>
 
             {/* Executive Summary */}
             <div className="space-y-1.5">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
                 Executive Profile
               </h2>
-              <p className="text-xs text-muted leading-relaxed text-justify">
+              <p className="text-xs text-text-secondary leading-relaxed text-justify">
                 {resumeData.summary}
               </p>
             </div>
@@ -495,17 +471,17 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
             {columnLayout === "two-column" ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Left Column (Skills, Education, Certs) */}
-                <div className="space-y-5 md:border-r md:border-border md:pr-4">
+                <div className="space-y-5 md:border-r md:border-slate md:pr-4">
                   {/* Skills */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
                       Core Competencies
                     </h3>
                     <div className="flex flex-wrap gap-1.5">
                       {resumeData.skills.map((skill, idx) => (
                         <span
                           key={idx}
-                          className="text-[11px] bg-muted text-text px-2 py-0.5 rounded border border-border font-medium"
+                          className="text-[11px] bg-surface-muted text-ink px-2 py-0.5 rounded border border-slate font-medium"
                         >
                           {skill}
                         </span>
@@ -515,13 +491,13 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
 
                   {/* Certifications */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
                       Certifications
                     </h3>
-                    <div className="space-y-1 text-xs text-muted">
+                    <div className="space-y-1 text-xs text-text-secondary">
                       {resumeData.certifications.map((cert, idx) => (
                         <div key={idx} className="flex items-start gap-1.5">
-                          <span className="text-accent font-bold">•</span>
+                          <span className="text-brand-orange font-bold">•</span>
                           <span>{cert}</span>
                         </div>
                       ))}
@@ -530,14 +506,14 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
 
                   {/* Education */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
                       Education
                     </h3>
                     <div className="space-y-2 text-xs">
                       {resumeData.education.map((edu, idx) => (
                         <div key={idx} className="space-y-0.5">
-                          <div className="font-semibold text-text">{edu.degree}</div>
-                          <div className="text-muted text-[11px]">{edu.institution} ({edu.year})</div>
+                          <div className="font-semibold text-ink">{edu.degree}</div>
+                          <div className="text-text-secondary text-[11px]">{edu.institution} ({edu.year})</div>
                         </div>
                       ))}
                     </div>
@@ -546,20 +522,20 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
 
                 {/* Right Column (Experience & Impact) */}
                 <div className="md:col-span-2 space-y-5">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
                     Selected Professional Engagements & Consultancies
                   </h3>
                   <div className="space-y-4">
                     {resumeData.experience.map((exp, idx) => (
                       <div key={idx} className="space-y-1.5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs">
-                          <span className="font-bold text-text text-sm">{exp.role}</span>
-                          <span className="text-muted font-mono text-[11px]">{exp.period}</span>
+                          <span className="font-bold text-ink text-sm">{exp.role}</span>
+                          <span className="text-text-secondary font-mono text-[11px]">{exp.period}</span>
                         </div>
-                        <div className="text-xs text-muted font-medium italic">
+                        <div className="text-xs text-text-secondary font-medium italic">
                           {exp.company} — {exp.location}
                         </div>
-                        <ul className="space-y-1 text-xs text-muted list-disc list-outside pl-4">
+                        <ul className="space-y-1 text-xs text-text-secondary list-disc list-outside pl-4">
                           {exp.bullets.map((b, bIdx) => (
                             <li key={bIdx} className="leading-relaxed">
                               {b}
@@ -576,17 +552,17 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
               <div className="space-y-6">
                 {/* Experience */}
                 <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
                     Professional Experience
                   </h3>
                   <div className="space-y-4">
                     {resumeData.experience.map((exp, idx) => (
                       <div key={idx} className="space-y-1">
                         <div className="flex justify-between items-baseline text-xs">
-                          <span className="font-bold text-text text-sm">{exp.role} — {exp.company}</span>
-                          <span className="text-muted font-mono">{exp.period} | {exp.location}</span>
+                          <span className="font-bold text-ink text-sm">{exp.role} — {exp.company}</span>
+                          <span className="text-text-secondary font-mono">{exp.period} | {exp.location}</span>
                         </div>
-                        <ul className="space-y-1 text-xs text-muted list-disc list-outside pl-4 pt-1">
+                        <ul className="space-y-1 text-xs text-text-secondary list-disc list-outside pl-4 pt-1">
                           {exp.bullets.map((b, bIdx) => (
                             <li key={bIdx} className="leading-relaxed">
                               {b}
@@ -599,14 +575,14 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                 </div>
 
                 {/* Skills & Education side by side */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-border">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate">
                   <div className="space-y-1.5">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-text font-mono">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-ink font-mono">
                       Technical & Operational Competencies
                     </h3>
                     <div className="flex flex-wrap gap-1 text-xs">
                       {resumeData.skills.map((s, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-muted rounded text-[11px] font-medium">
+                        <span key={i} className="px-2 py-0.5 bg-surface-muted rounded text-[11px] font-medium">
                           {s}
                         </span>
                       ))}
@@ -614,10 +590,10 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                   </div>
 
                   <div className="space-y-1.5">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-text font-mono">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-ink font-mono">
                       Education & Credentials
                     </h3>
-                    <div className="space-y-1 text-xs text-muted">
+                    <div className="space-y-1 text-xs text-text-secondary">
                       {resumeData.education.map((e, i) => (
                         <div key={i}>
                           <span className="font-semibold">{e.degree}</span> — {e.institution} ({e.year})
@@ -633,16 +609,16 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
 
         {/* ================= COVER LETTER VIEW ================= */}
         {activeTab === "cover_letter" && (
-          <div className="space-y-6 text-text font-body">
+          <div className="space-y-6 text-ink font-body">
             {/* Executive Letterhead */}
-            <div className="border-b border-border pb-4 flex justify-between items-start">
+            <div className="border-b border-slate pb-4 flex justify-between items-start">
               <div>
-                <h1 className="text-2xl font-bold font-heading text-text">
+                <h1 className="text-2xl font-bold font-heading text-ink">
                   {applicantProfile?.fullName || "Chifuniro Phiri"}
                 </h1>
-                <p className="text-xs text-muted font-mono mt-0.5">{applicantProfile?.headline || "Senior Technology & Operations Specialist"}</p>
+                <p className="text-xs text-text-secondary font-mono mt-0.5">{applicantProfile?.headline || "Senior Technology & Operations Specialist"}</p>
               </div>
-              <div className="text-right text-xs font-mono text-muted">
+              <div className="text-right text-xs font-mono text-text-secondary">
                 <div>{applicantProfile?.location || "Area 10, Lilongwe, Malawi"}</div>
                 <div>{applicantProfile?.email || "chifuniro.phiri@consult-mw.com"}</div>
                 <div>{applicantProfile?.phone || "+265 99 412 8890"}</div>
@@ -650,21 +626,21 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
             </div>
 
             {/* Date & Recipient */}
-            <div className="text-xs text-muted space-y-1 font-mono">
+            <div className="text-xs text-text-secondary space-y-1 font-mono">
               <div className="font-semibold">{coverLetterData.date}</div>
-              <div className="text-text font-bold">{coverLetterData.recipient}</div>
+              <div className="text-ink font-bold">{coverLetterData.recipient}</div>
             </div>
 
             {/* Subject */}
-            <div className="text-xs font-bold uppercase tracking-wider text-text font-mono bg-muted p-2 rounded border border-border">
+            <div className="text-xs font-bold uppercase tracking-wider text-ink font-mono bg-surface-muted p-2 rounded border border-slate">
               RE: {coverLetterData.title}
             </div>
 
             {/* Greeting */}
-            <div className="text-xs font-semibold text-text">{coverLetterData.greeting}</div>
+            <div className="text-xs font-semibold text-ink">{coverLetterData.greeting}</div>
 
             {/* Letter Body Paragraphs */}
-            <div className="space-y-4 text-xs text-muted leading-relaxed text-justify">
+            <div className="space-y-4 text-xs text-text-secondary leading-relaxed text-justify">
               {coverLetterData.paragraphs?.map((p, idx) => (
                 <p key={idx}>{p}</p>
               ))}
@@ -673,10 +649,10 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
             {/* Sign-off */}
             <div className="pt-4 space-y-3 text-xs">
               <div>{coverLetterData.closing}</div>
-              <div className="font-brand font-bold text-base text-text">
+              <div className="font-brand font-bold text-base text-ink">
                 {coverLetterData.signature}
               </div>
-              <div className="text-[11px] text-muted font-mono">
+              <div className="text-[11px] text-text-secondary font-mono">
                 Principal Consultant & Senior Technical Lead
               </div>
             </div>
@@ -685,23 +661,23 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
 
         {/* ================= CONSULTANCY PROPOSAL VIEW ================= */}
         {activeTab === "proposal" && (
-          <div className="space-y-6 text-text">
+          <div className="space-y-6 text-ink">
             {/* Proposal Header */}
-            <div className="border-b-2 border-red-500 pb-4">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-red-600 font-bold">
+            <div className="border-b-2 border-signoff-red pb-4">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-signoff-red font-bold">
                 CONFIDENTIAL ADVISORY PROPOSAL
               </div>
-              <h1 className="text-2xl font-bold font-heading text-text mt-1">
+              <h1 className="text-2xl font-bold font-heading text-ink mt-1">
                 {proposalData.title}
               </h1>
-              <div className="flex justify-between items-center text-xs text-muted mt-2 font-mono">
+              <div className="flex justify-between items-center text-xs text-text-secondary mt-2 font-mono">
                 <span>Client: {proposalData.recipient}</span>
                 <span>Date: {proposalData.date}</span>
               </div>
             </div>
 
             {/* Executive Summary Box */}
-            <div className="bg-red-50 border-l-4 border-red-500 border border-red-200 p-4 rounded-r-lg space-y-1.5">
+            <div className="bg-red-50 border-l-4 border-signoff-red border border-red-200 p-4 rounded-r-lg space-y-1.5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-red-900 font-mono">
                 Executive Summary (ATS ≥ 90 Automated Synthesis)
               </h3>
@@ -714,10 +690,10 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
             <div className="space-y-5">
               {proposalData.sections?.map((sec, idx) => (
                 <div key={idx} className="space-y-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
                     {sec.heading}
                   </h3>
-                  <p className="text-xs text-muted leading-relaxed whitespace-pre-line text-justify">
+                  <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line text-justify">
                     {sec.body}
                   </p>
                 </div>
@@ -725,24 +701,26 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
             </div>
 
             {/* Sign-off */}
-            <div className="pt-4 border-t border-border flex justify-between items-end text-xs">
+            <div className="pt-4 border-t border-slate flex justify-between items-end text-xs">
               <div className="space-y-1">
-                <div className="text-muted">{proposalData.closing}</div>
-                <div className="font-bold text-text font-heading text-sm">
+                <div className="text-text-secondary">{proposalData.closing}</div>
+                <div className="font-bold text-ink font-heading text-sm">
                   {proposalData.signature}
                 </div>
-                <div className="text-[10px] text-muted font-mono">
+                <div className="text-[10px] text-text-secondary font-mono">
                   Verified Signatory • Lilongwe, Malawi
                 </div>
               </div>
 
-              <button
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={() => onOpenSignOff?.(currentOpp)}
-                className="no-print px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                className="no-print"
               >
                 <UserCheck className="w-3.5 h-3.5" />
                 <span>Sign-Off & Authorize Submission</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}

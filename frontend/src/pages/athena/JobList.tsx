@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Search, Filter, X, ChevronDown, Download, Upload, Plus, Loader2, FileText } from 'lucide-react';
+import { Search, Filter, X, ChevronDown, Download, Upload, Plus, Loader2, FileText, Globe, MapPin, Building, Briefcase, CheckCircle2, AlertCircle, Clock, Sparkles, Zap } from 'lucide-react';
 import { JobCard } from '@/components/athena/JobCard';
 import { ATSGauge, MiniATSGauge } from '@/components/athena/ATSGauge';
+import { Badge, StatusPill } from '@/components/athena/ui/Badge';
+import { Button, PrimaryButton, AccentButton, GhostButton, OutlineButton } from '@/components/athena/ui/Button';
 import { cn, formatSalary, formatDate, getJobTypeLabel, getJobSourceLabel, getMatchTierColor, getMatchTierLabel, debounce } from '@/lib/athena/utils';
 import { listJobs, triggerScrape, listProfiles, applyToJob, tailorResume, generateCoverLetter, flagJob } from '@/lib/athena/api';
 import type { Job, JobFilter, JobSource, JobType, JobStatus, MatchTier, UserProfile } from '@/lib/athena/types';
@@ -11,6 +13,21 @@ const JOB_TYPES: JobType[] = ['full_time', 'part_time', 'contract', 'consultancy
 const JOB_STATUSES: JobStatus[] = ['new', 'fetched', 'matched', 'scored', 'flagged', 'applied', 'interview', 'offer', 'rejected', 'archived'];
 const MATCH_TIERS: MatchTier[] = ['excellent', 'good', 'fair', 'poor'];
 
+const SCOPE_OPTIONS = [
+  { id: 'all', label: 'All 3 Scopes', icon: Globe, description: 'Lilongwe Local + Remote Hub + International' },
+  { id: 'lilongwe-local', label: 'Lilongwe Local (MW)', icon: MapPin, description: 'On-site opportunities in Lilongwe' },
+  { id: 'lilongwe-remote', label: 'Lilongwe Remote Hub', icon: Building, description: 'Remote roles from Lilongwe base' },
+  { id: 'international-remote', label: 'International Remote', icon: Globe, description: 'Global remote opportunities' },
+] as const;
+
+const PLATFORM_PILLS = [
+  { id: 'all', label: 'All Platforms' },
+  { id: 'linkedin', label: 'LinkedIn' },
+  { id: 'upwork', label: 'Upwork' },
+  { id: 'reliefweb', label: 'ReliefWeb' },
+  { id: 'corporate', label: 'Corporate' },
+] as const;
+
 export const JobList: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
@@ -18,6 +35,7 @@ export const JobList: React.FC = () => {
   const [scraping, setScraping] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 20;
+  const [scrapeSuccess, setScrapeSuccess] = useState(false);
 
   // Filters state
   const [filters, setFilters] = useState<JobFilter>({
@@ -34,7 +52,10 @@ export const JobList: React.FC = () => {
     offset: 0,
   });
 
+  // UI state
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedScope, setSelectedScope] = useState<'all' | 'lilongwe-local' | 'lilongwe-remote' | 'international-remote'>('all');
+  const [selectedPlatform, setSelectedPlatform] = useState<'all' | 'linkedin' | 'upwork' | 'reliefweb' | 'corporate'>('all');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [modalAction, setModalAction] = useState<string | null>(null);
   const [modalFeedback, setModalFeedback] = useState<{ type: 'success' | 'error'; message: string; url?: string } | null>(null);
@@ -87,18 +108,23 @@ export const JobList: React.FC = () => {
       offset: 0,
     });
     setPage(1);
+    setSelectedScope('all');
+    setSelectedPlatform('all');
   };
 
   const hasActiveFilters = useMemo(() =>
     Object.entries(filters).some(([key, value]) =>
       key !== 'limit' && key !== 'offset' && value !== undefined && value !== '' && value !== null
-    ), [filters]);
+    ) || selectedScope !== 'all' || selectedPlatform !== 'all', [filters, selectedScope, selectedPlatform]);
 
   const handleScrape = async () => {
     setScraping(true);
+    setScrapeSuccess(false);
     try {
       await triggerScrape({ query: filters.search || 'software engineer', max_results: 50 });
-      loadJobs();
+      await loadJobs();
+      setScrapeSuccess(true);
+      setTimeout(() => setScrapeSuccess(false), 5000);
     } catch (error) {
       console.error('Scrape failed:', error);
     } finally {
@@ -179,70 +205,168 @@ export const JobList: React.FC = () => {
     }
   };
 
+  // Filter jobs by scope and platform
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      // Scope filter
+      if (selectedScope !== 'all' && job.scope !== selectedScope) {
+        return false;
+      }
+      // Platform filter
+      if (selectedPlatform !== 'all') {
+        const jobPlatform = job.source.toLowerCase();
+        if (selectedPlatform === 'linkedin' && !jobPlatform.includes('linkedin')) return false;
+        if (selectedPlatform === 'upwork' && !jobPlatform.includes('upwork')) return false;
+        if (selectedPlatform === 'reliefweb' && !jobPlatform.includes('reliefweb')) return false;
+        if (selectedPlatform === 'corporate' && !['company_career', 'other'].includes(job.source)) return false;
+      }
+      return true;
+    });
+  }, [jobs, selectedScope, selectedPlatform]);
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-canvas">
+      {/* Scrape Success Banner */}
+      {scrapeSuccess && (
+        <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex items-center gap-3 animate-slide-in-from-top no-print" data-testid="scrape-success-banner">
+          <CheckCircle2 className="w-5 h-5 text-success-emerald flex-shrink-0" aria-hidden="true" />
+          <span className="font-body text-sm text-emerald-900 font-medium">Live semantic scrape completed — new opportunities loaded</span>
+          <button onClick={() => setScrapeSuccess(false)} className="ml-auto p-1 text-emerald-600 hover:text-emerald-800 tactile" aria-label="Dismiss">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="font-display font-black text-2xl sm:text-3xl text-ls-navy">Job Search</h1>
-            <p className="font-body text-sm text-ls-grey-dark mt-1">
-              {total ?? 0} job{total !== 1 ? 's' : ''} found • Discover and match opportunities
+            <h1 className="font-heading font-bold text-2xl sm:text-3xl text-ink">Scraper & Discovery</h1>
+            <p className="font-body text-sm text-text-secondary mt-1">
+              {total ?? 0} job{total !== 1 ? 's' : ''} found • Semantic search across Lilongwe & global feeds
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button
+            <Button
+              variant="ghost"
+              size="md"
               onClick={() => setShowFilters(!showFilters)}
               className={cn(
-                'tactile flex items-center gap-2 px-4 py-2 rounded-lg border transition-all',
-                showFilters
-                  ? 'glow-amber bg-ls-red/10 border-ls-red text-ls-red'
-                  : 'bg-ls-white border-white/10 text-ls-grey-dark hover:border-ls-red/40 hover:text-ls-red'
+                showFilters && 'bg-brand-orange/10 text-brand-orange border-brand-orange/30'
               )}
             >
               <Filter className="w-4 h-4" aria-hidden="true" />
               <span className="font-body font-medium text-sm">Filters</span>
               {hasActiveFilters && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-ls-red text-[#14161A]">
-                  {Object.values(filters).filter(v => v !== undefined && v !== '' && v !== null).length}
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-orange text-white">
+                  {Object.values(filters).filter(v => v !== undefined && v !== '' && v !== null).length + (selectedScope !== 'all' ? 1 : 0) + (selectedPlatform !== 'all' ? 1 : 0)}
                 </span>
               )}
-            </button>
-            <button
+            </Button>
+            <AccentButton
               onClick={handleScrape}
               disabled={scraping}
-              className="tactile flex items-center gap-2 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors disabled:opacity-50"
+              size="md"
             >
               <Loader2 className={cn('w-4 h-4', scraping && 'animate-spin')} aria-hidden="true" />
-              <span className="font-body font-medium text-sm">Scrape</span>
-            </button>
-            <button className="tactile flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-medium text-sm hover:border-ls-red/40 hover:text-ls-red transition-all">
+              <span className="font-body font-medium text-sm">Run Live Semantic Scrape</span>
+              <Zap className="w-4 h-4" aria-hidden="true" />
+            </AccentButton>
+            <OutlineButton size="md">
               <Download className="w-4 h-4" aria-hidden="true" />
               <span className="font-body font-medium text-sm">Export</span>
-            </button>
+            </OutlineButton>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ls-grey-light-text" aria-hidden="true" />
+        <div className="relative mb-4" data-testid="job-search">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-placeholder" aria-hidden="true" />
           <input
             type="search"
             value={filters.search}
             onChange={(e) => debouncedSearch(e.target.value)}
-            placeholder="Search by title, company, description..."
-            className="w-full pl-12 pr-4 py-3 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
+            placeholder="Search by title, company, description, keywords..."
+            className="w-full pl-12 pr-4 py-3 bg-surface-white border border-slate rounded-lg text-sm text-ink placeholder:text-text-placeholder focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
             aria-label="Search jobs"
           />
           {filters.search && (
             <button
               onClick={() => handleFilterChange('search', '')}
-              className="tactile rounded-full absolute right-4 top-1/2 -translate-y-1/2 p-1 text-ls-grey-light-text hover:text-ls-red"
+              className="tactile rounded-full absolute right-4 top-1/2 -translate-y-1/2 p-1 text-text-placeholder hover:text-brand-orange"
               aria-label="Clear search"
             >
               <X className="w-5 h-5" />
             </button>
           )}
+        </div>
+
+        {/* Scope Selector Cards (4 cards, not sidebar pills) */}
+        <div className="mb-4" role="group" aria-label="Target scopes">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-body text-xs font-bold uppercase tracking-wider text-text-secondary">Target Scopes</h4>
+            <span className="font-mono text-[10px] text-brand-orange">Lilongwe / Global</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {SCOPE_OPTIONS.map(({ id, label, icon: Icon, description }) => {
+              const isActive = selectedScope === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setSelectedScope(id)}
+                  className={cn(
+                    'p-4 rounded-xl border-2 transition-all tactile relative overflow-hidden',
+                    isActive
+                      ? 'bg-brand-orange/10 border-brand-orange shadow-md'
+                      : 'bg-surface-white border-slate hover:border-brand-orange/40 hover:shadow-lg'
+                  )}
+                  aria-pressed={isActive}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+                      isActive
+                        ? 'bg-brand-orange text-white'
+                        : 'bg-surface-muted text-text-secondary'
+                    )}>
+                      <Icon className="w-5 h-5" aria-hidden="true" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-ink truncate">{label}</div>
+                      <div className="text-[11px] text-text-secondary mt-0.5 line-clamp-1">{description}</div>
+                    </div>
+                  </div>
+                  {isActive && (
+                    <div className="absolute inset-0 bg-brand-orange/5 pointer-events-none" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Platform Tag Pills */}
+        <div className="mb-4" role="group" aria-label="Platform filters">
+          <div className="flex flex-wrap gap-2">
+            {PLATFORM_PILLS.map(({ id, label }) => {
+              const isActive = selectedPlatform === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setSelectedPlatform(id)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-xs font-medium font-mono uppercase tracking-wider transition-all tactile',
+                    isActive
+                      ? 'bg-brand-orange text-white shadow-sm'
+                      : 'bg-surface-muted text-text-secondary hover:bg-brand-orange/10 hover:text-brand-orange border border-slate'
+                  )}
+                  aria-pressed={isActive}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Active Filters Chips */}
@@ -251,36 +375,57 @@ export const JobList: React.FC = () => {
             {(Object.entries(filters) as [keyof JobFilter, JobFilter[keyof JobFilter]][])
               .filter(([key, value]) => key !== 'limit' && key !== 'offset' && value !== undefined && value !== '' && value !== null)
               .map(([key, value]) => (
-                <span key={key} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-ls-red/10 text-ls-red text-sm font-medium">
+                <span key={key} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full tint-job text-sm font-medium">
                   {key.replace(/_/g, ' ')}: {String(value)}
                   <button
                     onClick={() => handleFilterChange(key, undefined)}
-                    className="tactile rounded-md hover:text-ls-red/70"
+                    className="tactile rounded-md hover:text-brand-orange/70"
                     aria-label={`Remove ${key} filter`}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </span>
               ))}
-            <button
-              onClick={clearFilters}
-              className="tactile px-3 py-1 rounded-full text-sm font-medium text-ls-grey-dark hover:text-ls-red transition-colors"
-            >
+            {selectedScope !== 'all' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full tint-job text-sm font-medium">
+                Scope: {SCOPE_OPTIONS.find(o => o.id === selectedScope)?.label}
+                <button
+                  onClick={() => setSelectedScope('all')}
+                  className="tactile rounded-md hover:text-brand-orange/70"
+                  aria-label="Remove scope filter"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            )}
+            {selectedPlatform !== 'all' && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full tint-job text-sm font-medium">
+                Platform: {PLATFORM_PILLS.find(o => o.id === selectedPlatform)?.label}
+                <button
+                  onClick={() => setSelectedPlatform('all')}
+                  className="tactile rounded-md hover:text-brand-orange/70"
+                  aria-label="Remove platform filter"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            )}
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
               Clear all
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Advanced Filters Panel */}
         {showFilters && (
-          <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5 mb-6 animate-in slide-in-from-top-2" role="region" aria-label="Advanced filters">
+          <div className="bg-surface-white raised border border-slate rounded-xl p-5 mb-6 animate-slide-in-from-top" role="region" aria-label="Advanced filters" data-testid="filter-panel">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="font-body text-xs font-bold tracking-wider uppercase text-ls-grey-dark block mb-1.5">Status</label>
+                <label className="font-body text-xs font-bold tracking-wider uppercase text-text-secondary block mb-1.5">Status</label>
                 <select
                   value={filters.status || ''}
                   onChange={(e) => handleFilterChange('status', e.target.value || undefined)}
-                  className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                  className="w-full px-3 py-2 bg-surface-white border border-slate rounded-lg text-sm text-ink focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
                 >
                   <option value="">All statuses</option>
                   {JOB_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
@@ -288,23 +433,11 @@ export const JobList: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-body text-xs font-bold tracking-wider uppercase text-ls-grey-dark block mb-1.5">Source</label>
-                <select
-                  value={filters.source || ''}
-                  onChange={(e) => handleFilterChange('source', e.target.value as JobSource || undefined)}
-                  className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy focus:ring-2 focus:ring-ls-red focus:border-transparent"
-                >
-                  <option value="">All sources</option>
-                  {JOB_SOURCES.map(s => <option key={s} value={s}>{getJobSourceLabel(s)}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="font-body text-xs font-bold tracking-wider uppercase text-ls-grey-dark block mb-1.5">Job Type</label>
+                <label className="font-body text-xs font-bold tracking-wider uppercase text-text-secondary block mb-1.5">Job Type</label>
                 <select
                   value={filters.job_type || ''}
                   onChange={(e) => handleFilterChange('job_type', e.target.value as JobType || undefined)}
-                  className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                  className="w-full px-3 py-2 bg-surface-white border border-slate rounded-lg text-sm text-ink focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
                 >
                   <option value="">All types</option>
                   {JOB_TYPES.map(t => <option key={t} value={t}>{getJobTypeLabel(t)}</option>)}
@@ -312,18 +445,18 @@ export const JobList: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-body text-xs font-bold tracking-wider uppercase text-ls-grey-dark block mb-1.5">Location</label>
+                <label className="font-body text-xs font-bold tracking-wider uppercase text-text-secondary block mb-1.5">Location</label>
                 <input
                   type="text"
                   value={filters.location}
                   onChange={(e) => handleFilterChange('location', e.target.value)}
                   placeholder="e.g., Lilongwe, Remote"
-                  className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                  className="w-full px-3 py-2 bg-surface-white border border-slate rounded-lg text-sm text-ink placeholder:text-text-placeholder focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
                 />
               </div>
 
               <div className="lg:col-span-2">
-                <label className="font-body text-xs font-bold tracking-wider uppercase text-ls-grey-dark block mb-1.5">ATS Score Range</label>
+                <label className="font-body text-xs font-bold tracking-wider uppercase text-text-secondary block mb-1.5">ATS Score Range</label>
                 <div className="flex items-center gap-3">
                   <input
                     type="number"
@@ -332,10 +465,10 @@ export const JobList: React.FC = () => {
                     value={filters.min_ats_score || ''}
                     onChange={(e) => handleFilterChange('min_ats_score', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Min"
-                    className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                    className="w-full px-3 py-2 bg-surface-white border border-slate rounded-lg text-sm text-ink placeholder:text-text-placeholder focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
                     aria-label="Minimum ATS score"
                   />
-                  <span className="text-ls-grey-light-text">–</span>
+                  <span className="text-text-placeholder">–</span>
                   <input
                     type="number"
                     min="0"
@@ -343,14 +476,14 @@ export const JobList: React.FC = () => {
                     value={filters.max_ats_score || ''}
                     onChange={(e) => handleFilterChange('max_ats_score', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Max"
-                    className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                    className="w-full px-3 py-2 bg-surface-white border border-slate rounded-lg text-sm text-ink placeholder:text-text-placeholder focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
                     aria-label="Maximum ATS score"
                   />
                 </div>
               </div>
 
               <div className="lg:col-span-2">
-                <label className="font-body text-xs font-bold tracking-wider uppercase text-ls-grey-dark block mb-1.5">Match Score Range</label>
+                <label className="font-body text-xs font-bold tracking-wider uppercase text-text-secondary block mb-1.5">Match Score Range</label>
                 <div className="flex items-center gap-3">
                   <input
                     type="number"
@@ -359,10 +492,10 @@ export const JobList: React.FC = () => {
                     value={filters.min_match_score || ''}
                     onChange={(e) => handleFilterChange('min_match_score', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Min"
-                    className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                    className="w-full px-3 py-2 bg-surface-white border border-slate rounded-lg text-sm text-ink placeholder:text-text-placeholder focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
                     aria-label="Minimum match score"
                   />
-                  <span className="text-ls-grey-light-text">–</span>
+                  <span className="text-text-placeholder">–</span>
                   <input
                     type="number"
                     min="0"
@@ -370,17 +503,17 @@ export const JobList: React.FC = () => {
                     value={filters.max_match_score || ''}
                     onChange={(e) => handleFilterChange('max_match_score', e.target.value ? parseInt(e.target.value) : undefined)}
                     placeholder="Max"
-                    className="w-full px-3 py-2 sunken rounded-lg border border-white/10 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                    className="w-full px-3 py-2 bg-surface-white border border-slate rounded-lg text-sm text-ink placeholder:text-text-placeholder focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
                     aria-label="Maximum match score"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-white/[0.07] flex justify-end">
-              <button onClick={clearFilters} className="tactile px-4 py-2 rounded-lg text-sm font-medium text-ls-grey-dark hover:text-ls-red transition-colors">
+            <div className="mt-4 pt-4 border-t border-slate flex justify-end">
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
                 Clear all filters
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -390,40 +523,41 @@ export const JobList: React.FC = () => {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-ls-red" aria-hidden="true" />
-            <span className="ml-3 font-body text-ls-grey-dark">Loading jobs...</span>
+            <Loader2 className="w-8 h-8 animate-spin text-brand-orange" aria-hidden="true" />
+            <span className="ml-3 font-body text-text-secondary">Loading opportunities...</span>
           </div>
-        ) : (jobs ?? []).length === 0 ? (
+        ) : filteredJobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <div className="w-16 h-16 sunken rounded-full flex items-center justify-center mb-4">
-              <Search className="w-8 h-8 text-ls-grey-light-text" aria-hidden="true" />
+            <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mb-4 border border-slate">
+              <Search className="w-8 h-8 text-text-placeholder" aria-hidden="true" />
             </div>
-            <h3 className="font-display font-bold text-lg text-ls-navy mb-2">No jobs found</h3>
-            <p className="font-body text-sm text-ls-grey-dark max-w-sm">
-              Try adjusting your filters or search terms, or scrape for new jobs.
+            <h3 className="font-heading font-bold text-lg text-ink mb-2">No opportunities found</h3>
+            <p className="font-body text-sm text-text-secondary max-w-sm">
+              Try adjusting your filters or search terms, or run a live semantic scrape.
             </p>
-            <button
+            <AccentButton
               onClick={handleScrape}
               disabled={scraping}
-              className="tactile mt-4 px-6 py-2.5 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors disabled:opacity-50"
+              className="mt-4"
             >
-              Scrape for jobs
-            </button>
+              <Sparkles className="w-4 h-4" aria-hidden="true" />
+              Run Live Semantic Scrape
+            </AccentButton>
           </div>
         ) : (
           <>
             {/* Results Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-white/[0.07]">
-              <p className="font-body text-sm text-ls-grey-dark">
-                Showing <span className="font-bold text-ls-navy">{((page - 1) * pageSize) + 1}</span>–
-                <span className="font-bold text-ls-navy">{Math.min(page * pageSize, total ?? 0)}</span>
-                of <span className="font-bold text-ls-navy">{(total ?? 0).toLocaleString()}</span> jobs
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-slate">
+              <p className="font-body text-sm text-text-secondary">
+                Showing <span className="font-bold text-ink">{((page - 1) * pageSize) + 1}</span>–
+                <span className="font-bold text-ink">{Math.min(page * pageSize, total ?? 0)}</span>
+                of <span className="font-bold text-ink">{(total ?? 0).toLocaleString()}</span> opportunities
               </p>
               <div className="flex items-center gap-2">
                 <select
                   value={pageSize}
                   onChange={(e) => { /* pageSize change would need state */ }}
-                  className="px-3 py-1.5 sunken rounded-lg border border-white/10 text-sm text-ls-navy focus:ring-2 focus:ring-ls-red focus:border-transparent"
+                  className="px-3 py-1.5 bg-surface-white border border-slate rounded-lg text-sm text-ink focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
                   aria-label="Items per page"
                 >
                   <option value={20}>20 per page</option>
@@ -433,41 +567,98 @@ export const JobList: React.FC = () => {
               </div>
             </div>
 
-            {/* Job Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="list" aria-label="Job listings">
-              {(jobs ?? []).map((job) => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  onClick={() => handleJobClick(job)}
-                  matchScore={job.match_score}
-                  matchTier={job.match_tier}
-                />
-              ))}
+            {/* Job Listings Table */}
+            <div className="bg-surface-white raised border border-slate rounded-xl overflow-hidden" role="list" aria-label="Job listings">
+              {/* Table Header */}
+              <div className="grid grid-cols-[1fr_auto_auto_auto_auto_80px] px-4 py-3 border-b border-slate bg-surface-muted text-xs font-bold uppercase tracking-wider text-text-secondary font-mono">
+                <span>Opportunity</span>
+                <span className="text-center">Platform</span>
+                <span className="text-center">ATS</span>
+                <span className="text-center">Compensation</span>
+                <span className="text-center">Posted</span>
+                <span className="text-center">Actions</span>
+              </div>
+              {/* Table Rows */}
+              <div className="divide-y divide-slate">
+                {filteredJobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className="grid grid-cols-[1fr_auto_auto_auto_auto_80px] px-4 py-3 items-center gap-4 hover:bg-surface-muted transition-colors group"
+                    role="listitem"
+                    onClick={() => handleJobClick(job)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {/* Opportunity Column */}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className={cn(
+                          'px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono border',
+                          job.category === 'consultancy' ? 'tint-consultancy' : 'tint-job'
+                        )}>
+                          {job.category.toUpperCase()}
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono bg-surface-muted border border-slate text-text-secondary">
+                          {getJobSourceLabel(job.source)}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-sm text-ink truncate pr-4">{job.title}</h4>
+                      <div className="flex items-center gap-3 mt-1 text-xs text-text-secondary flex-wrap">
+                        <span className="flex items-center gap-1"><Building className="w-3 h-3" /> {job.company}</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
+                      </div>
+                    </div>
+
+                    {/* Platform Column */}
+                    <div className="text-center">
+                      <Badge variant="job" size="micro">{getJobSourceLabel(job.source)}</Badge>
+                    </div>
+
+                    {/* ATS Column */}
+                    <div className="text-center">
+                      <MiniATSGauge score={job.ats_score || 0} size={48} tier={job.match_tier} />
+                    </div>
+
+                    {/* Compensation Column */}
+                    <div className="text-center font-mono text-xs text-text-secondary">
+                      {formatSalary(job.salary_range)}
+                    </div>
+
+                    {/* Posted Date Column */}
+                    <div className="text-center font-mono text-[10px] text-text-secondary">
+                      {formatDate(job.posted_date)}
+                    </div>
+
+                    {/* Actions Column */}
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <GhostButton size="sm" onClick={(e) => { e.stopPropagation(); handleModalAction('tailor'); }} aria-label="Tailor resume">
+                          <FileText className="w-3.5 h-3.5" />
+                        </GhostButton>
+                        <GhostButton size="sm" onClick={(e) => { e.stopPropagation(); handleModalAction('cover'); }} aria-label="Cover letter">
+                          <Upload className="w-3.5 h-3.5" />
+                        </GhostButton>
+                        <GhostButton size="sm" onClick={(e) => { e.stopPropagation(); handleModalAction('apply'); }} aria-label="Apply">
+                          <Briefcase className="w-3.5 h-3.5" />
+                        </GhostButton>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Pagination */}
             {total > pageSize && (
-              <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Pagination">
-                <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="tactile p-2 rounded-lg border border-white/10 text-ls-grey-dark hover:border-ls-red hover:text-ls-red disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Previous page"
-                >
+              <nav className="mt-6 flex items-center justify-center gap-2" aria-label="Pagination" data-testid="pagination">
+                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} aria-label="Previous page">
                   <ChevronDown className="w-5 h-5 rotate-180" />
-                </button>
-                <span className="font-body text-sm text-ls-grey-dark px-3">
+                </Button>
+                <span className="font-body text-sm text-text-secondary px-3">
                   Page {page} of {Math.ceil(total / pageSize)}
                 </span>
-                <button
-                  onClick={() => setPage(p => Math.min(Math.ceil(total / pageSize), p + 1))}
-                  disabled={page >= Math.ceil(total / pageSize)}
-                  className="tactile p-2 rounded-lg border border-white/10 text-ls-grey-dark hover:border-ls-red hover:text-ls-red disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  aria-label="Next page"
-                >
+                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(Math.ceil(total / pageSize), p + 1))} disabled={page >= Math.ceil(total / pageSize)} aria-label="Next page">
                   <ChevronDown className="w-5 h-5" />
-                </button>
+                </Button>
               </nav>
             )}
           </>
@@ -476,28 +667,28 @@ export const JobList: React.FC = () => {
 
       {/* Job Detail Modal */}
       {selectedJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-in fade-in" role="dialog" aria-modal="true" aria-labelledby="job-detail-title">
-          <div className="bg-ls-white raised rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 slide-in-from-bottom-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="job-detail-title">
+          <div className="bg-surface-white raised rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-zoom-in-95 animate-slide-in-from-bottom-2">
             {/* Modal Header */}
-            <div className="flex items-start justify-between p-5 border-b border-white/[0.07] sticky top-0 bg-ls-white z-10">
+            <div className="flex items-start justify-between p-5 border-b border-slate sticky top-0 bg-surface-white z-10">
               <div className="flex-1 mr-4 min-w-0">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className="font-display font-bold text-lg text-ls-navy truncate">{selectedJob.company}</span>
-                  <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider border', getMatchTierColor(selectedJob.match_tier))}>
+                  <span className="font-heading font-bold text-lg text-ink truncate">{selectedJob.company}</span>
+                  <StatusPill variant={job.category === 'consultancy' ? 'consultancy' : 'job'} size="micro">
                     {getMatchTierLabel(selectedJob.match_tier)}
-                  </span>
+                  </StatusPill>
                 </div>
-                <h2 id="job-detail-title" className="font-display font-bold text-xl text-ls-navy">{selectedJob.title}</h2>
-                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-ls-grey-dark">
+                <h2 id="job-detail-title" className="font-heading font-bold text-xl text-ink">{selectedJob.title}</h2>
+                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-text-secondary">
                   <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {selectedJob.location}</span>
                   <span className="flex items-center gap-1.5"><Briefcase className="w-4 h-4" /> {getJobTypeLabel(selectedJob.job_type)}</span>
-                  <span className="flex items-center gap-1.5"><DollarSign className="w-4 h-4" /> {formatSalary(selectedJob.salary_range)}</span>
+                  <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {formatSalary(selectedJob.salary_range)}</span>
                   <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {formatDate(selectedJob.posted_date)}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <ATSGauge score={selectedJob.ats_score || 0} size={60} strokeWidth={6} showLabel tier={selectedJob.match_tier} />
-                <button onClick={closeJobDetail} className="tactile p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors" aria-label="Close job detail">
+                <button onClick={closeJobDetail} className="tactile p-2 rounded-lg text-text-secondary hover:text-ink hover:bg-surface-muted transition-colors" aria-label="Close job detail">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -507,8 +698,8 @@ export const JobList: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
               {/* Description */}
               <section>
-                <h3 className="font-display font-bold text-base text-ls-navy mb-3">Description</h3>
-                <div className="prose prose-sm text-ls-grey-dark max-w-none">
+                <h3 className="font-heading font-bold text-base text-ink mb-3">Description</h3>
+                <div className="prose prose-sm text-text-secondary max-w-none">
                   <p className="whitespace-pre-wrap">{selectedJob.description}</p>
                 </div>
               </section>
@@ -517,14 +708,14 @@ export const JobList: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {(selectedJob.requirements?.length ?? 0) > 0 && (
                   <section>
-                    <h3 className="font-display font-bold text-base text-ls-navy mb-3 flex items-center gap-2">
-                      <ChevronDown className="w-4 h-4 text-ls-red" />
+                    <h3 className="font-heading font-bold text-base text-ink mb-3 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-brand-orange" />
                       Requirements
                     </h3>
                     <ul className="space-y-2">
                       {selectedJob.requirements.map((req, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-ls-grey-dark">
-                          <span className="w-1.5 h-1.5 rounded-full bg-ls-red mt-1.5 flex-shrink-0" />
+                        <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-orange mt-1.5 flex-shrink-0" />
                           {req}
                         </li>
                       ))}
@@ -534,14 +725,14 @@ export const JobList: React.FC = () => {
 
                 {(selectedJob.responsibilities?.length ?? 0) > 0 && (
                   <section>
-                    <h3 className="font-display font-bold text-base text-ls-navy mb-3 flex items-center gap-2">
-                      <ChevronDown className="w-4 h-4 text-ls-cyan" />
+                    <h3 className="font-heading font-bold text-base text-ink mb-3 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-success-emerald" />
                       Responsibilities
                     </h3>
                     <ul className="space-y-2">
                       {selectedJob.responsibilities.map((resp, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-ls-grey-dark">
-                          <span className="w-1.5 h-1.5 rounded-full bg-ls-cyan mt-1.5 flex-shrink-0" />
+                        <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
+                          <span className="w-1.5 h-1.5 rounded-full bg-success-emerald mt-1.5 flex-shrink-0" />
                           {resp}
                         </li>
                       ))}
@@ -553,7 +744,7 @@ export const JobList: React.FC = () => {
               {/* ATS Score Breakdown */}
               {selectedJob.ats_score !== undefined && (
                 <section>
-                  <h3 className="font-display font-bold text-base text-ls-navy mb-3">ATS Score Breakdown</h3>
+                  <h3 className="font-heading font-bold text-base text-ink mb-3">ATS Score Breakdown</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <ATSGauge score={selectedJob.ats_score} size={80} tier={selectedJob.match_tier} label="Overall" />
                     <div className="md:col-span-3 space-y-3">
@@ -564,11 +755,11 @@ export const JobList: React.FC = () => {
                         { label: 'Education Match', value: 75, color: '#34D399' },
                       ].map((item) => (
                         <div key={item.label} className="flex items-center gap-3">
-                          <span className="w-36 font-body text-sm text-ls-grey-dark">{item.label}</span>
-                          <div className="flex-1 h-2 bg-ls-grey-light rounded-full overflow-hidden">
+                          <span className="w-36 font-body text-sm text-text-secondary">{item.label}</span>
+                          <div className="flex-1 h-2 bg-surface-muted rounded-full overflow-hidden">
                             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${item.value}%`, backgroundColor: item.color }} />
                           </div>
-                          <span className="w-10 text-right font-display font-bold text-sm text-ls-navy">{item.value}%</span>
+                          <span className="w-10 text-right font-heading font-bold text-sm text-ink">{item.value}%</span>
                         </div>
                       ))}
                     </div>
@@ -577,40 +768,44 @@ export const JobList: React.FC = () => {
               )}
 
               {/* Actions */}
-              <div className="pt-4 border-t border-white/[0.07] space-y-3">
+              <div className="pt-4 border-t border-slate space-y-3">
                 <div className="flex flex-wrap gap-3">
-                  <button
+                  <AccentButton
                     onClick={() => handleModalAction('apply')}
                     disabled={modalAction !== null}
-                    className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors disabled:opacity-50"
+                    data-testid="apply-btn"
+                    className="flex-1 sm:flex-none"
                   >
                     {modalAction === 'apply' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     {modalAction === 'apply' ? 'Applying...' : 'Apply Now'}
-                  </button>
-                  <button
+                  </AccentButton>
+                  <OutlineButton
                     onClick={() => handleModalAction('tailor')}
                     disabled={modalAction !== null}
-                    className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
+                    data-testid="tailor-resume-btn"
+                    className="flex-1 sm:flex-none"
                   >
                     {modalAction === 'tailor' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                     {modalAction === 'tailor' ? 'Tailoring...' : 'Tailor Resume'}
-                  </button>
-                  <button
+                  </OutlineButton>
+                  <OutlineButton
                     onClick={() => handleModalAction('cover')}
                     disabled={modalAction !== null}
-                    className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
+                    data-testid="cover-letter-btn"
+                    className="flex-1 sm:flex-none"
                   >
                     {modalAction === 'cover' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                     {modalAction === 'cover' ? 'Generating...' : 'Cover Letter'}
-                  </button>
-                  <button
+                  </OutlineButton>
+                  <OutlineButton
                     onClick={() => handleModalAction('flag')}
                     disabled={modalAction !== null}
-                    className="tactile flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-bold text-sm hover:border-ls-red/40 hover:text-ls-red transition-colors disabled:opacity-50"
+                    data-testid="flag-btn"
+                    className="flex-1 sm:flex-none"
                   >
-                    {modalAction === 'flag' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
+                    {modalAction === 'flag' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
                     {modalAction === 'flag' ? 'Flagging...' : 'Flag'}
-                  </button>
+                  </OutlineButton>
                 </div>
                 {modalFeedback && (
                   <p
@@ -618,8 +813,8 @@ export const JobList: React.FC = () => {
                     className={cn(
                       'px-3 py-2 rounded-lg border font-body text-sm',
                       modalFeedback.type === 'success'
-                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                        : 'bg-red-500/10 border-red-500/30 text-red-300'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900'
+                        : 'bg-red-500/10 border-red-500/30 text-red-900'
                     )}
                   >
                     {modalFeedback.message}
@@ -644,7 +839,7 @@ export const JobList: React.FC = () => {
   );
 }
 
-// Need to import MapPin, Briefcase, DollarSign, Clock, ChevronDown
-import { MapPin, Briefcase, DollarSign, Clock } from 'lucide-react';
+// Need to import Flag
+import { Flag } from 'lucide-react';
 
 export default JobList;

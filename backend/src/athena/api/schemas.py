@@ -277,3 +277,37 @@ class DocumentGenerateResponse(BaseModel):
     filename: str
     path: str | None
     warnings: list[str]
+
+
+class DocumentResponse(BaseModel):
+    """Response for a single document in a user profile."""
+    id: UUID
+    name: str
+    type: Literal["resume", "cover_letter", "certification", "portfolio", "other"]
+    file_path: str
+    mime_type: str
+    size_bytes: int
+    uploaded_at: datetime
+    parsed_content: dict[str, Any] | None = None
+
+
+class ReceiptResponse(BaseModel):
+    """Receipt for a submitted application."""
+    receipt_id: str
+    confirmation_hash: str
+    submitted_at: datetime
+    job_title: str
+    company: str
+    applicant_name: str
+    authorized_by: str
+    authorized_at: datetime
+    portal_name: str
+    follow_up_date: str
+    status: str
+    notes: str | None = None
+
+
+class ReceiptListResponse(BaseModel):
+    """List of receipts."""
+    receipts: list[ReceiptResponse]
+    total: int

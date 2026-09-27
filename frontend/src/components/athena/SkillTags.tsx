@@ -56,7 +56,7 @@ export const SkillTags: React.FC<SkillTagsProps> = ({
   if (!skills.length) {
     return (
       <div className={cn('p-4 sunken rounded-lg border border-white/7', className)}>
-        <p className="font-body text-sm text-ls-grey-light-text text-center py-4">
+        <p className="font-body text-sm text-white text-center py-4">
           No skills data available
         </p>
       </div>

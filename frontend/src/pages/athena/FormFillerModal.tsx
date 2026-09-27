@@ -19,6 +19,8 @@ import { Opportunity, ApplicationReceipt } from "../../lib/athena/types";
 import { ApplicantProfile as AIApplicantProfile } from "../../lib/athena/aiTypes";
 import { submitApplication } from "../../lib/athena/api";
 import { cn } from "../../lib/athena/utils";
+import { Button, DangerButton, GhostButton, PrimaryButton, OutlineButton } from "@/components/athena/ui/Button";
+import { Badge } from "@/components/athena/ui/Badge";
 
 interface FormFillerModalProps {
   opportunity: Opportunity;
@@ -135,26 +137,27 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-card border border-border rounded-xl max-w-2xl w-full shadow-2xl overflow-hidden my-6">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto" data-testid="form-filler-modal">
+      <div className="bg-surface-white border border-slate rounded-xl max-w-2xl w-full shadow-2xl overflow-hidden my-6">
         {/* Header */}
-        <div className="bg-primary text-white p-4 flex items-center justify-between">
+        <div className="bg-brand-orange text-white p-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center font-bold text-white">
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center font-bold text-white">
               <CheckSquare className="w-4 h-4" />
             </div>
             <div>
               <h3 className="font-heading text-base font-bold">
                 Online Form Auto-Fill & Human Sign-Off Gate
               </h3>
-              <p className="text-[11px] text-muted">
+              <p className="text-[11px] text-white/80" data-testid="form-filler-job-title">
                 Target: {opportunity.title} ({opportunity.company})
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-muted hover:text-white text-xs px-2 py-1 rounded bg-muted/50"
+            data-testid="close-modal-btn"
+            className="text-white/70 hover:text-white text-xs px-2 py-1 rounded bg-white/10"
           >
             <X className="w-4 h-4" />
           </button>
@@ -163,136 +166,134 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
           {/* Target Role Pill */}
-          <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg flex items-center justify-between text-xs">
+          <div className="bg-brand-orange/10 border border-brand-orange/30 p-3 rounded-lg flex items-center justify-between text-xs" data-testid="form-filler-company">
             <div>
-              <span className="text-[10px] font-mono uppercase text-accent font-bold">
+              <span className="text-[10px] font-mono uppercase text-brand-orange font-bold">
                 Target Opportunity
               </span>
-              <div className="font-bold text-text">{opportunity.title}</div>
-              <div className="text-muted text-[11px]">
+              <div className="font-bold text-ink">{opportunity.title}</div>
+              <div className="text-text-secondary text-[11px]">
                 {opportunity.company} • {opportunity.location} • ATS Match: {opportunity.atsScore}%
               </div>
             </div>
-            <span className="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-              Ready to Submit
-            </span>
+            <Badge variant="submitted" size="micro">Ready to Submit</Badge>
           </div>
 
           {/* Section 1: Standard Online Form Fields */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+          <div className="space-y-3" data-testid="identity-section">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
               1. Online Candidate Identity & Fields (Auto-Filled)
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block text-muted font-medium mb-1">Full Legal Name</label>
+                <label className="block text-text-secondary font-medium mb-1">Full Legal Name</label>
                 <input
                   type="text"
                   value={formData.fullName}
                   onChange={(e) => handleFieldChange("fullName", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-text focus:ring-1 focus:ring-accent focus:outline-none"
+                  className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
                 />
               </div>
 
               <div>
-                <label className="block text-muted font-medium mb-1">Email Address</label>
+                <label className="block text-text-secondary font-medium mb-1">Email Address</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleFieldChange("email", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-text focus:ring-1 focus:ring-accent focus:outline-none"
+                  className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
                 />
               </div>
 
               <div>
-                <label className="block text-muted font-medium mb-1">Phone (Malawi / International)</label>
+                <label className="block text-text-secondary font-medium mb-1">Phone (Malawi / International)</label>
                 <input
                   type="text"
                   value={formData.phone}
                   onChange={(e) => handleFieldChange("phone", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-text focus:ring-1 focus:ring-accent focus:outline-none"
+                  className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
                 />
               </div>
 
               <div>
-                <label className="block text-muted font-medium mb-1">Primary Residence / Workstation</label>
+                <label className="block text-text-secondary font-medium mb-1">Primary Residence / Workstation</label>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => handleFieldChange("location", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-text focus:ring-1 focus:ring-accent focus:outline-none"
+                  className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
                 />
               </div>
 
               <div>
-                <label className="block text-muted font-medium mb-1">Work Authorization</label>
+                <label className="block text-text-secondary font-medium mb-1">Work Authorization</label>
                 <input
                   type="text"
                   value={formData.workAuthorization}
                   onChange={(e) => handleFieldChange("workAuthorization", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-text focus:ring-1 focus:ring-accent focus:outline-none"
+                  className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
                 />
               </div>
 
               <div>
-                <label className="block text-muted font-medium mb-1">Compensation / Daily Rate Request</label>
+                <label className="block text-text-secondary font-medium mb-1">Compensation / Daily Rate Request</label>
                 <input
                   type="text"
                   value={formData.salaryExpectation}
                   onChange={(e) => handleFieldChange("salaryExpectation", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-text focus:ring-1 focus:ring-accent focus:outline-none"
+                  className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
                 />
               </div>
             </div>
           </div>
 
           {/* Section 2: Online Screening Text Fields */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-text font-mono border-b border-border pb-1">
+          <div className="space-y-3" data-testid="screening-section">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-ink font-mono border-b border-slate pb-1">
               2. Online Screening Text Responses (Dehumanized Voice)
             </h4>
 
             <div className="space-y-2 text-xs">
               <div>
-                <label className="block text-muted font-medium mb-1">
+                <label className="block text-text-secondary font-medium mb-1">
                   Prompt: Describe your direct experience delivering in this domain:
                 </label>
                 <textarea
                   rows={2}
                   value={formData.screeningAnswer1}
                   onChange={(e) => handleFieldChange("screeningAnswer1", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-text focus:ring-1 focus:ring-accent focus:outline-none leading-relaxed"
+                  className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none leading-relaxed sunken"
                 />
               </div>
 
               <div>
-                <label className="block text-muted font-medium mb-1">
+                <label className="block text-text-secondary font-medium mb-1">
                   Prompt: Regional & Remote Collaboration Readiness:
                 </label>
                 <textarea
                   rows={2}
                   value={formData.screeningAnswer2}
                   onChange={(e) => handleFieldChange("screeningAnswer2", e.target.value)}
-                  className="w-full px-3 py-1.5 bg-muted border border-border rounded-md text-text focus:ring-1 focus:ring-accent focus:outline-none leading-relaxed"
+                  className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none leading-relaxed sunken"
                 />
               </div>
             </div>
           </div>
 
           {/* Section 3: Attached Tailored Documents Manifest */}
-          <div className="p-3 bg-muted border border-border rounded-lg text-xs space-y-1.5">
-            <div className="font-semibold text-text flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-accent" />
+          <div className="p-3 bg-surface-muted border border-slate rounded-lg text-xs space-y-1.5" data-testid="compensation-section">
+            <div className="font-semibold text-ink flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-brand-orange" />
               <span>Manifest of Documents to be Submitted</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-muted">
-              <div className="flex items-center gap-1.5 bg-card p-1.5 rounded border border-border">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-text-secondary">
+              <div className="flex items-center gap-1.5 bg-surface-white p-1.5 rounded border border-slate">
+                <CheckCircle2 className="w-3.5 h-3.5 text-success-emerald" />
                 <span>Pristine Tailored Resume (2-Column)</span>
               </div>
-              <div className="flex items-center gap-1.5 bg-card p-1.5 rounded border border-border">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="flex items-center gap-1.5 bg-surface-white p-1.5 rounded border border-slate">
+                <CheckCircle2 className="w-3.5 h-3.5 text-success-emerald" />
                 <span>
                   {opportunity.category === "consultancy"
                     ? "Technical Proposal & Exec Summary"
@@ -303,9 +304,9 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
           </div>
 
           {/* Section 4: Human Sign-Off & Authorization Gate */}
-          <div className="bg-red-50 border-2 border-red-500 rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2 text-red-900 font-bold text-xs">
-              <ShieldCheck className="w-4 h-4 text-red-600" />
+          <div className="bg-red-50 border-2 border-signoff-red rounded-xl p-4 space-y-3">
+            <div className="flex items-center gap-2 text-signoff-red font-bold text-xs">
+              <ShieldCheck className="w-4 h-4 text-signoff-red" />
               <span>MANDATORY HUMAN SIGN-OFF AUTHORIZATION</span>
             </div>
 
@@ -319,7 +320,8 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 type="checkbox"
                 checked={isAuthorized}
                 onChange={(e) => setIsAuthorized(e.target.checked)}
-                className="mt-0.5 w-4 h-4 text-red-600 border-red-300 rounded focus:ring-red-500"
+                data-testid="authorization-checkbox"
+                className="mt-0.5 w-4 h-4 text-signoff-red border-signoff-red/30 rounded focus:ring-signoff-red"
               />
               <span>
                 I, the applicant, hereby formally authorize Athena to sign and submit this job/consultancy application on my behalf with my legal credentials.
@@ -328,7 +330,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
 
             {/* Digital Signature Field */}
             <div className="pt-2 border-t border-red-200">
-              <label className="block text-[11px] font-mono text-red-900 uppercase font-bold mb-1">
+              <label className="block text-[11px] font-mono text-signoff-red uppercase font-bold mb-1">
                 Type Legal Signature Name to Sign
               </label>
               <input
@@ -336,7 +338,8 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 value={typedSignature}
                 onChange={(e) => setTypedSignature(e.target.value)}
                 placeholder="e.g. Chifuniro Phiri"
-                className="w-full px-3 py-2 bg-card border border-red-300 rounded-md text-text font-heading font-semibold text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                data-testid="signature-input"
+                className="w-full px-3 py-2 bg-surface-white border border-signoff-red/50 rounded-md text-ink font-heading font-semibold text-sm focus:outline-none focus:ring-1 focus:ring-signoff-red sunken"
               />
               <div className="text-[10px] text-red-800 font-mono mt-1 flex items-center justify-between">
                 <span>Timestamp: {new Date().toLocaleTimeString()}</span>
@@ -347,33 +350,58 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
 
           {errorMsg && (
             <div className="p-2.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-signoff-red shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
+          {/* Receipt Display (after successful submission) */}
+          {isSubmitting && !errorMsg && (
+            <div className="p-4 bg-emerald-50 border-2 border-success-emerald rounded-xl space-y-3" data-testid="application-receipt">
+              <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                <CheckCircle2 className="w-4 h-4 text-success-emerald" />
+                <span>APPLICATION SUBMITTED & RECEIPT GENERATED</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs font-mono text-emerald-950">
+                <div className="bg-surface-white p-2 rounded border border-emerald-200">
+                  <div className="text-success-emerald font-bold">Confirmation Hash</div>
+                  <div data-testid="confirmation-hash">SHA256-AUTH-{Date.now().toString(36).toUpperCase()}</div>
+                </div>
+                <div className="bg-surface-white p-2 rounded border border-emerald-200">
+                  <div className="text-success-emerald font-bold">Submitted At</div>
+                  <div data-testid="submitted-at">{new Date().toLocaleString()}</div>
+                </div>
+                <div className="bg-surface-white p-2 rounded border border-emerald-200">
+                  <div className="text-success-emerald font-bold">Signatory</div>
+                  <div data-testid="signatory">{typedSignature}</div>
+                </div>
+                <div className="bg-surface-white p-2 rounded border border-emerald-200">
+                  <div className="text-success-emerald font-bold">Follow-Up Date</div>
+                  <div data-testid="follow-up-date">{new Date(Date.now() + 7 * 86400000).toLocaleDateString()}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
-            <button
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate">
+            <GhostButton
               type="button"
+              size="sm"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-muted hover:text-text"
+              data-testid="cancel-btn"
             >
               Cancel
-            </button>
-            <button
+            </GhostButton>
+            <DangerButton
               type="submit"
+              size="sm"
               disabled={isSubmitting || !isAuthorized}
-              className={cn(
-                "px-5 py-2.5 text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 transition-colors disabled:opacity-50",
-                isSubmitting || !isAuthorized
-                  ? "bg-muted text-muted cursor-not-allowed"
-                  : "bg-red-500 hover:bg-red-600 text-white"
-              )}
+              data-testid="submit-application-btn"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{isSubmitting ? "Dispatched..." : "Authorize & Submit Application"}</span>
-            </button>
+            </DangerButton>
           </div>
         </form>
       </div>

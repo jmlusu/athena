@@ -82,6 +82,7 @@ const NAV_ITEMS: { id: NavView; label: string; icon: React.ComponentType<{ class
   { id: 'n8n', label: 'n8n Workflow Nodes', icon: Workflow, badge: 'Plus' },
   { id: 'profile', label: 'Applicant Skills & Profile', icon: User },
   { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'design-tokens-test', label: 'Design Tokens Test', icon: Sliders, badge: 'Dev' },
 ];
 
 export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
@@ -104,7 +105,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
 
   // Sync currentView with route
   useEffect(() => {
-    const path = location.pathname.replace('/athena', '') || '/dashboard';
+    const path = location.pathname || '/dashboard';
     const routeMap: Record<string, NavView> = {
       '/dashboard': 'dashboard',
       '/jobs': 'jobs',
@@ -115,6 +116,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
       '/n8n': 'n8n',
       '/profile': 'profile',
       '/settings': 'settings',
+      '/design-tokens-test': 'design-tokens-test',
     };
     const view = routeMap[path] || 'dashboard';
     setCurrentView(view);
@@ -129,15 +131,16 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
   const handleNavigate = (view: NavView) => {
     setCurrentView(view);
     const pathMap: Record<NavView, string> = {
-      dashboard: '/athena/dashboard',
-      jobs: '/athena/jobs',
-      applications: '/athena/applications',
-      documents: '/athena/documents',
-      form_filler: '/athena/form-filler',
-      receipts: '/athena/receipts',
-      n8n: '/athena/n8n',
-      profile: '/athena/profile',
-      settings: '/athena/settings',
+      dashboard: '/dashboard',
+      jobs: '/jobs',
+      applications: '/applications',
+      documents: '/documents',
+      form_filler: '/form-filler',
+      receipts: '/receipts',
+      n8n: '/n8n',
+      profile: '/profile',
+      settings: '/settings',
+      'design-tokens-test': '/design-tokens-test',
     };
     navigate(pathMap[view]);
   };
@@ -161,7 +164,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col font-body text-text selection:bg-accent selection:text-white">
+    <div className="min-h-screen bg-canvas flex flex-col font-body text-ink selection:bg-brand-orange selection:text-white">
       {/* Skip link for accessibility */}
       <a href="#main-content" className="skip-link">
         Skip to main content
@@ -175,7 +178,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
         {/* Far-Left Vertical Sidebar */}
         <aside
           className={cn(
-            'w-68 min-h-screen bg-primary text-white border-r border-border flex flex-col justify-between shrink-0 select-none transition-all duration-300 lg:translate-x-0',
+            'w-68 min-h-screen bg-chassis-frame text-chassis-primary border-r border-chassis flex flex-col justify-between shrink-0 select-none transition-all duration-300 lg:translate-x-0',
             leftSidebarOpen ? 'w-68' : 'w-20 lg:w-20',
             !leftSidebarOpen && 'lg:w-20',
             mobileLeftOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
@@ -185,28 +188,28 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
         >
           <div className="flex-1 overflow-y-auto">
             {/* Brand Header */}
-            <div className={cn('p-4 border-b border-border flex items-center justify-between', !leftSidebarOpen && 'justify-center')}>
+            <div className={cn('p-4 border-b border-chassis flex items-center justify-between', !leftSidebarOpen && 'justify-center')}>
               {leftSidebarOpen && (
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-red-600 flex items-center justify-center text-white shadow-md font-brand font-bold text-base">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-signoff-red flex items-center justify-center text-white shadow-md font-brand font-bold text-base raised">
                     A
                   </div>
                   <div className="min-w-0">
-                    <h1 className="font-brand font-bold tracking-wider text-white text-base leading-none truncate">
+                    <h1 className="font-brand font-bold tracking-wider text-white text-base leading-none truncate wordmark">
                       ATHENA
                     </h1>
-                    <span className="text-[10px] tracking-widest text-subtle uppercase font-mono">
+                    <span className="text-[10px] tracking-widest text-chassis-muted uppercase font-mono">
                       Auto Job & Consultancy
                     </span>
                   </div>
                 </div>
               )}
               {!leftSidebarOpen && (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-red-600 flex items-center justify-center text-white shadow-md font-brand font-bold text-base">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-orange to-signoff-red flex items-center justify-center text-white shadow-md font-brand font-bold text-base raised">
                   A
                 </div>
               )}
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" title="Engine Online" />
+              <span className="w-2 h-2 rounded-full bg-success-emerald animate-ping-custom" title="Engine Online" aria-label="Engine online" />
             </div>
 
             {/* Search Scopes Quick Filters */}
@@ -221,7 +224,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
 
             {/* Main Navigation */}
             <nav className={cn('p-3 space-y-1', leftSidebarOpen ? '' : 'hidden')} role="navigation" aria-label="System modules">
-              <div className="text-[10px] font-semibold text-subtle uppercase tracking-wider mb-2 px-1">
+              <div className="text-[10px] font-semibold text-chassis-low uppercase tracking-wider mb-2 px-1">
                 System Modules
               </div>
               {NAV_ITEMS.map((item) => {
@@ -231,22 +234,22 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
                     key={item.id}
                     onClick={() => handleNavigate(item.id)}
                     className={cn(
-                      'w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                      'w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all tactile',
                       isActive
-                        ? 'bg-accent text-white shadow-sm font-semibold'
-                        : 'text-muted hover:bg-muted hover:text-text'
+                        ? 'bg-chassis-active text-white border-l-2 border-brand-orange font-semibold'
+                        : 'text-chassis-muted hover:bg-chassis-active hover:text-chassis-primary'
                     )}
                     title={!leftSidebarOpen ? item.label : undefined}
                   >
                     <div className="flex items-center gap-2.5">
-                      <item.icon className={cn('w-4 h-4', isActive ? 'text-white' : 'text-muted')} />
+                      <item.icon className={cn('w-4 h-4', isActive ? 'text-white' : 'text-chassis-muted')} />
                       {leftSidebarOpen && <span>{item.label}</span>}
                     </div>
                     {item.badge && leftSidebarOpen && (
                       <span
                         className={cn(
                           'text-[9px] font-mono px-1.5 py-0.2 rounded',
-                          isActive ? 'bg-black/20 text-white' : 'bg-muted text-amber-500'
+                          isActive ? 'bg-black/20 text-white' : 'bg-chassis-raised text-amber-led'
                         )}
                       >
                         {item.badge}
@@ -260,17 +263,19 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
 
           {/* 4-Hour Cron Schedules Status Widget */}
           {leftSidebarOpen && cronState && (
-            <CronCountdown
-              jobSecondsRemaining={cronState.jobSecondsRemaining}
-              consultancySecondsRemaining={cronState.consultancySecondsRemaining}
-              lastJobRun={cronState.lastJobRun}
-              onTriggerNow={onTriggerCronNow || (() => {})}
-            />
+            <div className="p-4 border-t border-chassis">
+              <CronCountdown
+                jobSecondsRemaining={cronState.jobSecondsRemaining}
+                consultancySecondsRemaining={cronState.consultancySecondsRemaining}
+                lastJobRun={cronState.lastJobRun}
+                onTriggerNow={onTriggerCronNow || (() => {})}
+              />
+            </div>
           )}
 
           {/* Collapsed brand footer */}
           {!leftSidebarOpen && (
-            <div className="p-3 border-t border-border text-center text-[10px] text-subtle font-mono">
+            <div className="p-3 border-t border-chassis text-center text-[10px] text-chassis-low font-mono">
               ATHENA v2.4
             </div>
           )}
@@ -295,11 +300,11 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
           tabIndex={-1}
         >
           {/* Top Application Bar */}
-          <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border px-6 py-3 flex items-center justify-between shadow-xs">
+          <header className="sticky top-0 z-30 bg-surface-white/90 backdrop-blur-md border-b border-slate px-6 py-3 flex items-center justify-between shadow-xs">
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileLeftOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-muted hover:text-text hover:bg-muted tactile disabled:opacity-40"
+              className="lg:hidden p-2 rounded-lg text-secondary hover:text-ink hover:bg-surface-muted tactile disabled:opacity-40"
               aria-label="Open navigation menu"
             >
               <Menu className="w-6 h-6" />
@@ -307,31 +312,31 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
 
             {/* Breadcrumb & Scope Pill */}
             <div className="flex items-center gap-2 text-xs flex-1">
-              <span className="font-brand font-bold text-sm tracking-wider text-text">
+              <span className="font-brand font-bold text-sm tracking-wider text-ink">
                 ATHENA
               </span>
-              <ChevronRight className="w-3.5 h-3.5 text-subtle" />
-              <span className="font-semibold text-muted capitalize">
+              <ChevronRight className="w-3.5 h-3.5 text-secondary" />
+              <span className="font-heading font-semibold text-secondary capitalize">
                 {NAV_ITEMS.find((i) => i.id === currentView)?.label || currentView}
               </span>
-              <ChevronRight className="w-3.5 h-3.5 text-subtle" />
-              <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-accent border border-orange-200 font-medium">
+              <ChevronRight className="w-3.5 h-3.5 text-secondary" />
+              <span className="font-mono text-[11px] px-2 py-0.5 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 font-medium">
                 Scope: {selectedScope === 'all' ? 'Lilongwe & Global' : selectedScope}
               </span>
             </div>
 
             {/* Quick Actions & Status */}
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted font-mono bg-muted px-2.5 py-1 rounded-md border border-border">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-secondary font-mono bg-surface-muted px-2.5 py-1 rounded-md border border-slate">
+                <span className="w-2 h-2 rounded-full bg-success-emerald animate-pulse-custom" />
                 <span>Lilongwe Gateway: Active</span>
               </div>
 
               <button
                 onClick={() => handleNavigate('documents')}
-                className="px-3 py-1.5 bg-primary hover:bg-navy text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 bg-surface-dark-inset hover:bg-black text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors"
               >
-                <FileText className="w-3.5 h-3.5 text-accent" />
+                <FileText className="w-3.5 h-3.5 text-brand-orange" />
                 <span className="hidden sm:inline">Pristine Document Studio</span>
                 <span className="sm:hidden">Studio</span>
               </button>
@@ -341,8 +346,8 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
                 onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
                 className={cn(
                   'p-2 rounded-lg transition-colors tactile disabled:opacity-40',
-                  'text-muted hover:text-text hover:bg-muted',
-                  rightSidebarOpen && 'bg-muted text-text'
+                  'text-secondary hover:text-ink hover:bg-surface-muted',
+                  rightSidebarOpen && 'bg-surface-muted text-ink'
                 )}
                 aria-label={rightSidebarOpen ? 'Close right panel' : 'Open right panel'}
                 aria-expanded={rightSidebarOpen}
@@ -353,7 +358,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
               {/* Mobile right sidebar toggle */}
               <button
                 onClick={() => setMobileRightOpen(true)}
-                className="lg:hidden p-2 rounded-lg text-muted hover:text-text hover:bg-muted tactile disabled:opacity-40"
+                className="lg:hidden p-2 rounded-lg text-secondary hover:text-ink hover:bg-surface-muted tactile disabled:opacity-40"
                 aria-label="Open automation panel"
               >
                 <Sliders className="w-5 h-5" />
@@ -370,7 +375,7 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
         {/* Far-Right Vertical Sidebar: Autonomous Rules, Sign-Off Gate, Aggregator Status */}
         <aside
           className={cn(
-            'w-72 min-h-screen bg-primary text-white border-l border-border flex flex-col justify-between shrink-0 select-none overflow-y-auto transition-all duration-300 lg:translate-x-0',
+            'w-72 min-h-screen bg-chassis-frame text-chassis-primary border-l border-chassis flex flex-col justify-between shrink-0 select-none overflow-y-auto transition-all duration-300 lg:translate-x-0',
             rightSidebarOpen ? 'w-72' : 'w-0 lg:w-0 overflow-hidden',
             !rightSidebarOpen && 'lg:w-0 overflow-hidden',
             mobileRightOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0',
@@ -386,9 +391,9 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
             />
           )}
           {rightSidebarOpen && userProfile && (
-            <div className="p-3 border-t border-border bg-muted/50 flex items-center justify-between text-[10px] text-subtle">
+            <div className="p-3 border-t border-chassis bg-chassis-raised/50 flex items-center justify-between text-[10px] text-chassis-low">
               <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Human Protected
+                <ShieldCheck className="w-3.5 h-3.5 text-success-emerald" /> Human Protected
               </span>
               <span className="font-mono">ATHENA v2.4</span>
             </div>

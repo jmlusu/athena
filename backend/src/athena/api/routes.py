@@ -27,6 +27,7 @@ from .schemas import (
     ATSScoreResponse,
     CoverLetterRequest,
     DocumentGenerateResponse,
+    DocumentResponse,
     FlagJobRequest,
     JobCreate,
     JobListResponse,
@@ -34,6 +35,8 @@ from .schemas import (
     MatchJobsRequest,
     MatchJobsResponse,
     PipelineStatsResponse,
+    ReceiptListResponse,
+    ReceiptResponse,
     ScrapeJobRequest,
     ScrapeJobResponse,
     ScrapeStatsResponse,
@@ -238,6 +241,145 @@ async def update_application(app_id: UUID, updates: dict[str, Any]):
             setattr(app, key, value)
 
     return athena_db.update_application(app)
+
+
+# Receipts endpoints
+@router.get("/receipts", response_model=ReceiptListResponse)
+async def list_receipts(
+    user_profile_id: UUID | None = None,
+    limit: int = Query(50, le=100),
+    offset: int = Query(0, ge=0),
+):
+    """List application receipts (applications with receipt_data)."""
+    apps = athena_db.get_applications(user_profile_id, None, None)
+    
+    # Filter to only applications with receipt data
+    receipts = []
+    for app in apps:
+        if app.receipt_data and app.receipt_data.get("receipt_id"):
+            job = athena_db.get_job(app.job_id)
+            profile = athena_db.get_user_profile(app.user_profile_id)
+            
+            receipt = ReceiptResponse(
+                receipt_id=app.receipt_data.get("receipt_id", f"ATH-RCPT-{str(app.id)[:8]}"),
+                confirmation_hash=app.receipt_data.get("confirmation_hash", f"SHA256-{str(app.id)}"),
+                submitted_at=app.submitted_at or app.created_at,
+                job_title=job.title if job else "Unknown Position",
+                company=job.company if job else "Unknown Company",
+                applicant_name=profile.full_name if profile else "Unknown Applicant",
+                authorized_by=app.receipt_data.get("authorized_by", "System"),
+                authorized_at=app.receipt_data.get("authorized_at", app.created_at),
+                portal_name=app.receipt_data.get("portal_name", "Athena Direct"),
+                follow_up_date=app.receipt_data.get("follow_up_date", (app.created_at).strftime("%Y-%m-%d")),
+                status=app.receipt_data.get("status", "SUBMITTED"),
+                notes=app.receipt_data.get("notes"),
+            )
+            receipts.append(receipt)
+    
+    # Sort by submitted_at descending
+    receipts.sort(key=lambda r: r.submitted_at, reverse=True)
+    total = len(receipts)
+    receipts = receipts[offset:offset + limit]
+    
+    return ReceiptListResponse(receipts=receipts, total=total)
+
+
+@router.get("/receipts/{receipt_id}", response_model=ReceiptResponse)
+async def get_receipt(receipt_id: str):
+    """Get a specific receipt by ID."""
+    apps = athena_db.get_applications(None, None, None)
+    
+    for app in apps:
+        if app.receipt_data and app.receipt_data.get("receipt_id") == receipt_id:
+            job = athena_db.get_job(app.job_id)
+            profile = athena_db.get_user_profile(app.user_profile_id)
+            
+            return ReceiptResponse(
+                receipt_id=app.receipt_data.get("receipt_id", f"ATH-RCPT-{str(app.id)[:8]}"),
+                confirmation_hash=app.receipt_data.get("confirmation_hash", f"SHA256-{str(app.id)}"),
+                submitted_at=app.submitted_at or app.created_at,
+                job_title=job.title if job else "Unknown Position",
+                company=job.company if job else "Unknown Company",
+                applicant_name=profile.full_name if profile else "Unknown Applicant",
+                authorized_by=app.receipt_data.get("authorized_by", "System"),
+                authorized_at=app.receipt_data.get("authorized_at", app.created_at),
+                portal_name=app.receipt_data.get("portal_name", "Athena Direct"),
+                follow_up_date=app.receipt_data.get("follow_up_date", (app.created_at).strftime("%Y-%m-%d")),
+                status=app.receipt_data.get("status", "SUBMITTED"),
+                notes=app.receipt_data.get("notes"),
+            )
+    
+    raise HTTPException(status_code=404, detail="Receipt not found")
+
+
+# Profile Documents endpoints
+@router.get("/profiles/{profile_id}/documents", response_model=list[DocumentResponse])
+async def list_profile_documents(profile_id: UUID):
+    """List all documents for a user profile."""
+    profile = athena_db.get_user_profile(profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    documents = []
+    for doc in profile.documents:
+        if isinstance(doc, dict):
+            documents.append(DocumentResponse(**doc))
+        else:
+            documents.append(DocumentResponse.model_validate(doc))
+    
+    return documents
+
+
+@router.post("/profiles/{profile_id}/documents", response_model=DocumentResponse)
+async def upload_profile_document(
+    profile_id: UUID,
+    document: DocumentResponse,
+):
+    """Add a document to a user profile."""
+    profile = athena_db.get_user_profile(profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Convert to dict for storage
+    doc_dict = document.model_dump()
+    profile.documents.append(doc_dict)
+    athena_db.update_user_profile(profile)
+    
+    return document
+
+
+@router.delete("/profiles/{profile_id}/documents/{document_id}")
+async def delete_profile_document(profile_id: UUID, document_id: UUID):
+    """Remove a document from a user profile."""
+    profile = athena_db.get_user_profile(profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Find and remove the document
+    original_count = len(profile.documents)
+    profile.documents = [
+        doc for doc in profile.documents
+        if str(doc.get("id") if isinstance(doc, dict) else doc.id) != str(document_id)
+    ]
+    
+    if len(profile.documents) == original_count:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    athena_db.update_user_profile(profile)
+    return {"success": True}
+
+
+# Combined Stats endpoint
+@router.get("/stats", response_model=dict[str, Any])
+async def get_combined_stats():
+    """Get combined statistics for dashboard."""
+    pipeline_stats = await get_pipeline_stats()
+    scraping_stats = await get_scraping_stats()
+    
+    return {
+        "pipeline": pipeline_stats.model_dump(),
+        "scraping": scraping_stats.model_dump(),
+    }
 
 
 # Job action endpoints

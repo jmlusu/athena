@@ -8,6 +8,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     curl \
+    # WeasyPrint dependencies
+    libpango-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
+    libffi-dev \
+    shared-mime-info \
+    fonts-dejavu-core \
+    fonts-liberation \
+    # Playwright dependencies
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv for fast Python package management

@@ -80,7 +80,7 @@ export const JobDetail: React.FC = () => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <p className="font-body text-ls-grey-dark">Job not found</p>
-          <button onClick={() => navigate('/athena/jobs')} className="tactile mt-4 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold hover:brightness-110 transition-colors">
+          <button onClick={() => navigate('/jobs')} className="tactile mt-4 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold hover:brightness-110 transition-colors">
             Back to Jobs
           </button>
         </div>
@@ -175,7 +175,7 @@ export const JobDetail: React.FC = () => {
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-4 mb-4">
           <button
-            onClick={() => navigate('/athena/jobs')}
+            onClick={() => navigate('/jobs')}
             className="tactile p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors"
             aria-label="Back to job list"
           >
@@ -204,16 +204,16 @@ export const JobDetail: React.FC = () => {
           <span className={cn('px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider border', getMatchTierColor(job.match_tier))}>
             {getMatchTierLabel(job.match_tier)}
           </span>
-          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-white text-[10px] font-bold tracking-wider">
             {getJobSourceLabel(job.source)}
           </span>
-          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-white text-[10px] font-bold tracking-wider">
             {getJobTypeLabel(job.job_type)}
           </span>
-          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-white text-[10px] font-bold tracking-wider">
             {formatSalary(job.salary_range)}
           </span>
-          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-white text-[10px] font-bold tracking-wider">
             Posted {formatDate(job.posted_date)}
           </span>
         </div>
@@ -280,7 +280,7 @@ export const JobDetail: React.FC = () => {
               </h2>
               <div className="flex flex-wrap gap-2">
                 {job.benefits.map((benefit, i) => (
-                  <span key={i} className="px-3 py-1.5 sunken rounded-lg text-ls-grey-dark text-sm font-medium border border-white/10">
+                  <span key={i} className="px-3 py-1.5 sunken rounded-lg text-white text-sm font-medium border border-white/10">
                     {benefit}
                   </span>
                 ))}

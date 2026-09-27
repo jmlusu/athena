@@ -14,6 +14,9 @@ import type {
   JobType,
   JobStatus,
   MatchTier,
+  Document,
+  ReceiptResponse,
+  ReceiptListResponse,
 } from './types';
 
 // AI Studio types (from aiTypes.ts)
@@ -35,10 +38,12 @@ import type {
   AIHealthResponse,
 } from './aiTypes';
 
-const API_BASE = import.meta.env.VITE_ATHENA_API_BASE || '/api/v1/athena';
+// Safely access Vite env variables (undefined in non-Vite contexts like Playwright tests)
+const _importMetaEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
+const API_BASE = _importMetaEnv.VITE_ATHENA_API_BASE || '/api/v1/athena';
 // Athena's admin key — required on all write (POST/PUT/PATCH/DELETE) endpoints.
 // Override via VITE_ATHENA_API_KEY at build time; defaults to the backend dev fallback.
-const API_KEY = import.meta.env.VITE_ATHENA_API_KEY || 'dev-admin-key';
+const API_KEY = _importMetaEnv.VITE_ATHENA_API_KEY || 'dev-admin-key';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -95,7 +100,8 @@ export async function listJobs(filters: JobFilter = {}): Promise<JobListResponse
     && typeof body.total === 'number'
     && typeof body.limit === 'number'
     && typeof body.offset === 'number';
-  if (!canonical && import.meta.env.DEV && !jobsShapeWarned) {
+  const isDev = _importMetaEnv.DEV === true;
+  if (!canonical && isDev && !jobsShapeWarned) {
     jobsShapeWarned = true;
     console.warn(`listJobs: unexpected response shape from ${url}`, body);
   }
@@ -285,6 +291,56 @@ export async function stopScheduler(): Promise<{ status: string; running: boolea
 
 export async function getSchedulerStatus(): Promise<{ running: boolean; jobs: Array<{ id: string; name: string; next_run?: string }> }> {
   return fetchJson(`${API_BASE}/scheduler/status`);
+}
+
+// Receipts endpoints
+export async function listReceipts(filters?: {
+  user_profile_id?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<ReceiptListResponse> {
+  const params = new URLSearchParams();
+  if (filters?.user_profile_id) params.append('user_profile_id', filters.user_profile_id);
+  if (filters?.limit) params.append('limit', String(filters.limit));
+  if (filters?.offset) params.append('offset', String(filters.offset));
+  return fetchJson<ReceiptListResponse>(`${API_BASE}/receipts?${params.toString()}`);
+}
+
+export async function getReceipt(receiptId: string): Promise<ReceiptResponse> {
+  return fetchJson<ReceiptResponse>(`${API_BASE}/receipts/${receiptId}`);
+}
+
+// Profile Documents endpoints
+export async function listProfileDocuments(profileId: string): Promise<Document[]> {
+  return fetchJson<Document[]>(`${API_BASE}/profiles/${profileId}/documents`);
+}
+
+export async function uploadProfileDocument(
+  profileId: string,
+  document: Document,
+): Promise<Document> {
+  return fetchJson<Document>(`${API_BASE}/profiles/${profileId}/documents`, {
+    method: 'POST',
+    body: JSON.stringify(document),
+  });
+}
+
+export async function deleteProfileDocument(profileId: string, documentId: string): Promise<{ success: boolean }> {
+  await fetch(`${API_BASE}/profiles/${profileId}/documents/${documentId}`, { method: 'DELETE' });
+  return { success: true };
+}
+
+// Combined Stats endpoint
+export async function getCombinedStats(): Promise<{
+  pipeline: PipelineStatsResponse;
+  scraping: {
+    recent_scrapes: ScrapeJob[];
+    total_jobs_scraped: number;
+    total_new_jobs: number;
+    last_scrape_at?: string;
+  };
+}> {
+  return fetchJson(`${API_BASE}/stats`);
 }
 
 // Helper functions for UI — dark skeuomorphic chips: bg-{hue}-500/15 text-{hue}-300 border-{hue}-500/30

@@ -47,7 +47,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({
   if (!data.length || !keys.length) {
     return (
       <div className={cn('h-[200px] flex items-center justify-center sunken rounded-xl border border-white/7', className)}>
-        <span className="font-body text-sm text-ls-grey-light-text">No data available</span>
+        <span className="font-body text-sm text-white">No data available</span>
       </div>
     );
   }
@@ -201,7 +201,7 @@ export const MountainAreaChart: React.FC<{
   if (!data.length) {
     return (
       <div className={cn('h-[240px] flex items-center justify-center sunken rounded-xl border border-white/7', className)}>
-        <span className="font-body text-sm text-ls-grey-light-text">No ATS score data</span>
+        <span className="font-body text-sm text-white">No ATS score data</span>
       </div>
     );
   }
