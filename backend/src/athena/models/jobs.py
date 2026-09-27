@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
@@ -54,7 +54,7 @@ class Document(BaseModel):
     file_path: str
     mime_type: str
     size_bytes: int
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     parsed_content: dict[str, Any] | None = None
 
 
@@ -95,8 +95,8 @@ class Job(BaseModel):
     match_score: float | None = None
     match_tier: MatchTier | None = None
     status: JobStatus = JobStatus.NEW
-    scraped_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    scraped_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = {}  # Source-specific extra data
 
 
@@ -116,8 +116,8 @@ class Application(BaseModel):
     receipt_data: dict[str, Any] = {}  # Confirmation number, reference ID, etc.
     follow_up_dates: list[datetime] = []
     notes: str = ""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class UserProfile(BaseModel):
@@ -139,8 +139,8 @@ class UserProfile(BaseModel):
     preferences: JobPreferences = Field(default_factory=JobPreferences)
     documents: list[Document] = []
     resume_base: dict[str, Any] | None = None  # Parsed structured resume
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ScrapeJob(BaseModel):
@@ -157,4 +157,4 @@ class ScrapeJob(BaseModel):
     error: str | None = None
     started_at: datetime | None = None
     completed_at: datetime | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

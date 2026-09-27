@@ -185,58 +185,10 @@ const FormFillerModalWrapper: React.FC = () => {
     return <FormFillerLanding />;
   }
 
-  // In a real app, this would load from context/state
-  // For now, we'll use mock data matching the expected types
-  const opportunity: Opportunity = {
-    id: jobId,
-    title: "Sample Position",
-    company: "Sample Company",
-    location: "Lilongwe, Malawi",
-    category: "job",
-    scope: "lilongwe-local",
-    platform: "LinkedIn",
-    description: "Sample description",
-    requirements: [],
-    salaryOrBudget: "$50,000/yr",
-    deadline: "2026-12-31",
-    atsScore: 90,
-    postedDate: "2026-01-01",
-    status: "awaiting_signoff",
-    isFlagged: false,
-  };
-  const applicantProfile: AIApplicantProfile = {
-    full_name: "Chifuniro Phiri",
-    email: "chifuniro.phiri@consult-mw.com",
-    phone: "+265 99 412 8890",
-    location: "Area 10, Lilongwe, Malawi",
-    headline: "Senior Technology & Operations Specialist",
-    summary: "Experienced professional...",
-    skills: [],
-    experience: [],
-    education: [],
-    certifications: [],
-    hourly_rate_usd: 50,
-    expected_monthly_mwk: 3500000,
-    legal_authorized_signer: "Chifuniro Phiri",
-    linkedin_url: "https://linkedin.com/in/chifuniro-phiri-mw",
-    portfolio_url: "https://github.com/chifuniro-phiri-systems",
-    github_url: "https://github.com/chifuniro-phiri-systems",
-    preferences: {
-      keywords: [],
-      excluded_keywords: [],
-      locations: [],
-      job_types: [],
-      min_salary: undefined,
-      preferred_sources: [],
-      remote_only: false,
-      visa_sponsorship_required: false,
-    },
-  };
-  
   return (
     <FormFillerModal
-      opportunity={opportunity}
-      applicantProfile={applicantProfile}
+      opportunity={{ id: jobId, title: "Position", company: "Company", location: "Lilongwe, Malawi", category: "job", scope: "lilongwe-local", platform: "LinkedIn", description: "", requirements: [], salaryOrBudget: "", deadline: "", atsScore: 0, postedDate: "", status: "awaiting_signoff", isFlagged: false }}
+      applicantProfile={{ full_name: "", email: "", phone: "", location: "", headline: "", summary: "", skills: [], experience: [], education: [], certifications: [], hourly_rate_usd: 0, expected_monthly_mwk: 0, legal_authorized_signer: "", linkedin_url: "", portfolio_url: "", github_url: "", preferences: { keywords: [], excluded_keywords: [], locations: [], job_types: [], min_salary: undefined, preferred_sources: [], remote_only: false, visa_sponsorship_required: false } }}
       onClose={() => navigate('/form-filler')}
       onSubmitSuccess={() => navigate('/form-filler')}
     />

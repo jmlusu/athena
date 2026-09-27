@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from uuid import UUID
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -101,7 +101,7 @@ class AthenaScheduler:
             job_type=config.job_type,
             max_results=config.max_results,
             status="running",
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(UTC),
         )
         athena_db.add_scrape_job(scrape_job)
 
@@ -138,7 +138,7 @@ class AthenaScheduler:
             scrape_job.jobs_new = new_count
             scrape_job.jobs_updated = updated_count
             scrape_job.status = "completed"
-            scrape_job.completed_at = datetime.utcnow()
+            scrape_job.completed_at = datetime.now(UTC)
 
             logger.info(
                 f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)"
@@ -147,7 +147,7 @@ class AthenaScheduler:
         except Exception as e:  # noqa: BLE001
             scrape_job.status = "failed"
             scrape_job.error = str(e)
-            scrape_job.completed_at = datetime.utcnow()
+            scrape_job.completed_at = datetime.now(UTC)
             logger.error(f"Scrape failed: {config.query} - {e}")
 
         athena_db.update_scrape_job(scrape_job)
@@ -236,7 +236,7 @@ class AthenaScheduler:
 
     async def cleanup_old_jobs(self, days: int = 90) -> None:
         """Clean up old jobs beyond retention period."""
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         all_jobs = athena_db.jobs.get_all()
         deleted = 0

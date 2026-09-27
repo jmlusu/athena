@@ -148,6 +148,7 @@ export interface Job {
   scraped_at: string;
   updated_at: string;
   metadata: Record<string, unknown>;
+  scope?: OpportunityScope;
 }
 
 export interface Application {
@@ -387,6 +388,7 @@ export interface Opportunity {
   tailoredProposal?: TailoredDocument;
   receipt?: ApplicationReceipt;
   formFields?: Record<string, string>;
+  match_tier?: MatchTier;
 }
 
 export interface ApplicantProfile {

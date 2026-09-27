@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, UTC
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Generic, TypeVar
@@ -210,7 +210,7 @@ class AthenaDB:
         return jobs[offset : offset + limit]
 
     def update_job(self, job: Job) -> Job:
-        job.updated_at = datetime.utcnow()
+        job.updated_at = datetime.now(UTC)
         return self.jobs.update(job)
 
     def upsert_job(self, job: Job) -> Job:
@@ -250,7 +250,7 @@ class AthenaDB:
         return apps
 
     def update_application(self, app: Application) -> Application:
-        app.updated_at = datetime.utcnow()
+        app.updated_at = datetime.now(UTC)
         return self.applications.update(app)
 
     # User profile operations
@@ -267,7 +267,7 @@ class AthenaDB:
         return None
 
     def update_user_profile(self, profile: UserProfile) -> UserProfile:
-        profile.updated_at = datetime.utcnow()
+        profile.updated_at = datetime.now(UTC)
         return self.user_profiles.update(profile)
 
     # Scrape job operations

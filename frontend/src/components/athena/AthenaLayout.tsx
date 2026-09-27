@@ -44,7 +44,8 @@ export type NavView =
   | 'receipts'
   | 'n8n'
   | 'profile'
-  | 'settings';
+  | 'settings'
+  | 'design-tokens-test';
 
 interface AthenaLayoutProps {
   userProfile?: {

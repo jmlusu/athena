@@ -1,6 +1,6 @@
 """Adapter for converting between AI Studio Opportunity and OpenCode Job models."""
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
@@ -49,7 +49,7 @@ def opportunity_to_job(opp: dict[str, Any], profile_id: Optional[UUID] = None) -
         salary_range = _parse_salary_range(salary_str)
 
     # Parse posted date
-    posted_at = datetime.utcnow()
+    posted_at = datetime.now(UTC)
     posted_str = opp.get("postedDate", "")
     if posted_str:
         posted_at = _parse_posted_date(posted_str)
@@ -80,7 +80,7 @@ def opportunity_to_job(opp: dict[str, Any], profile_id: Optional[UUID] = None) -
         match_score=None,
         match_tier=None,
         status=pipeline_to_job_status(opp.get("status", "discovered")),
-        scraped_at=datetime.utcnow(),
+        scraped_at=datetime.now(UTC),
         metadata={
             "ai_studio_original": True,
             "original_scope": scope,
@@ -202,7 +202,7 @@ def _parse_posted_date(posted_str: str) -> datetime:
     """Parse posted date string like '1 hour ago', '3 hours ago', '1 day ago'."""
     import re
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     posted_lower = posted_str.lower()
 
     if "just now" in posted_lower or "now" == posted_lower.strip():

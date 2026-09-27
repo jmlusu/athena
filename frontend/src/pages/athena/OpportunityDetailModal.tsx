@@ -2,7 +2,8 @@ import React from "react";
 import { X, MapPin, Briefcase, Building, DollarSign, Clock, Globe, CheckCircle2, AlertTriangle, ShieldCheck, Download, ExternalLink, FileText, Send, Sparkles } from "lucide-react";
 import { Opportunity } from "../../lib/athena/types";
 import { cn } from "../../lib/athena/utils";
-import { Modal, DangerButton, AccentButton, OutlineButton, GhostButton, PrimaryButton } from "@/components/athena/ui/Button";
+import Modal from "@/components/athena/ui/Modal";
+import { DangerButton, AccentButton, OutlineButton, GhostButton, PrimaryButton } from "@/components/athena/ui/Button";
 import { Badge, StatusPill } from "@/components/athena/ui/Badge";
 import { ATSGauge } from "@/components/athena/ATSGauge";
 
@@ -141,7 +142,7 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
         <section className="space-y-3 pt-4 border-t border-slate">
           <h3 className="font-heading text-base font-bold text-ink">ATS Compatibility Analysis</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <ATSGauge score={opportunity.atsScore || 0} size={100} tier={opportunity.match_tier} label="Overall" showLabel={true} showTierLabel={true} />
+            <ATSGauge score={opportunity.atsScore || 0} size={100} tier={opportunity.match_tier} label="Overall" showLabel={true} />
             <div className="md:col-span-3 space-y-3">
               {[
                 { label: 'Keyword Match', value: 85, color: '#FFA928' },

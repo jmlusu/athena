@@ -593,7 +593,7 @@ export const JobList: React.FC = () => {
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className={cn(
                           'px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono border',
-                          job.category === 'consultancy' ? 'tint-consultancy' : 'tint-job'
+                          job.job_type === 'consultancy' ? 'tint-consultancy' : 'tint-job'
                         )}>
                           {job.category.toUpperCase()}
                         </span>
@@ -615,7 +615,7 @@ export const JobList: React.FC = () => {
 
                     {/* ATS Column */}
                     <div className="text-center">
-                      <MiniATSGauge score={job.ats_score || 0} size={48} tier={job.match_tier} />
+                      <MiniATSGauge score={job.ats_score || 0} size={48} />
                     </div>
 
                     {/* Compensation Column */}
@@ -674,7 +674,7 @@ export const JobList: React.FC = () => {
               <div className="flex-1 mr-4 min-w-0">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <span className="font-heading font-bold text-lg text-ink truncate">{selectedJob.company}</span>
-                  <StatusPill variant={job.category === 'consultancy' ? 'consultancy' : 'job'} size="micro">
+                  <StatusPill variant={selectedJob.job_type === 'consultancy' ? 'consultancy' : 'job'} size="micro">
                     {getMatchTierLabel(selectedJob.match_tier)}
                   </StatusPill>
                 </div>
@@ -687,7 +687,7 @@ export const JobList: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <ATSGauge score={selectedJob.ats_score || 0} size={60} strokeWidth={6} showLabel tier={selectedJob.match_tier} />
+                <ATSGauge score={selectedJob.ats_score || 0} size={60} strokeWidth={6} showLabel />
                 <button onClick={closeJobDetail} className="tactile p-2 rounded-lg text-text-secondary hover:text-ink hover:bg-surface-muted transition-colors" aria-label="Close job detail">
                   <X className="w-5 h-5" />
                 </button>
@@ -838,8 +838,5 @@ export const JobList: React.FC = () => {
     </div>
   );
 }
-
-// Need to import Flag
-import { Flag } from 'lucide-react';
 
 export default JobList;

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { X, Download, Copy, ExternalLink, Linkedin, FileText, Code, CheckCircle2 } from "lucide-react";
+import { X, Download, Copy, ExternalLink, FileText, Code, CheckCircle2 } from "lucide-react";
 import { Opportunity } from "../../lib/athena/types";
 import { cn } from "../../lib/athena/utils";
-import { Modal, PrimaryButton, GhostButton, AccentButton, OutlineButton, DangerButton } from "@/components/athena/ui/Button";
+import Modal from "@/components/athena/ui/Modal";
+import { PrimaryButton, GhostButton, AccentButton, OutlineButton, DangerButton } from "@/components/athena/ui/Button";
 import { Badge } from "@/components/athena/ui/Badge";
 
 interface LinkedInExportModalProps {

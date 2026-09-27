@@ -39,11 +39,11 @@ import type {
 } from './aiTypes';
 
 // Safely access Vite env variables (undefined in non-Vite contexts like Playwright tests)
-const _importMetaEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
-const API_BASE = _importMetaEnv.VITE_ATHENA_API_BASE || '/api/v1/athena';
+const _importMetaEnv: Record<string, unknown> = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
+const API_BASE = (_importMetaEnv.VITE_ATHENA_API_BASE as string) || '/api/v1/athena';
 // Athena's admin key — required on all write (POST/PUT/PATCH/DELETE) endpoints.
-// Override via VITE_ATHENA_API_KEY at build time; defaults to the backend dev fallback.
-const API_KEY = _importMetaEnv.VITE_ATHENA_API_KEY || 'dev-admin-key';
+ // Override via VITE_ATHENA_API_KEY at build time; defaults to the backend dev fallback.
+ const API_KEY = (_importMetaEnv.VITE_ATHENA_API_KEY as string) || 'dev-admin-key';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
