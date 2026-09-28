@@ -311,9 +311,11 @@ def create_app() -> FastAPI:
     # ── Routers ─────────────────────────────────────────────────────────
     from athena.api.routes import router as athena_router
     from athena.api.ai_routes import router as ai_router
+    from athena.metrics.prometheus import router as metrics_router
 
     app.include_router(athena_router, prefix="/api/v1/athena")
     app.include_router(ai_router, prefix="/api/v1/athena")
+    app.include_router(metrics_router, prefix="/api/v1/athena")
 
     # ── Health check ───────────────────────────────────────────────────
     @app.get("/health")

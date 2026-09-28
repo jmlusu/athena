@@ -1,29 +1,40 @@
 import json
+import os
+from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Generic, TypeVar
+from typing import Any
 from uuid import UUID
 
 from filelock import FileLock
 from pydantic import BaseModel
 
+from .lockfile import (
+    acquire_artifact_lock_context,
+    acquire_global_lock_context,
+    scan_for_stale_locks,
+)
 from .models import (
     Application,
     ApplicationStatus,
     Job,
     JobSource,
     JobStatus,
+    JobType,
     ScrapeJob,
     UserProfile,
 )
+from .paths import get_data_root
 from .timeutils import ensure_utc, sort_key_utc
 
-T = TypeVar("T", bound=BaseModel)
 
+class AthenaStore[T: BaseModel]:
+    """File-based store for Athena data using JSONL format with file locking.
 
-class AthenaStore(Generic[T]):
-    """File-based store for Athena data using JSONL format with file locking."""
+    Integrates per-artifact locks for agent coordination, preventing
+    concurrent modifications to the same artifact by different agents.
+    """
 
     def __init__(self, base_dir: Path, filename: str, model_class: type[T], id_field: str = "id"):
         self.base_dir = base_dir
@@ -33,6 +44,7 @@ class AthenaStore(Generic[T]):
         self._lock = FileLock(str(self.filepath) + ".lock")
         self._cache: dict[str, T] = {}
         self._loaded = False
+        self._agent_id = os.getenv("ATHENA_AGENT_ID", "unknown")
 
     def _ensure_dir(self) -> None:
         self.base_dir.mkdir(parents=True, exist_ok=True)
@@ -75,21 +87,21 @@ class AthenaStore(Generic[T]):
             self.filepath.write_text("\n".join(lines))
 
     def _serialize(self, data: Any) -> Any:
-        if isinstance(data, UUID):
+        # UUID/Decimal/HttpUrl all serialize via str(); grouped here to keep
+        # the return count within PLR0911's limit.
+        if isinstance(data, UUID | Decimal) or (
+            hasattr(data, "__str__") and type(data).__name__ == "HttpUrl"
+        ):
             return str(data)
         if isinstance(data, datetime):
             # Persist aware UTC even if a naive value was assigned post-validation
             return ensure_utc(data).isoformat()
-        if hasattr(data, "__str__") and type(data).__name__ == "HttpUrl":
-            return str(data)
         if isinstance(data, dict):
             return {k: self._serialize(v) for k, v in data.items()}
         if isinstance(data, list):
             return [self._serialize(v) for v in data]
         if hasattr(data, "value"):  # Enum
             return data.value
-        if isinstance(data, Decimal):
-            return str(data)
         return data
 
     def _deserialize(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -139,26 +151,61 @@ class AthenaStore(Generic[T]):
         return list(self._load_all().values())
 
     def add(self, obj: T) -> T:
-        items = self._load_all()
-        items[str(getattr(obj, self.id_field))] = obj
-        self._save_all()
+        entity_type = self.__class__.__name__.replace("AthenaStore", "").lower()
+        entity_id = str(getattr(obj, self.id_field))
+        lock = acquire_artifact_lock_context(
+            entity_type, entity_id, self._agent_id, ttl=600,
+        )
+        if lock is None:
+            raise RuntimeError(  # noqa: TRY003
+                f"Could not acquire lock on {entity_type}/{entity_id}",
+            )
+        try:
+            items = self._load_all()
+            items[str(getattr(obj, self.id_field))] = obj
+            self._save_all()
+        finally:
+            lock.release()
         return obj
 
     def update(self, obj: T) -> T:
-        items = self._load_all()
-        id_str = str(getattr(obj, self.id_field))
-        if id_str in items:
-            items[id_str] = obj
-            self._save_all()
+        entity_type = self.__class__.__name__.replace("AthenaStore", "").lower()
+        entity_id = str(getattr(obj, self.id_field))
+        lock = acquire_artifact_lock_context(
+            entity_type, entity_id, self._agent_id, ttl=600,
+        )
+        if lock is None:
+            raise RuntimeError(  # noqa: TRY003
+                f"Could not acquire lock on {entity_type}/{entity_id}",
+            )
+        try:
+            items = self._load_all()
+            id_str = str(getattr(obj, self.id_field))
+            if id_str in items:
+                items[id_str] = obj
+                self._save_all()
+        finally:
+            lock.release()
         return obj
 
     def delete(self, id: UUID) -> bool:
-        items = self._load_all()
+        entity_type = self.__class__.__name__.replace("AthenaStore", "").lower()
+        # We need the ID as a string to generate the lock ID
         id_str = str(id)
-        if id_str in items:
-            del items[id_str]
-            self._save_all()
-            return True
+        lock = acquire_artifact_lock_context(
+            entity_type, id_str, self._agent_id, ttl=600,
+        )
+        if lock is None:
+            raise RuntimeError(f"Could not acquire lock on {entity_type}/{id_str}")  # noqa: TRY003
+        try:
+            items = self._load_all()
+            id_str = str(id)
+            if id_str in items:
+                del items[id_str]
+                self._save_all()
+                return True
+        finally:
+            lock.release()
         return False
 
     def filter(self, **kwargs: Any) -> list[T]:
@@ -180,17 +227,39 @@ class AthenaDB:
 
     def __init__(self, base_dir: Path | None = None):
         if base_dir is None:
-            from .paths import get_data_root
-
             base_dir = get_data_root()
 
         self.base_dir = base_dir
+        self._agent_id = os.getenv("ATHENA_AGENT_ID", "unknown")
 
         # Initialize stores
         self.jobs = AthenaStore(base_dir, "jobs.jsonl", Job)
         self.applications = AthenaStore(base_dir, "applications.jsonl", Application)
         self.user_profiles = AthenaStore(base_dir, "user_profiles.jsonl", UserProfile)
         self.scrape_jobs = AthenaStore(base_dir, "scrape_jobs.jsonl", ScrapeJob)
+
+    # Stale lock management
+    def scan_for_stale_locks(self) -> int:
+        """Scan for and release stale locks.
+
+        Returns the number of locks released.
+        """
+        return scan_for_stale_locks(self._agent_id)
+
+    # Global agent lock
+    def with_global_lock(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+        """Execute a function while holding the global agent lock.
+
+        This serializes all operations, ensuring only one agent
+        modifies data at a time when needed.
+        """
+        lock = acquire_global_lock_context(self._agent_id)
+        if lock is None:
+            raise RuntimeError("Could not acquire global agent lock")  # noqa: TRY003
+        try:
+            return func(*args, **kwargs)
+        finally:
+            lock.release()
 
     # Job operations
     def add_job(self, job: Job) -> Job:
@@ -290,6 +359,46 @@ class AthenaDB:
 
     def update_scrape_job(self, scrape_job: ScrapeJob) -> ScrapeJob:
         return self.scrape_jobs.update(scrape_job)
+
+    # Pipeline statistics
+    def get_pipeline_stats_dict(self) -> dict[str, Any]:
+        """Get pipeline statistics as a dict for internal use."""
+        jobs = self.jobs.get_all()
+
+        by_status: dict[str, int] = {}
+        for status in JobStatus:
+            by_status[status.value] = len([j for j in jobs if j.status == status])
+
+        by_source: dict[str, int] = {}
+        for source in JobSource:
+            count = len([j for j in jobs if j.source == source])
+            if count > 0:
+                by_source[source.value] = count
+
+        by_type: dict[str, int] = {}
+        for jtype in JobType:
+            count = len([j for j in jobs if j.job_type == jtype])
+            if count > 0:
+                by_type[jtype.value] = count
+
+        ats_scores = [j.ats_score for j in jobs if j.ats_score is not None]
+        match_scores = [j.match_score for j in jobs if j.match_score is not None]
+
+        return {
+            "total_jobs": len(jobs),
+            "new": by_status.get(JobStatus.NEW.value, 0),
+            "fetched": by_status.get(JobStatus.FETCHED.value, 0),
+            "matched": by_status.get(JobStatus.MATCHED.value, 0),
+            "scored": by_status.get(JobStatus.SCORED.value, 0),
+            "applied": by_status.get(JobStatus.APPLIED.value, 0),
+            "interview": by_status.get(JobStatus.INTERVIEW.value, 0),
+            "offer": by_status.get(JobStatus.OFFER.value, 0),
+            "rejected": by_status.get(JobStatus.REJECTED.value, 0),
+            "by_source": by_source,
+            "by_type": by_type,
+            "avg_ats_score": sum(ats_scores) / len(ats_scores) if ats_scores else 0,
+            "avg_match_score": sum(match_scores) / len(match_scores) if match_scores else 0,
+        }
 
 
 # Global instance

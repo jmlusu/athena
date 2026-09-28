@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -485,6 +486,30 @@ async def flag_job(job_id: UUID, request: FlagJobRequest | None = None) -> JobRe
 @router.post("/scrape", response_model=ScrapeJobResponse)
 async def trigger_scrape(request: ScrapeJobRequest, background_tasks: BackgroundTasks):
     """Trigger a scrape job."""
+    # Test mode: return mock response instantly without hitting external APIs
+    if os.getenv("ATHENA_TEST_MODE") == "true":
+        from datetime import datetime, UTC
+        from uuid import uuid4
+        
+        # Return the seeded test jobs (5 jobs from global-setup)
+        mock_scrape_job = ScrapeJobResponse(
+            id=uuid4(),
+            source=JobSource.LINKEDIN,
+            query=request.query or "software engineer",
+            location=request.location,
+            job_type=request.job_type,
+            max_results=request.max_results or 100,
+            status="completed",
+            jobs_found=5,
+            jobs_new=5,
+            jobs_updated=0,
+            error=None,
+            started_at=datetime.now(UTC),
+            completed_at=datetime.now(UTC),
+            created_at=datetime.now(UTC),
+        )
+        return mock_scrape_job
+    
     config = ScrapeConfig(
         query=request.query,
         location=request.location,
