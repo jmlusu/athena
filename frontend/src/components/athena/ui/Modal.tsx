@@ -20,6 +20,22 @@ import { cn } from '@/lib/athena/utils';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
+interface ModalPropsBase {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  description?: string;
+  children: React.ReactNode;
+  size?: ModalSize;
+  showCloseButton?: boolean;
+  closeOnOverlayClick?: boolean;
+  closeOnEscape?: boolean;
+  className?: string;
+  'data-testid'?: string;
+  footer?: React.ReactNode;
+  disableAnimation?: boolean;
+}
+
 const SIZE_CLASSES: Record<ModalSize, string> = {
   sm: 'max-w-md',
   md: 'max-w-lg',
@@ -44,7 +60,7 @@ interface ModalProps {
   footer?: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({
+export const Modal: React.FC<ModalPropsBase> = ({
   isOpen,
   onClose,
   title,
@@ -57,6 +73,7 @@ export const Modal: React.FC<ModalProps> = ({
   className,
   'data-testid': testId,
   footer,
+  disableAnimation = false,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -142,7 +159,7 @@ export const Modal: React.FC<ModalProps> = ({
   const modalContent = (
     <div
       ref={overlayRef}
-      className="modal-overlay"
+      className={cn('modal-overlay', disableAnimation && 'animate-none')}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
@@ -157,7 +174,8 @@ export const Modal: React.FC<ModalProps> = ({
           'bg-surface-white',
           'overflow-hidden',
           SIZE_CLASSES[size],
-          className
+          className,
+          disableAnimation && 'animate-none'
         )}
         data-testid={testId ? `${testId}-content` : 'modal-content'}
       >

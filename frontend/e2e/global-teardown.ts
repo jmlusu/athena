@@ -8,12 +8,14 @@ import path from 'node:path';
  * Only removes what setup created (the seeded jobs, via the API so the live
  * process stays consistent) and drops the manifest. Never touches staging
  * data: seeds live in the isolated ATHENA_DATA_DIR written by the config.
+ * Also cleans up local test-results and test-output to prevent storage bloat.
  */
 
 const API_URL = process.env.E2E_API_URL || 'http://127.0.0.1:8001';
 const API_ROOT = `${API_URL}/api/v1/athena`;
 const API_KEY = process.env.E2E_API_KEY || 'dev-admin-key';
 const MANIFEST_PATH = path.join(os.tmpdir(), 'athena-e2e-manifest.json');
+const TEST_RESULTS_DIR = path.join(os.tmpdir(), 'athena-e2e-test-results');
 
 type Manifest = {
   jobIds?: string[];
@@ -62,6 +64,12 @@ export default async function globalTeardown(): Promise<void> {
         `[e2e] teardown: unexpected DELETE /profiles/${manifest.profileId} -> HTTP ${status}`,
       );
     }
+  }
+
+  // Clean up local test results to prevent storage bloat
+  if (fs.existsSync(TEST_RESULTS_DIR)) {
+    fs.rmSync(TEST_RESULTS_DIR, { recursive: true, force: true });
+    console.log('[e2e] teardown: removed test-results directory');
   }
 
   fs.rmSync(MANIFEST_PATH, { force: true });

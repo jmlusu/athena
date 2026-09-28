@@ -7,11 +7,15 @@ import { MetricsAndBarChart } from '@/components/athena/charts/MetricsAndBarChar
 import { PipelineKanbanBoard } from '@/components/athena/pipeline/PipelineKanbanBoard';
 import { cn, formatRelativeTime, groupBy, sortBy } from '@/lib/athena/utils';
 import { listJobs, getPipelineStats, getScrapingStats, triggerScrape, listProfiles, submitApplication } from '@/lib/athena/api';
-import { jobToOpportunity } from '@/lib/athena/mappers';
-import type { Job, JobStatus, PipelineStatsResponse } from '@/lib/athena/types';
+import { jobToOpportunity, userProfileToApplicantProfile } from '@/lib/athena/mappers';
+import { buildStatsShapeFromJobs } from '@/lib/athena/metrics-registry';
+import { DEFAULT_AUTOMATION_SETTINGS, FALLBACK_APPLICANT_PROFILE } from '@/lib/athena/settings';
+import type { Job, JobStatus, PipelineStatsResponse, AutomationSettings, UserProfile } from '@/lib/athena/types';
 import { OpportunityDetailModal } from './OpportunityDetailModal';
 import { LinkedInExportModal } from './LinkedInExportModal';
 import { SignOffModal } from './SignOffModal';
+import { FormFillerModal } from './FormFillerModal';
+import { AutomationControls } from '@/components/athena/AutomationControls';
 
 export const AthenaDashboard: React.FC = () => {
   const location = useLocation();
@@ -26,10 +30,13 @@ export const AthenaDashboard: React.FC = () => {
   const [pipelineSources, setPipelineSources] = useState<Array<{ name: string; globalRemote: number; lilongweHub: number; consultancies: number }>>([]);
   const [skillsData, setSkillsData] = useState<Array<{ skill: string; compatibility: number; category: 'technical' | 'soft' | 'language' }>>([]);
   const [applicantName, setApplicantName] = useState('Applicant');
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [automationSettings, setAutomationSettings] = useState<AutomationSettings>(DEFAULT_AUTOMATION_SETTINGS);
   const [activeJob, setActiveJob] = useState<Job | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [signOffOpen, setSignOffOpen] = useState(false);
+  const [formFillerOpen, setFormFillerOpen] = useState(false);
   const [signOffSubmitting, setSignOffSubmitting] = useState(false);
 
   useEffect(() => {
@@ -51,6 +58,7 @@ export const AthenaDashboard: React.FC = () => {
       setStats(statsData);
       setJobs(jobsList);
       setRecentJobs(jobsList.slice(0, 5));
+      setProfiles(profiles);
       if (profiles.length > 0 && profiles[0].full_name) {
         setApplicantName(profiles[0].full_name);
       }
@@ -186,6 +194,11 @@ export const AthenaDashboard: React.FC = () => {
     }
   };
 
+  const handleFormFiller = (job: Job) => {
+    setActiveJob(job);
+    setFormFillerOpen(true);
+  };
+
   const handleMetricFilter = (_metric: string) => {
     // Could integrate with PipelineKanbanBoard filter logic
   };
@@ -201,11 +214,10 @@ export const AthenaDashboard: React.FC = () => {
     );
   }
 
-  // Compute derived stats for MetricsAndBarChart
-  const criticalMatch = jobs.filter(j => (j.ats_score || 0) >= 90).length;
-  const flaggedReview = jobs.filter(j => (j.ats_score || 0) >= 80 && (j.ats_score || 0) < 90).length;
-  const signOffPending = jobs.filter(j => j.status === 'scored').length;
-  const submitted = jobs.filter(j => ['applied', 'interview', 'offer'].includes(j.status)).length;
+  // Derived stats for MetricsAndBarChart — canonical derivation via metrics
+  // registry (criticalMatch/flaggedReview/signOffPending/submitted computed
+  // once in buildStatsShapeFromJobs, not hand-rolled here)
+  const statsShape = buildStatsShapeFromJobs(jobs, stats);
 
   return (
     <div className="h-full flex flex-col">
@@ -222,6 +234,7 @@ export const AthenaDashboard: React.FC = () => {
             <button
               onClick={handleScrape}
               disabled={scraping}
+              data-testid="trigger-scrape"
               className="tactile flex items-center gap-2 px-4 py-2 rounded-lg border border-slate bg-surface-white text-text-secondary font-medium text-sm hover:border-brand-orange/40 hover:text-brand-orange transition-all disabled:opacity-50"
             >
               <RefreshCw className={cn('w-4 h-4', scraping && 'animate-spin')} aria-hidden="true" />
@@ -236,15 +249,7 @@ export const AthenaDashboard: React.FC = () => {
 
         {/* Metrics & Charts Section - Replaces old metric cards + MountainAreaChart */}
         <MetricsAndBarChart
-          stats={{
-            total_jobs: stats?.total_jobs || 0,
-            new: stats?.new || 0,
-            criticalMatch,
-            flaggedReview,
-            signOffPending,
-            submitted,
-            avg_ats_score: stats?.avg_ats_score || 0,
-          }}
+          stats={statsShape}
           skillsData={skillsData}
           onMetricClick={handleMetricFilter}
         />
@@ -257,6 +262,7 @@ export const AthenaDashboard: React.FC = () => {
           <PipelineKanbanBoard
             jobs={jobs}
             onJobClick={handleJobClick}
+            onFormFiller={handleFormFiller}
             onJobStatusChange={handleJobStatusChange}
           />
         </div>
@@ -264,6 +270,16 @@ export const AthenaDashboard: React.FC = () => {
         {/* Right Sidebar - Analytics & Insights */}
         <div className="lg:w-1/3 flex-shrink-0 hidden lg:block">
           <div className="space-y-6">
+            {/* Autonomous Controls */}
+            <AutomationControls
+              settings={automationSettings}
+              onUpdateSettings={patch =>
+                setAutomationSettings(prev => ({ ...prev, ...patch }))
+              }
+              pendingCount={jobs.filter(j => j.status === 'scored').length}
+              onTriggerCron={handleScrape}
+            />
+
             {/* Pipeline Sources - Layered Mountain Chart */}
             <div className="bg-surface-white raised border border-slate rounded-xl p-5">
               <h3 className="font-heading font-bold text-base text-ink mb-4">Pipeline Sources</h3>
@@ -441,6 +457,10 @@ export const AthenaDashboard: React.FC = () => {
               setDetailOpen(false);
               setSignOffOpen(true);
             }}
+            onOpenFormFiller={() => {
+              setDetailOpen(false);
+              setFormFillerOpen(true);
+            }}
           />
           <LinkedInExportModal
             isOpen={exportOpen}
@@ -463,6 +483,20 @@ export const AthenaDashboard: React.FC = () => {
             opportunityCompany={activeJob.company}
             applicantName={applicantName}
             isSubmitting={signOffSubmitting}
+          />
+          <FormFillerModal
+            isOpen={formFillerOpen}
+            onClose={() => setFormFillerOpen(false)}
+            opportunity={jobToOpportunity(activeJob)}
+            applicantProfile={
+              profiles.length > 0
+                ? userProfileToApplicantProfile(profiles[0])
+                : FALLBACK_APPLICANT_PROFILE
+            }
+            onSubmitSuccess={(oppId, receipt) => {
+              setFormFillerOpen(false);
+              console.log('Form submitted:', oppId, receipt);
+            }}
           />
         </>
       )}

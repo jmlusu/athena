@@ -20,6 +20,14 @@ const SCOPE_OPTIONS = [
   { id: 'international-remote', label: 'International Remote', icon: Globe, description: 'Global remote opportunities' },
 ] as const;
 
+// Derive scope from job source (since API doesn't return scope field)
+const getJobScope = (source: string): 'lilongwe-local' | 'lilongwe-remote' | 'international-remote' => {
+  const src = source.toLowerCase();
+  if (['malawi_jobs', 'malawi_work', 'jobs_malawi'].includes(src)) return 'lilongwe-local';
+  if (['remote_ok', 'we_work_remotely', 'remote_co', 'upwork', 'reliefweb'].includes(src)) return 'lilongwe-remote';
+  return 'international-remote';
+};
+
 const PLATFORM_PILLS = [
   { id: 'all', label: 'All Platforms' },
   { id: 'linkedin', label: 'LinkedIn' },
@@ -208,8 +216,8 @@ export const JobList: React.FC = () => {
   // Filter jobs by scope and platform
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
-      // Scope filter
-      if (selectedScope !== 'all' && job.scope !== selectedScope) {
+      // Scope filter - derive from source since API doesn't return scope
+      if (selectedScope !== 'all' && getJobScope(job.source) !== selectedScope) {
         return false;
       }
       // Platform filter
@@ -417,19 +425,46 @@ export const JobList: React.FC = () => {
         )}
 
         {/* Advanced Filters Panel */}
-        {showFilters && (
-          <div className="bg-surface-white raised border border-slate rounded-xl p-5 mb-6 animate-slide-in-from-top" role="region" aria-label="Advanced filters" data-testid="filter-panel">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div
+          className="bg-surface-white raised border border-slate rounded-xl p-5 mb-6 animate-slide-in-from-top"
+          role="region"
+          aria-label="Advanced filters"
+          data-testid="filter-panel"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="font-body text-xs font-bold tracking-wider uppercase text-text-secondary block mb-1.5">Status</label>
-                <select
-                  value={filters.status || ''}
-                  onChange={(e) => handleFilterChange('status', e.target.value || undefined)}
-                  className="w-full px-3 py-2 bg-surface-white border border-slate rounded-lg text-sm text-ink focus:ring-2 focus:ring-brand-orange focus:border-transparent sunken"
-                >
-                  <option value="">All statuses</option>
-                  {JOB_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-                </select>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Status filters">
+                  <button
+                    onClick={() => handleFilterChange('status', undefined)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-xs font-medium font-mono uppercase tracking-wider transition-all tactile',
+                      !filters.status
+                        ? 'bg-brand-orange text-white shadow-sm'
+                        : 'bg-surface-muted text-text-secondary hover:bg-brand-orange/10 hover:text-brand-orange border border-slate'
+                    )}
+                    aria-pressed={!filters.status}
+                    data-testid="filter-status-all"
+                  >
+                    All
+                  </button>
+                  {JOB_STATUSES.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => handleFilterChange('status', s as JobStatus)}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-xs font-medium font-mono uppercase tracking-wider transition-all tactile',
+                        filters.status === s
+                          ? 'bg-brand-orange text-white shadow-sm'
+                          : 'bg-surface-muted text-text-secondary hover:bg-brand-orange/10 hover:text-brand-orange border border-slate'
+                      )}
+                      aria-pressed={filters.status === s}
+                      data-testid={`filter-status-${s}`}
+                    >
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>
@@ -508,6 +543,51 @@ export const JobList: React.FC = () => {
                   />
                 </div>
               </div>
+
+              <div className="lg:col-span-4">
+                <label className="font-body text-xs font-bold tracking-wider uppercase text-text-secondary block mb-1.5">Source</label>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Source filters">
+                  {PLATFORM_PILLS.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => handleFilterChange('source', id as 'all' | 'linkedin' | 'upwork' | 'reliefweb' | 'corporate')}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-xs font-medium font-mono uppercase tracking-wider transition-all tactile',
+                        filters.source === id || (id === 'all' && !filters.source)
+                          ? 'bg-brand-orange text-white shadow-sm'
+                          : 'bg-surface-muted text-text-secondary hover:bg-brand-orange/10 hover:text-brand-orange border border-slate'
+                      )}
+                      aria-pressed={filters.source === id || (id === 'all' && !filters.source)}
+                      data-testid={`filter-source-${id}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="lg:col-span-4">
+                <label className="font-body text-xs font-bold tracking-wider uppercase text-text-secondary block mb-1.5">Scope</label>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Scope filters">
+                  {SCOPE_OPTIONS.map(({ id, label }) => (
+                    <button
+                      key={id}
+                      onClick={() => setSelectedScope(id as 'all' | 'lilongwe-local' | 'lilongwe-remote' | 'international-remote')}
+                      className={cn(
+                        'px-3 py-1.5 rounded-full text-xs font-medium font-mono uppercase tracking-wider transition-all tactile',
+                        selectedScope === id
+                          ? 'bg-brand-orange text-white shadow-sm'
+                          : 'bg-surface-muted text-text-secondary hover:bg-brand-orange/10 hover:text-brand-orange border border-slate'
+                      )}
+                      aria-pressed={selectedScope === id}
+                      data-testid={`filter-type-${id}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate flex justify-end">
@@ -516,7 +596,7 @@ export const JobList: React.FC = () => {
               </Button>
             </div>
           </div>
-        )}
+
       </div>
 
       {/* Job Results */}
@@ -583,6 +663,8 @@ export const JobList: React.FC = () => {
                 {filteredJobs.map((job) => (
                   <div
                     key={job.id}
+                    data-testid="job-card"
+                    data-job-id={job.id}
                     className="grid grid-cols-[1fr_auto_auto_auto_auto_80px] px-4 py-3 items-center gap-4 hover:bg-surface-muted transition-colors group"
                     role="listitem"
                     onClick={() => handleJobClick(job)}
@@ -601,10 +683,12 @@ export const JobList: React.FC = () => {
                           {getJobSourceLabel(job.source)}
                         </span>
                       </div>
-                      <h4 className="font-semibold text-sm text-ink truncate pr-4">{job.title}</h4>
+                      <h4 data-testid="job-title" className="font-semibold text-sm text-ink truncate pr-4">{job.title}</h4>
                       <div className="flex items-center gap-3 mt-1 text-xs text-text-secondary flex-wrap">
-                        <span className="flex items-center gap-1"><Building className="w-3 h-3" /> {job.company}</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
+                        <span data-testid="job-company" className="flex items-center gap-1"><Building className="w-3 h-3" /> {job.company}</span>
+                        <span data-testid="job-location" className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
+                        <span data-testid="job-match-score" className="sr-only">{job.match_score !== undefined ? `${job.match_score}%` : '—'}</span>
+                        <span data-testid="job-status" className="sr-only">{job.status}</span>
                       </div>
                     </div>
 
@@ -615,7 +699,9 @@ export const JobList: React.FC = () => {
 
                     {/* ATS Column */}
                     <div className="text-center">
-                      <MiniATSGauge score={job.ats_score || 0} size={48} />
+                      <div data-testid="job-ats-score">
+                    <MiniATSGauge score={job.ats_score || 0} size={48} />
+                  </div>
                     </div>
 
                     {/* Compensation Column */}

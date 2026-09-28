@@ -1,5 +1,5 @@
 import React from "react";
-import { X, MapPin, Briefcase, Building, DollarSign, Clock, Globe, CheckCircle2, AlertTriangle, ShieldCheck, Download, ExternalLink, FileText, Send, Sparkles } from "lucide-react";
+import { X, MapPin, Briefcase, Building, DollarSign, Clock, Globe, CheckCircle2, AlertTriangle, ShieldCheck, Download, ExternalLink, FileText, Send, Sparkles, PenSquare } from "lucide-react";
 import { Opportunity } from "../../lib/athena/types";
 import { cn } from "../../lib/athena/utils";
 import Modal from "@/components/athena/ui/Modal";
@@ -14,6 +14,7 @@ interface OpportunityDetailModalProps {
   onExportLinkedIn?: () => void;
   onInspectDocuments?: () => void;
   onSignOff?: () => void;
+  onOpenFormFiller?: () => void;
 }
 
 export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
@@ -23,6 +24,7 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
   onExportLinkedIn,
   onInspectDocuments,
   onSignOff,
+  onOpenFormFiller,
 }) => {
   if (!isOpen || !opportunity) return null;
 
@@ -72,6 +74,10 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
           <OutlineButton onClick={onInspectDocuments} size="sm">
             <FileText className="w-3.5 h-3.5" />
             <span>Inspect Tailored Documents</span>
+          </OutlineButton>
+          <OutlineButton onClick={onOpenFormFiller} size="sm">
+            <PenSquare className="w-3.5 h-3.5" />
+            <span>Open Form Filler</span>
           </OutlineButton>
           <DangerButton onClick={onSignOff} size="sm">
             <ShieldCheck className="w-3.5 h-3.5" />

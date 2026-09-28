@@ -31,6 +31,7 @@ import {
   Sliders,
 } from 'lucide-react';
 import { cn } from '@/lib/athena/utils';
+import type { AutomationSettings } from '@/lib/athena/types';
 import { ScopeFilter } from './ScopeFilter';
 import { CronCountdown } from './CronCountdown';
 import { AutomationControls } from './AutomationControls';
@@ -58,18 +59,8 @@ interface AthenaLayoutProps {
     lastJobRun: string;
   };
   onTriggerCronNow?: () => void;
-  automationSettings?: {
-    autoCreateThreshold: number;
-    flagThresholdMin: number;
-    flagThresholdMax: number;
-    autoCreateResumeCoverLetter: boolean;
-    autoCreateProposalExecSummary: boolean;
-    dehumanizeEnabled: boolean;
-    n8nWebhookUrl: string;
-    n8nActive: boolean;
-    soundAlerts: boolean;
-  };
-  onUpdateAutomationSettings?: (settings: Partial<AthenaLayoutProps['automationSettings']>) => void;
+  automationSettings?: AutomationSettings;
+  onUpdateAutomationSettings?: (settings: Partial<AutomationSettings>) => void;
   pendingAuthorizationsCount?: number;
 }
 
@@ -146,18 +137,6 @@ export const AthenaLayout: React.FC<AthenaLayoutProps> = ({
     jobSecondsRemaining: 14400,
     consultancySecondsRemaining: 14400,
     lastJobRun: 'Never',
-  };
-
-  const defaultAutomationSettings = {
-    autoCreateThreshold: 90,
-    flagThresholdMin: 80,
-    flagThresholdMax: 89,
-    autoCreateResumeCoverLetter: true,
-    autoCreateProposalExecSummary: true,
-    dehumanizeEnabled: true,
-    n8nWebhookUrl: 'https://n8n.athena-ops.internal/webhook/athena-pipeline-trigger',
-    n8nActive: false,
-    soundAlerts: false,
   };
 
   return (

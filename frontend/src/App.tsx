@@ -238,6 +238,7 @@ const FormFillerModalWrapper: React.FC = () => {
 
   return (
     <FormFillerModal
+      isOpen
       opportunity={jobToOpportunity(job)}
       applicantProfile={applicantProfile}
       onClose={() => navigate('/form-filler')}

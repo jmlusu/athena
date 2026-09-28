@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Briefcase, DollarSign, Clock, ExternalLink, ChevronRight, Building2, Globe, Sparkles, AlertTriangle } from 'lucide-react';
+import { MapPin, Briefcase, DollarSign, Clock, ExternalLink, ChevronRight, Building2, Globe, Sparkles, AlertTriangle, FileText, PenSquare } from 'lucide-react';
 import { MiniATSGauge } from './ATSGauge';
 import { cn, formatSalary, formatDate, getJobTypeLabel, getJobSourceLabel } from '@/lib/athena/utils';
 import type { Job, JobCardProps } from '@/lib/athena/types';
@@ -7,6 +7,8 @@ import type { Job, JobCardProps } from '@/lib/athena/types';
 interface JobCardPropsExtended extends JobCardProps {
   compact?: boolean;
   showActions?: boolean;
+  onTailorClick?: (job: Job) => void;
+  onFormFiller?: (job: Job) => void;
 }
 
 export const JobCard: React.FC<JobCardPropsExtended> = ({
@@ -16,6 +18,8 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
   matchTier,
   compact = false,
   showActions = false,
+  onTailorClick,
+  onFormFiller,
 }) => {
   const effectiveMatchScore = matchScore ?? job.match_score;
   const effectiveMatchTier = matchTier ?? job.match_tier;
@@ -74,13 +78,13 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
               {getJobSourceLabel(job.source)}
             </span>
           </div>
-          <h3 className="font-heading font-bold text-base sm:text-lg text-ink truncate group-hover:text-brand-orange transition-colors">
+          <h3 data-testid="job-title" className="font-heading font-bold text-base sm:text-lg text-ink truncate group-hover:text-brand-orange transition-colors">
             {job.title}
           </h3>
         </div>
 
         {/* ATS Gauge */}
-        <div className="flex-shrink-0 ml-3">
+        <div className="flex-shrink-0 ml-3" data-testid="job-ats-score">
           <MiniATSGauge
             score={atsScore}
             size={48}
@@ -91,8 +95,8 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
 
       {/* Company & Meta info row */}
       <div className="flex flex-wrap items-center gap-3 text-xs font-body text-text-secondary mb-3">
-        <span className="font-medium text-ink">{job.company}</span>
-        <span className="flex items-center gap-1.5">
+        <span data-testid="job-company" className="font-medium text-ink">{job.company}</span>
+        <span data-testid="job-location" className="flex items-center gap-1.5">
           <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
           {job.location}
         </span>
@@ -107,6 +111,16 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
         <span className="flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5" aria-hidden="true" />
           {formatDate(job.posted_date)}
+        </span>
+      </div>
+
+      {/* Match Score & Status */}
+      <div className="flex items-center justify-between gap-3 mb-3 text-xs">
+        <span data-testid="job-match-score" className="text-text-secondary">
+          {job.match_score !== undefined ? `Match: ${job.match_score}%` : 'Match: —'}
+        </span>
+        <span data-testid="job-status" className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono bg-surface-muted border border-slate text-text-secondary">
+          {job.status}
         </span>
       </div>
 
@@ -144,17 +158,35 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
         </div>
 
         {showActions && (
-          <a
-            href={job.application_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            data-testid="apply-btn"
-            className="p-2 rounded-lg bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 transition-colors tactile disabled:opacity-40"
-            aria-label={`Apply on ${getJobSourceLabel(job.source)}`}
-          >
-            <ExternalLink className="w-4 h-4" aria-hidden="true" />
-          </a>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); onTailorClick?.(job); }}
+              data-testid="tailor-resume-btn"
+              className="p-2 rounded-lg bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 transition-colors tactile disabled:opacity-40"
+              aria-label="Tailor resume"
+            >
+              <FileText className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onFormFiller?.(job); }}
+              data-testid="form-filler-btn"
+              className="p-2 rounded-lg bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 transition-colors tactile disabled:opacity-40"
+              aria-label="Open form filler"
+            >
+              <PenSquare className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <a
+              href={job.application_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              data-testid="apply-btn"
+              className="p-2 rounded-lg bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 transition-colors tactile disabled:opacity-40"
+              aria-label={`Apply on ${getJobSourceLabel(job.source)}`}
+            >
+              <ExternalLink className="w-4 h-4" aria-hidden="true" />
+            </a>
+          </div>
         )}
       </div>
 
@@ -169,12 +201,14 @@ export const JobCard: React.FC<JobCardPropsExtended> = ({
 };
 
 // Compact job card for list views
-export const JobCardCompact: React.FC<JobCardProps & { onApplyClick?: (e: React.MouseEvent) => void }> = ({
+export const JobCardCompact: React.FC<JobCardProps & { onApplyClick?: (e: React.MouseEvent) => void; onTailorClick?: (e: React.MouseEvent) => void; showActions?: boolean }> = ({
   job,
   onClick,
   matchScore,
   matchTier,
   onApplyClick,
+  onTailorClick,
+  showActions = false,
 }) => {
   const effectiveMatchScore = matchScore ?? job.match_score;
   const effectiveMatchTier = matchTier ?? job.match_tier;
@@ -205,16 +239,16 @@ export const JobCardCompact: React.FC<JobCardProps & { onApplyClick?: (e: React.
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <h4 className="font-heading font-bold text-sm text-ink truncate group-hover:text-brand-orange transition-colors">
+          <h4 data-testid="job-title" className="font-heading font-bold text-sm text-ink truncate group-hover:text-brand-orange transition-colors">
             {job.title}
           </h4>
           <span className={atsTier === 'critical' ? 'badge-critical' : atsTier === 'flagged' ? 'badge-flagged' : 'badge-muted'}>
             {atsTier === 'critical' ? 'Critical' : atsTier === 'flagged' ? 'Flagged' : 'Standard'}
           </span>
         </div>
-        <p className="font-body text-xs text-text-secondary truncate">{job.company}</p>
+        <p data-testid="job-company" className="font-body text-xs text-text-secondary truncate">{job.company}</p>
         <div className="flex items-center gap-3 mt-1 text-[10px] text-text-subtle">
-          <span className="flex items-center gap-1">
+          <span data-testid="job-location" className="flex items-center gap-1">
             <MapPin className="w-3 h-3" aria-hidden="true" />
             {job.location}
           </span>
@@ -225,9 +259,27 @@ export const JobCardCompact: React.FC<JobCardProps & { onApplyClick?: (e: React.
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <MiniATSGauge score={atsScore} size={40} tier={atsTier} />
-        {onApplyClick && (
+      <div className="flex items-center gap-2">
+        <div data-testid="job-ats-score">
+          <MiniATSGauge score={atsScore} size={40} tier={atsTier} />
+        </div>
+        <span data-testid="job-match-score" className="text-[10px] text-text-secondary">
+          {job.match_score !== undefined ? `${job.match_score}%` : '—'}
+        </span>
+        <span data-testid="job-status" className="px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono bg-surface-muted border border-slate text-text-secondary">
+          {job.status}
+        </span>
+        {(showActions || onTailorClick) && (
+          <button
+            onClick={onTailorClick}
+            data-testid="tailor-resume-btn"
+            className="p-2 rounded-lg bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 transition-colors tactile disabled:opacity-40"
+            aria-label="Tailor resume"
+          >
+            <FileText className="w-4 h-4" aria-hidden="true" />
+          </button>
+        )}
+        {(showActions || onApplyClick) && (
           <button
             onClick={onApplyClick}
             data-testid="apply-btn"

@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { cn } from '@/lib/athena/utils';
 import { PipelineMetricCard } from '@/components/athena/MetricCard';
 import { CheckCircle2, AlertTriangle, ShieldCheck, Target, TrendingUp } from 'lucide-react';
+import { calculateFunnelData } from '@/lib/athena/metrics-registry';
 
 interface MetricsAndBarChartProps {
   stats: {
@@ -309,11 +310,11 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
     {
       key: 'discovered',
       title: 'Discovered',
-      value: stats.total_jobs,
+      value: stats.new,
       subtitle: 'new this week',
       description: 'Total new positions found',
       trend: 'up' as const,
-      trendValue: `+${stats.new}`,
+      trendValue: stats.new > 0 ? `+${stats.new}` : '+0',
       variant: 'discovered' as const,
       icon: <Target className="w-5 h-5" />,
     },
@@ -363,13 +364,7 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
     },
   ];
 
-  const defaultFunnelData = [
-    { stage: 'Discovered', count: stats.total_jobs, conversionRate: 100 },
-    { stage: 'ATS Evaluated', count: stats.criticalMatch + stats.flaggedReview, conversionRate: stats.total_jobs ? ((stats.criticalMatch + stats.flaggedReview) / stats.total_jobs) * 100 : 0 },
-    { stage: 'Tailored', count: stats.signOffPending + stats.submitted, conversionRate: (stats.criticalMatch + stats.flaggedReview) ? ((stats.signOffPending + stats.submitted) / (stats.criticalMatch + stats.flaggedReview)) * 100 : 0 },
-    { stage: 'Submitted', count: stats.submitted, conversionRate: (stats.signOffPending + stats.submitted) ? (stats.submitted / (stats.signOffPending + stats.submitted)) * 100 : 0 },
-    { stage: 'Interview', count: Math.floor(stats.submitted * 0.3), conversionRate: stats.submitted ? 30 : 0 },
-  ];
+  const defaultFunnelData = calculateFunnelData(stats);
 
   const displayFunnelData = funnelData.length > 0 ? funnelData : defaultFunnelData;
 

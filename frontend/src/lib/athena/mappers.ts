@@ -2,6 +2,7 @@
 // Opportunity/ApplicantProfile shapes used by the migrated modals.
 
 import type {
+  ApplicantProfile,
   Education,
   Experience,
   Job,
@@ -62,9 +63,10 @@ function sourceToScope(source: JobSource): OpportunityScope {
 }
 
 /** Map a backend Job to the AI Studio Opportunity shape (modals/Kanban). */
-export function jobToOpportunity(job: Job): Opportunity {
+export function jobToOpportunity(job: Job): Opportunity & { source_job_id: string } {
   return {
     id: job.id,
+    source_job_id: job.source_job_id ?? job.id,
     title: job.title,
     company: job.company,
     location: job.location,
@@ -131,5 +133,26 @@ export function userProfileToApplicantProfile(profile: UserProfile): AIApplicant
     portfolio_url: profile.portfolio_url,
     github_url: profile.github_url,
     preferences: profile.preferences,
+  };
+}
+
+/** Map a backend UserProfile to the camelCase Athena ApplicantProfile used by DocumentStudio. */
+export function userProfileToAthenaApplicantProfile(profile: UserProfile): ApplicantProfile {
+  const annualUsd = profile.preferences.min_salary;
+  return {
+    fullName: profile.full_name,
+    email: profile.email,
+    phone: profile.phone ?? '',
+    location: profile.location ?? '',
+    headline: profile.headline,
+    summary: profile.summary,
+    skills: profile.skills.map((s) => s.name),
+    experience: profile.experience.map(experienceToEntry),
+    education: profile.education.map(educationToEntry),
+    certifications: profile.certifications,
+    hourlyRateUsd: annualUsd ? Math.round(annualUsd / 2080) : 0,
+    expectedMonthlyMwk: 0,
+    legalAuthorizedSigner: profile.full_name,
+    linkedinUrl: profile.linkedin_url,
   };
 }

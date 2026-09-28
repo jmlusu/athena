@@ -2,12 +2,14 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Search, Filter, X, ChevronRight, ChevronLeft } from 'lucide-react';
 import { PipelineColumn, KANBAN_STAGES } from './PipelineColumn';
 import { cn, formatRelativeTime } from '@/lib/athena/utils';
+import { ATS_FLAGGED_MIN, ATS_FLAGGED_MAX } from '@/lib/athena/metrics-registry';
 import type { Job, JobStatus } from '@/lib/athena/types';
 
 interface PipelineKanbanBoardProps {
   jobs: Job[];
   onJobClick: (job: Job) => void;
   onJobStatusChange: (jobId: string, newStatus: JobStatus) => Promise<void>;
+  onFormFiller?: (job: Job) => void;
   onDragStart?: (job: Job) => void;
   className?: string;
 }
@@ -23,7 +25,6 @@ const STAGE_FILTER_OPTIONS = [
   { value: 'scored', label: 'Awaiting Sign-Off' },
   { value: 'applied', label: 'Submitted' },
   { value: 'interview', label: 'Interview & Award' },
-  { value: 'offer', label: 'Offer' },
 ] as const;
 
 type StageFilterValue = typeof STAGE_FILTER_OPTIONS[number]['value'];
@@ -32,6 +33,7 @@ export const PipelineKanbanBoard: React.FC<PipelineKanbanBoardProps> = ({
   jobs,
   onJobClick,
   onJobStatusChange,
+  onFormFiller,
   onDragStart,
   className,
 }) => {
@@ -40,8 +42,13 @@ export const PipelineKanbanBoard: React.FC<PipelineKanbanBoardProps> = ({
   const [draggedJob, setDraggedJob] = useState<Job | null>(null);
   const [showOnlyFlagged, setShowOnlyFlagged] = useState(false);
 
-  // Flagged jobs are those with ATS score 80-89% (flagged review) or status 'flagged'
-  const isJobFlagged = (job: Job) => job.status === 'flagged' || ((job.ats_score || 0) >= 80 && (job.ats_score || 0) < 90);
+  // Flagged jobs are those with ATS score in the flagged range or status
+  // 'flagged'. Thresholds come from the metrics registry (single source of
+  // truth) so this stays consistent with criticalMatch/flaggedReview counts.
+  const isJobFlagged = (job: Job) =>
+    job.status === 'flagged' ||
+    ((job.ats_score || 0) >= ATS_FLAGGED_MIN &&
+      (job.ats_score || 0) < ATS_FLAGGED_MAX);
 
   // Filter jobs based on search, stage, and flagged status
   const filteredJobs = useMemo(() => {
@@ -270,6 +277,7 @@ export const PipelineKanbanBoard: React.FC<PipelineKanbanBoardProps> = ({
                 title={stage.title}
                 jobs={stageJobs}
                 onJobClick={onJobClick}
+                onFormFiller={onFormFiller}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}

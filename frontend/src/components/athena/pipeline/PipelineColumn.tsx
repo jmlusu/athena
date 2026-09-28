@@ -13,7 +13,6 @@ export const KANBAN_STAGES: Array<{ status: JobStatus; title: string; order: num
   { status: 'scored', title: '4. Awaiting Sign-Off', order: 4 },
   { status: 'applied', title: '5. Submitted', order: 5 },
   { status: 'interview', title: '6. Interview & Award', order: 6 },
-  { status: 'offer', title: 'Offer', order: 7 },
 ];
 
 const STAGE_COLORS: Record<JobStatus, { chip: string; header: string }> = {
@@ -81,6 +80,7 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
   title,
   jobs,
   onJobClick,
+  onFormFiller,
   onDragStart,
   onDragOver,
   onDrop,
@@ -162,6 +162,7 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
             <JobCard
               job={job}
               onClick={() => onJobClick(job)}
+              onFormFiller={onFormFiller}
               compact
               showActions
             />

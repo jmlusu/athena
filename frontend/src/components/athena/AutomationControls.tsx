@@ -1,28 +1,34 @@
-import React from "react";
-import { Zap, Sparkles, AlertTriangle, CheckCircle2, ShieldCheck, Workflow, ExternalLink } from "lucide-react";
+import React, { useState } from "react";
+import { Zap, Sparkles, AlertTriangle, CheckCircle2, ShieldCheck, Workflow, RotateCw, Clock } from "lucide-react";
+import type { AutomationSettings } from "@/lib/athena/types";
 
 interface AutomationControlsProps {
-  settings: {
-    autoCreateThreshold: number;
-    flagThresholdMin: number;
-    flagThresholdMax: number;
-    autoCreateResumeCoverLetter: boolean;
-    autoCreateProposalExecSummary: boolean;
-    dehumanizeEnabled: boolean;
-    n8nWebhookUrl: string;
-    n8nActive: boolean;
-  };
-  onUpdateSettings: (settings: Partial<AutomationControlsProps["settings"]>) => void;
+  settings: AutomationSettings;
+  onUpdateSettings: (settings: Partial<AutomationSettings>) => void;
   pendingCount: number;
+  onTriggerCron?: () => void;
 }
 
 export const AutomationControls: React.FC<AutomationControlsProps> = ({
   settings,
   onUpdateSettings,
   pendingCount,
+  onTriggerCron,
 }) => {
+  const [autoApplyThreshold, setAutoApplyThreshold] = useState(settings.autoCreateThreshold);
+  const [flagMin, setFlagMin] = useState(settings.flagThresholdMin);
+  const [flagMax, setFlagMax] = useState(settings.flagThresholdMax);
+
+  const handleSaveThresholds = () => {
+    onUpdateSettings({
+      autoCreateThreshold: autoApplyThreshold,
+      flagThresholdMin: flagMin,
+      flagThresholdMax: flagMax,
+    });
+  };
+
   return (
-    <div className="space-y-4 p-4 bg-chassis-frame border border-chassis rounded-xl">
+    <div className="space-y-4 p-4 bg-chassis-frame border border-chassis rounded-xl" data-testid="automation-controls">
       <div className="flex items-center justify-between border-b border-chassis pb-3">
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-brand-orange" />
@@ -40,13 +46,24 @@ export const AutomationControls: React.FC<AutomationControlsProps> = ({
           Scoring & Document Triggers
         </div>
 
-        {/* ATS >= 90 Auto-Create */}
-        <div className="p-3 bg-chassis-base border border-chassis rounded-lg space-y-2" data-testid="auto-apply-threshold-container">
+        {/* ATS >= 90 Auto-Create - Editable Threshold */}
+        <div className="p-3 bg-chassis-base border border-chassis rounded-lg space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
               <span className="text-xs font-semibold text-chassis-primary">ATS ≥ 90 Auto-Generate</span>
             </div>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={autoApplyThreshold}
+              onChange={(e) => setAutoApplyThreshold(parseInt(e.target.value) || 0)}
+              className="w-16 text-right text-xs font-mono bg-chassis-raised border border-chassis rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-orange"
+              data-testid="auto-apply-threshold"
+            />
+          </div>
+          <div className="flex items-center gap-2">
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -61,32 +78,61 @@ export const AutomationControls: React.FC<AutomationControlsProps> = ({
               />
               <div className="w-8 h-4 bg-chassis-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-orange" />
             </label>
+            <span className="text-[10px] text-chassis-muted">Enabled</span>
           </div>
           <p className="text-[10px] text-chassis-muted leading-tight">
             Auto-creates tailored resume + cover letter for jobs, and executive summary + proposal for consultancies.
           </p>
         </div>
 
-        {/* ATS 80-89 Auto-Flag */}
-        <div className="p-3 bg-chassis-base border border-chassis rounded-lg space-y-2">
+        {/* ATS 80-89 Auto-Flag - Editable Thresholds */}
+        <div className="p-3 bg-chassis-base border border-chassis rounded-lg space-y-2" data-testid="flag-thresholds">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-led" />
               <span className="text-xs font-semibold text-chassis-primary">ATS 80-89 Auto-Flag</span>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <div className="flex items-center gap-1 text-[10px] font-mono">
               <input
-                type="checkbox"
-                checked={true}
-                readOnly
-                className="sr-only peer"
+                type="number"
+                min="0"
+                max="100"
+                value={flagMin}
+                onChange={(e) => setFlagMin(parseInt(e.target.value) || 0)}
+                className="w-14 text-center text-xs font-mono bg-chassis-raised border border-chassis rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                data-testid="flag-threshold-min"
               />
-              <div className="w-8 h-4 bg-brand-orange peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all" />
-            </label>
+              <span>–</span>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={flagMax}
+                onChange={(e) => setFlagMax(parseInt(e.target.value) || 0)}
+                className="w-14 text-center text-xs font-mono bg-chassis-raised border border-chassis rounded px-1 py-1 focus:outline-none focus:ring-2 focus:ring-brand-orange"
+                data-testid="flag-threshold-max"
+              />
+            </div>
           </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={true}
+              readOnly
+              className="sr-only peer"
+            />
+            <div className="w-8 h-4 bg-brand-orange peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all" />
+          </label>
           <p className="text-[10px] text-chassis-muted leading-tight">
             Auto-flags opportunities with 80-89 ATS match into high-priority review queue.
           </p>
+        </div>
+
+        {/* Save Automation Settings */}
+        <div className="p-3 bg-chassis-base border border-chassis rounded-lg space-y-2">
+          <button data-testid="save-automation" onClick={handleSaveThresholds} className="w-full py-1 rounded-md text-xs font-medium text-brand-orange hover:bg-brand-orange/20 hover:text-brand-orange transition-colors tactile">
+            Save
+          </button>
         </div>
 
         {/* Dehumanizer */}
@@ -102,7 +148,7 @@ export const AutomationControls: React.FC<AutomationControlsProps> = ({
                 checked={settings.dehumanizeEnabled}
                 onChange={(e) => onUpdateSettings({ dehumanizeEnabled: e.target.checked })}
                 data-testid="dehumanize-toggle"
-                className="sr-only peer"
+                className="peer opacity-0 absolute inset-0 z-10 w-8 h-4 cursor-pointer"
               />
               <div className="w-8 h-4 bg-chassis-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-orange" />
             </label>
@@ -111,6 +157,51 @@ export const AutomationControls: React.FC<AutomationControlsProps> = ({
             Purges AI telltales ("delve", "spearhead", "testament to") ensuring organic human professional voice.
           </p>
         </div>
+      </div>
+
+      {/* 4-Hour Cron Countdown */}
+      <div data-testid="cron-countdown" className="p-4 bg-chassis-base sunken space-y-4 rounded-xl border border-chassis">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold text-chassis-primary">
+            <Clock className="w-4 h-4 text-amber-led" />
+            <span>4-Hour Cron Crawlers</span>
+          </div>
+          <span className="text-[10px] font-mono bg-success-emerald/20 text-success-emerald px-2 py-0.5 rounded border border-success-emerald/30">
+            Active (q=4h)
+          </span>
+        </div>
+
+        {/* Job crawler */}
+        <div className="space-y-1.5" data-testid="cron-jobs">
+          <div className="flex justify-between text-xs">
+            <span className="text-chassis-muted">Job Search (4h)</span>
+            <span className="font-mono font-semibold text-amber-led" data-testid="cron-countdown-text">3h 45m</span>
+          </div>
+          <div className="w-full h-2 bg-chassis-raised rounded-full overflow-hidden">
+            <div className="h-full bg-amber-led glow-amber transition-all duration-1000" style={{ width: '45%' }} />
+          </div>
+        </div>
+
+        {/* Consultancy crawler */}
+        <div className="space-y-1.5" data-testid="cron-consultancy">
+          <div className="flex justify-between text-xs">
+            <span className="text-chassis-muted">Consultancy (4h)</span>
+            <span className="font-mono font-semibold text-signoff-red">3h 45m</span>
+          </div>
+          <div className="w-full h-2 bg-chassis-raised rounded-full overflow-hidden">
+            <div className="h-full bg-signoff-red glow-amber transition-all duration-1000" style={{ width: '45%' }} />
+          </div>
+        </div>
+
+        {/* Manual trigger */}
+        <button
+          onClick={onTriggerCron || (() => {})}
+          data-testid="manual-trigger-scrape"
+          className="w-full flex items-center justify-center gap-2 py-2 bg-chassis-raised hover:bg-chassis-active text-chassis-primary text-xs rounded-lg font-medium transition-colors border border-chassis tactile"
+        >
+          <RotateCw className="w-3 h-3 text-amber-led" />
+          <span>Execute 4h Cycle Now</span>
+        </button>
       </div>
 
       {/* Human Sign-Off Gate */}
@@ -134,22 +225,9 @@ export const AutomationControls: React.FC<AutomationControlsProps> = ({
             No applications waiting for signature.
           </div>
         ) : (
-          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-            <div className="p-2.5 bg-chassis-base rounded-lg border border-signoff-red/40 space-y-1.5">
-              <div className="flex justify-between items-start">
-                <span className="font-semibold text-xs text-chassis-primary line-clamp-1">
-                  Sample Opportunity Awaiting Sign-Off
-                </span>
-                <span className="text-[9px] font-mono text-brand-orange font-bold">95%</span>
-              </div>
-              <div className="text-[10px] text-chassis-muted line-clamp-1">Sample Company</div>
-              <button
-                className="w-full mt-1 py-1 bg-signoff-red hover:bg-signoff-red-hover text-white text-[11px] rounded font-medium flex items-center justify-center gap-1 transition-colors tactile"
-              >
-                <span>Sign-Off & Authorize</span>
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
+          <div className="p-3 bg-chassis-base rounded-lg border border-signoff-red/40 text-center text-xs text-chassis-muted">
+            {pendingCount} {pendingCount === 1 ? "application" : "applications"} waiting for
+            applicant sign-off.
           </div>
         )}
       </div>

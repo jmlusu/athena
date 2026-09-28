@@ -80,6 +80,11 @@ export const N8nIntegration: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* n8n Status Pill */}
+          <span className="flex items-center gap-1.5 text-xs font-medium text-chassis-primary" data-testid="n8n-status-pill">
+            <span className="w-2 h-2 rounded-full bg-success-emerald" />
+            <span>Connected</span>
+          </span>
           <OutlineButton size="sm" onClick={handleCopy}>
             <Copy className="w-3.5 h-3.5 text-text-secondary" />
             <span>{copiedUrl ? "Copied Endpoint!" : "Copy Webhook URL"}</span>
@@ -99,53 +104,53 @@ export const N8nIntegration: React.FC = () => {
 
         {/* Nodes Grid */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2">
-          {/* Node 1: 4h Cron */}
-          <div className="bg-chassis-raised border border-chassis p-3 rounded-lg space-y-2 relative" data-testid="n8n-node" data-label="Cron (4 Hours)">
+          {/* Node 1: 4h Cron Scrape */}
+          <div className="bg-chassis-raised border border-chassis p-3 rounded-lg space-y-2 relative" data-testid="n8n-node" data-label="Cron Scrape (4 Hours)">
             <div className="flex items-center justify-between text-xs">
               <Badge variant="critical" size="micro">Trigger</Badge>
               <Clock className="w-3.5 h-3.5 text-success-emerald" />
             </div>
-            <div className="font-semibold text-xs text-white">Cron (4 Hours)</div>
+            <div className="font-semibold text-xs text-white" data-testid="n8n-node-label">Cron Scrape (4 Hours)</div>
             <div className="text-[10px] text-text-secondary">Lilongwe & Global Crawl</div>
           </div>
 
-          {/* Node 2: Scraper Aggregator */}
-          <div className="bg-chassis-raised border border-chassis p-3 rounded-lg space-y-2" data-testid="n8n-node" data-label="Athena Scraper Node">
+          {/* Node 2: Scraper Match */}
+          <div className="bg-chassis-raised border border-chassis p-3 rounded-lg space-y-2" data-testid="n8n-node" data-label="Scrape Match Node">
             <div className="flex items-center justify-between text-xs">
               <Badge variant="job" size="micro">HTTP Request</Badge>
               <Workflow className="w-3.5 h-3.5 text-linkedin-blue" />
             </div>
-            <div className="font-semibold text-xs text-white">Athena Scraper Node</div>
+            <div className="font-semibold text-xs text-white" data-testid="n8n-node-label">Scrape Match Node</div>
             <div className="text-[10px] text-text-secondary">LinkedIn, Upwork, Portals</div>
           </div>
 
-          {/* Node 3: Gemini ATS Evaluator */}
-          <div className="bg-chassis-raised border border-chassis p-3 rounded-lg space-y-2" data-testid="n8n-node" data-label="ATS Semantic Scoring">
+          {/* Node 3: ATS Score & Tailor */}
+          <div className="bg-chassis-raised border border-chassis p-3 rounded-lg space-y-2" data-testid="n8n-node" data-label="ATS Score & Tailor">
             <div className="flex items-center justify-between text-xs">
               <Badge variant="flagged" size="micro">Gemini AI</Badge>
               <Code className="w-3.5 h-3.5 text-amber-led" />
             </div>
-            <div className="font-semibold text-xs text-white">ATS Semantic Scoring</div>
+            <div className="font-semibold text-xs text-white" data-testid="n8n-node-label">ATS Score & Tailor</div>
             <div className="text-[10px] text-text-secondary">0 - 100% Evaluation</div>
           </div>
 
-          {/* Node 4: Switch / Router */}
-          <div className="bg-chassis-raised border border-chassis p-3 rounded-lg space-y-2" data-testid="n8n-node" data-label="ATS Decision Gate">
+          {/* Node 4: Sign-off Submit Gate */}
+          <div className="bg-chassis-raised border border-chassis p-3 rounded-lg space-y-2" data-testid="n8n-node" data-label="Sign-off Submit Gate">
             <div className="flex items-center justify-between text-xs">
               <Badge variant="critical" size="micro">Switch</Badge>
               <Zap className="w-3.5 h-3.5 text-brand-orange" />
             </div>
-            <div className="font-semibold text-xs text-white">ATS Decision Gate</div>
+            <div className="font-semibold text-xs text-white" data-testid="n8n-node-label">Sign-off Submit Gate</div>
             <div className="text-[10px] text-text-secondary">≥90 Auto | 80-89 Flag</div>
           </div>
 
-          {/* Node 5: Human Gate & Dispatch */}
-          <div className="bg-chassis-raised border border-signoff-red/50 p-3 rounded-lg space-y-2" data-testid="n8n-node" data-label="Human Sign-Off Gate">
+          {/* Node 5: Human Sign-off n8n */}
+          <div className="bg-chassis-raised border border-signoff-red/50 p-3 rounded-lg space-y-2" data-testid="n8n-node" data-label="Human Sign-off n8n Gate">
             <div className="flex items-center justify-between text-xs">
               <Badge variant="signoff" size="micro">Wait / Webhook</Badge>
               <ShieldCheck className="w-3.5 h-3.5 text-signoff-red" />
             </div>
-            <div className="font-semibold text-xs text-white">Human Sign-Off Gate</div>
+            <div className="font-semibold text-xs text-white" data-testid="n8n-node-label">Human Sign-off n8n Gate</div>
             <div className="text-[10px] text-signoff-red">Mandatory Authorization</div>
           </div>
         </div>
@@ -153,34 +158,52 @@ export const N8nIntegration: React.FC = () => {
 
       {/* Webhook Tester & Code Payload */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Input Payload */}
-        <div className="bg-surface-white border border-slate rounded-xl p-4 space-y-3 shadow-xs" data-testid="n8n-webhook-url">
-          <div className="flex items-center justify-between">
-            <h4 className="font-bold text-xs text-ink uppercase tracking-wider font-mono">
-              n8n Inbound Webhook Payload
-            </h4>
-            <GhostButton size="sm" data-testid="test-payload-btn">
-              Test Payload
-            </GhostButton>
+        {/* Webhook Configuration & Payload Tester */}
+        <div className="bg-surface-white border border-slate rounded-xl p-4 space-y-3 shadow-xs" data-testid="n8n-webhook-tester">
+          {/* Webhook URL Input */}
+          <div className="space-y-2">
+            <label className="font-bold text-xs text-ink uppercase tracking-wider font-mono block">
+              n8n Webhook URL
+            </label>
+            <input
+              type="text"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              data-testid="n8n-webhook-url"
+              className="w-full font-mono text-xs bg-surface-dark-inset text-emerald-400 p-3 rounded-lg border border-slate focus:outline-none focus:ring-2 focus:ring-brand-orange sunken"
+              placeholder="https://your-n8n-instance.com/webhook/athena"
+            />
           </div>
 
-          <textarea
-            rows={10}
-            value={testPayload}
-            onChange={(e) => setTestPayload(e.target.value)}
-            data-testid="payload-editor"
-            className="w-full font-mono text-xs bg-surface-dark-inset text-emerald-400 p-3 rounded-lg border border-slate focus:outline-none focus:ring-2 focus:ring-brand-orange sunken"
-          />
+          {/* Payload Editor */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs text-ink uppercase tracking-wider font-mono">
+                n8n Inbound Webhook Payload
+              </h4>
+              <GhostButton size="sm" data-testid="test-payload-btn">
+                Test Payload
+              </GhostButton>
+            </div>
 
-          <AccentButton
-            onClick={handleTestWebhook}
-            disabled={isTriggering}
-            data-testid="execute-webhook-btn"
-            className="w-full"
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span>{isTriggering ? "Sending Trigger to Athena..." : "Fire n8n Webhook Trigger"}</span>
-          </AccentButton>
+            <textarea
+              rows={10}
+              value={testPayload}
+              onChange={(e) => setTestPayload(e.target.value)}
+              data-testid="payload-editor"
+              className="w-full font-mono text-xs bg-surface-dark-inset text-emerald-400 p-3 rounded-lg border border-slate focus:outline-none focus:ring-2 focus:ring-brand-orange sunken"
+            />
+
+            <AccentButton
+              onClick={handleTestWebhook}
+              disabled={isTriggering}
+              data-testid="execute-webhook-btn"
+              className="w-full"
+            >
+              <Play className="w-3.5 h-3.5" />
+              <span>{isTriggering ? "Sending Trigger to Athena..." : "Fire n8n Webhook Trigger"}</span>
+            </AccentButton>
+          </div>
         </div>
 
         {/* Execution Output */}

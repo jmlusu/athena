@@ -88,19 +88,11 @@ export const JobDetail: React.FC = () => {
     );
   }
 
-  // Mock skill data for demonstration
-  const jobSkills: SkillTag[] = [
-    { name: 'React', level: 'advanced', category: 'technical', matched: true, importance: 'required' },
-    { name: 'TypeScript', level: 'advanced', category: 'technical', matched: true, importance: 'required' },
-    { name: 'Node.js', level: 'intermediate', category: 'technical', matched: true, importance: 'preferred' },
-    { name: 'PostgreSQL', level: 'intermediate', category: 'technical', matched: false, importance: 'preferred' },
-    { name: 'AWS', level: 'beginner', category: 'technical', matched: false, importance: 'nice-to-have' },
-    { name: 'GraphQL', level: 'beginner', category: 'technical', matched: false, importance: 'nice-to-have' },
-    { name: 'Communication', level: 'advanced', category: 'soft', matched: true, importance: 'required' },
-    { name: 'Problem Solving', level: 'expert', category: 'soft', matched: true, importance: 'required' },
-  ];
-
-  const userSkills = ['React', 'TypeScript', 'Node.js', 'Communication', 'Problem Solving'];
+  // Skills derived from the job keywords and the applicant's profile.
+  const userSkills = (profiles[0]?.skills ?? []).map(s => s.name);
+  const jobSkills: SkillTag[] = (job.keywords ?? []).map(keyword => ({
+    name: keyword,
+  }));
   const matchingSkills = jobSkills.filter(s => userSkills.includes(s.name));
   const missingSkills = jobSkills.filter(s => !userSkills.includes(s.name));
 
@@ -405,10 +397,16 @@ export const JobDetail: React.FC = () => {
 
           {/* Skills Analysis */}
           <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6 sticky top-24" style={{ top: '320px' }}>
-            <SkillComparison
-              matchingSkills={matchingSkills}
-              missingSkills={missingSkills}
-            />
+            {jobSkills.length > 0 ? (
+              <SkillComparison
+                matchingSkills={matchingSkills}
+                missingSkills={missingSkills}
+              />
+            ) : (
+              <p className="font-body text-sm text-ls-grey-dark text-center py-4">
+                No skills extracted
+              </p>
+            )}
           </section>
 
           {/* Quick Actions */}

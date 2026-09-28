@@ -42,9 +42,9 @@ export default defineConfig({
   ],
   use: {
     baseURL: WEB_URL,
-    trace: 'on-first-retry',
+    trace: 'retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    video: 'off',
     extraHTTPHeaders: {
       'X-API-Key': API_KEY,
     },
@@ -72,6 +72,12 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     },
   ],
+  // Visual regression test project: runs only visual-regression.spec.ts
+  // with masks, baselines, and viewport comparisons. All other tests are excluded.
+  visualRegression: {
+    testMatch: ['**/visual-regression.spec.ts'],
+    testDir: path.join(CONFIG_DIR, 'tests'),
+  },
   webServer: [
     {
       // Real module path: athena.api.app:app (athena.api.server:app does not exist).
@@ -93,6 +99,8 @@ export default defineConfig({
         ATHENA_AI_PROVIDER: 'fallback',
         GEMINI_API_KEY: '',
         AISTUDIO_PREVIEW: 'false',
+        // Test mode: mock external scrapers, return seeded jobs instantly
+        ATHENA_TEST_MODE: 'true',
       },
     },
     {

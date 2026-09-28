@@ -295,6 +295,7 @@ export interface PipelineColumnProps {
   title: string;
   jobs: Job[];
   onJobClick: (job: Job) => void;
+  onFormFiller?: (job: Job) => void;
   onDragStart?: (job: Job) => void;
   onDragOver?: (e: React.DragEvent, status: JobStatus) => void;
   onDrop?: (e: React.DragEvent, status: JobStatus) => void;
@@ -360,6 +361,7 @@ export interface ReceiptListResponse {
 
 export interface Opportunity {
   id: string;
+  source_job_id?: string;
   title: string;
   company: string;
   location: string;
@@ -415,6 +417,7 @@ export interface ApplicantProfile {
   hourlyRateUsd: number;
   expectedMonthlyMwk: number;
   legalAuthorizedSigner: string;
+  linkedinUrl?: string;
 }
 
 export interface TailoredResume {

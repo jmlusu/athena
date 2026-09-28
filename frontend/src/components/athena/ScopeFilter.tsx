@@ -29,7 +29,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
   ] as const;
 
   return (
-    <div className="space-y-4 p-4 bg-chassis-raised border border-chassis rounded-xl">
+    <div data-testid="scope-filter" className="space-y-4 p-4 bg-chassis-raised border border-chassis rounded-xl">
       {/* Scope Filters */}
       <div className="space-y-2">
         <h4 className="text-xs font-semibold text-chassis-low uppercase tracking-wider flex items-center justify-between">
