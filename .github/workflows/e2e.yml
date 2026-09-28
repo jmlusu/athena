@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -27,10 +28,17 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: '22'
-          cache: 'pnpm'
 
       - name: Enable Corepack
         run: corepack enable
+
+      - name: Setup Node cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - name: Setup Python and uv
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
@@ -54,30 +62,22 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Start backend services
-        run: |
-          docker-compose up -d backend redis
-          # Wait for backend to be healthy
-          for i in {1..30}; do
-            if curl -f http://localhost:8520/health; then
-              echo "Backend is healthy"
-              break
-            fi
-            echo "Waiting for backend... ($i/30)"
-            sleep 2
-          done
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm build
 
       - name: Run E2E tests
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:8530
+          E2E_API_URL: http://127.0.0.1:8001
           E2E_API_KEY: dev-admin-key
           CI: true
         run: pnpm run test:e2e
 
       - name: Upload Playwright HTML report
         if: always()
-        uses: actions/upload-artifact@4c6f2b2a5b1d6c6e7d6b6c6e7d6b6c6e7d6b6c6e7
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: frontend/e2e/test-results/html-report/
@@ -85,7 +85,7 @@ jobs:
 
       - name: Upload Playwright test results (JSON)
         if: always()
-        uses: actions/upload-artifact@4c6f2b2a5b1d6c6e7d6b6c6e7d6b6c6e7d6b6c6e7
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-results
           path: frontend/e2e/test-results/results.json
@@ -93,11 +93,23 @@ jobs:
 
       - name: Upload Playwright test results (JUnit)
         if: always()
-        uses: actions/upload-artifact@4c6f2b2a5b1d6c6e7d6b6c6e7d6b6c6e7d6b6c6e7
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-junit
           path: frontend/e2e/test-results/results.xml
           retention-days: 7
+
+      - name: Clean up old test artifacts (keep last 5 runs)
+        if: always()
+        run: |
+          ARTIFACT_NAMES=$(gh artifact list --repo "${GITHUB_REPOSITORY}" --json name --jq '.[].name' 2>/dev/null | grep -E '^(playwright-report|playwright-results|playwright-junit)-' | sort -r)
+          COUNT=0
+          for name in $ARTIFACT_NAMES; do
+            COUNT=$((COUNT + 1))
+            if [ $COUNT -gt 5 ]; then
+              gh artifact delete --repo "${GITHUB_REPOSITORY}" "$name" --yes 2>/dev/null || true
+            fi
+          done
 
       - name: Comment PR with test summary
         if: github.event_name == 'pull_request' && always()

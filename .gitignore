@@ -52,6 +52,7 @@ playwright-report/
 
 # Data
 company/athena/
+backend/artifacts/
 *.db
 *.sqlite
 

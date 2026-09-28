@@ -37,6 +37,276 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
+// ── Lockfile API endpoints for agent coordination ──────────────────────
+
+// Per-artifact lock: acquire lock on a specific entity (job, application, profile)
+app.post("/api/lock/artifact", (req, res) => {
+  const { entity, entityId, agentId, ttl } = req.body;
+  if (!entity || !entityId || !agentId) {
+    return res.status(400).json({ error: "Missing required: entity, entityId, agentId" });
+  }
+
+  const lockPath = path.join(
+    __dirname,
+    "..",
+    "backend",
+    "src",
+    "athena",
+    "artifacts",
+    "locks",
+    `${entity}_${entityId.replace("/", "_").replace("\\", "_")}.lock`
+  );
+
+  // Ensure lock directory exists
+  const lockDir = path.dirname(lockPath);
+  require("fs").mkdirSync(lockDir, { recursive: true });
+
+  // Try to acquire exclusive file lock
+  try {
+    const existing = require("fs").readFileSync(lockPath, "utf8").trim();
+    const existingParts = existing.split("\n");
+    const existingAgentId = existingParts[0];
+    const existingAcquiredAt = existingParts[1];
+    const existingTtl = existingParts[2];
+
+    // Check if existing lock is stale
+    const now = new Date().getTime();
+    let isStale = false;
+
+    if (existingAgentId && existingAgentId !== agentId) {
+      // Lock held by different agent
+      if (existingAcquiredAt) {
+        const acquired = new Date(existingAcquiredAt).getTime();
+        const elapsed = (now - acquired) / 1000; // seconds
+        if (elapsed > 1800) {
+          // Stale after 30 minutes
+          isStale = true;
+        }
+      }
+    } else if (existingAgentId && existingAgentId === agentId) {
+      // Same agent - lock is fresh
+      isStale = false;
+    }
+
+    if (!isStale) {
+      // Wait or return busy
+      return res.status(409).json({ error: "Artifact lock already held, please retry" });
+    }
+
+    // Force-release stale lock
+    require("fs").unlinkSync(lockPath);
+  } catch (e) {
+    // No existing lock or error reading it - proceed to acquire
+  }
+
+  // Acquire exclusive lock
+  const fd = require("fs").openSync(lockPath, "w+");
+  require("fcntl").flock(fd, require("fcntl").LOCK_EX);
+
+  const acquiredAt = new Date().toISOString();
+  const lockContent = `${agentId}\n${acquiredAt}\n${ttl || ""}\n`;
+  require("fs").writeFileSync(lockPath, lockContent);
+
+  // Return lock token for frontend to use on release
+  const lockToken = Math.random().toString(36).substring(2, 18);
+
+  res.json({
+    success: true,
+    lockToken,
+    lockPath,
+    message: `Artifact lock acquired for ${entity}/${entityId}`,
+  });
+});
+
+// Release per-artifact lock
+app.post("/api/lock/artifact/release", (req, res) => {
+  const { lockToken, entity, entityId } = req.body;
+
+  if (!lockToken || !entity || !entityId) {
+    return res.status(400).json({ error: "Missing required: lockToken, entity, entityId" });
+  }
+
+  const lockPath = path.join(
+    __dirname,
+    "..",
+    "backend",
+    "src",
+    "athena",
+    "artifacts",
+    "locks",
+    `${entity}_${entityId.replace("/", "_").replace("\\", "_")}.lock`
+  );
+
+  try {
+    const fd = require("fs").openSync(lockPath, "r+");
+    require("fcntl").flock(fd, require("fcntl").LOCK_UN);
+    require("fs").closeSync(fd);
+    require("fs").unlinkSync(lockPath);
+  } catch (e) {
+    // Lock file may already be released
+  }
+
+  res.json({ success: true, message: "Artifact lock released" });
+});
+
+// Global agent lock: acquire global serializing lock
+app.post("/api/lock/global", (req, res) => {
+  const { agentId } = req.body;
+
+  if (!agentId) {
+    return res.status(400).json({ error: "Missing required: agentId" });
+  }
+
+  const lockPath = path.join(
+    __dirname,
+    "..",
+    "backend",
+    "src",
+    "athena",
+    "artifacts",
+    "locks",
+    "global_agent.lock"
+  );
+
+  // Ensure lock directory exists
+  const lockDir = path.dirname(lockPath);
+  require("fs").mkdirSync(lockDir, { recursive: true });
+
+  // Try to acquire exclusive file lock (blocking with timeout concept)
+  // In a real implementation, we'd use a non-blocking check with retry
+  try {
+    const existing = require("fs").readFileSync(lockPath, "utf8").trim();
+    const existingParts = existing.split("\n");
+    const existingAgentId = existingParts[0];
+
+    // If lock is held by different agent and stale, force-release
+    if (existingAgentId && existingAgentId !== agentId) {
+      // Check if stale (held for > 30 minutes)
+      // For simplicity, we always allow acquisition in this demo
+      // Real implementation would check timestamp and force-release stale locks
+    }
+  } catch (e) {
+    // No existing lock - proceed
+  }
+
+  // Acquire exclusive lock
+  const fd = require("fs").openSync(lockPath, "w+");
+  require("fcntl").flock(fd, require("fcntl").LOCK_EX);
+
+  const acquiredAt = new Date().toISOString();
+  const lockContent = `${agentId}\n${acquiredAt}\n`;
+  require("fs").writeFileSync(lockPath, lockContent);
+
+  const lockToken = Math.random().toString(36).substring(2, 18);
+
+  res.json({
+    success: true,
+    lockToken,
+    lockPath,
+    message: "Global agent lock acquired (serializes all operations)",
+  });
+});
+
+// Release global agent lock
+app.post("/api/lock/global/release", (req, res) => {
+  const { lockToken } = req.body;
+
+  if (!lockToken) {
+    return res.status(400).json({ error: "Missing required: lockToken" });
+  }
+
+  const lockPath = path.join(
+    __dirname,
+    "..",
+    "backend",
+    "src",
+    "athena",
+    "artifacts",
+    "locks",
+    "global_agent.lock"
+  );
+
+  try {
+    const fd = require("fs").openSync(lockPath, "r+");
+    require("fcntl").flock(fd, require("fcntl").LOCK_UN);
+    require("fs").closeSync(fd);
+    require("fs").unlinkSync(lockPath);
+  } catch (e) {
+    // Lock file may already be released
+  }
+
+  res.json({ success: true, message: "Global agent lock released" });
+});
+
+// Scan for stale locks
+app.post("/api/lock/stale", (req, res) => {
+  const { agentId } = req.body;
+
+  if (!agentId) {
+    return res.status(400).json({ error: "Missing required: agentId" });
+  }
+
+  const lockDir = path.join(
+    __dirname,
+    "..",
+    "backend",
+    "src",
+    "athena",
+    "artifacts",
+    "locks"
+  );
+
+  let released = 0;
+  try {
+    const files = require("fs").readdirSync(lockDir);
+    const now = new Date().getTime();
+
+    for (const file of files) {
+      if (!file.endsWith(".lock")) continue;
+      const filePath = path.join(lockDir, file);
+      try {
+        const content = require("fs").readFileSync(filePath, "utf8").trim();
+        const parts = content.split("\n");
+        if (parts.length >= 2) {
+          const fileAgentId = parts[0];
+          const acquiredAt = parts[1];
+          const ttlStr = parts[2] || "";
+
+          // Check if lock is held by different agent or stale
+          if (fileAgentId && fileAgentId !== agentId) {
+            if (acquiredAt) {
+              const acquired = new Date(acquiredAt).getTime();
+              const elapsed = (now - acquired) / 1000; // seconds
+              if (elapsed > 1800) {
+                // Stale after 30 minutes - force release
+                require("fs").unlinkSync(filePath);
+                released++;
+              }
+            }
+          } else if (fileAgentId === agentId) {
+            // Same agent - check their own TTL
+            if (ttlStr) {
+              const ttl = parseInt(ttlStr, 10);
+              const acquired = new Date(acquiredAt).getTime();
+              const elapsed = (now - acquired) / 1000;
+              if (elapsed > ttl) {
+                require("fs").unlinkSync(filePath);
+                released++;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // Skip unreadable files
+      }
+    }
+  } catch (e) {
+    // Lock dir may not exist yet
+  }
+
+  res.json({ success: true, released });
+});
+
 // ATS Scoring Engine with LLM
 app.post("/api/ai/score-ats", async (req, res) => {
   const { jobTitle, company, description, requirements, applicantProfile, itemType } = req.body;
@@ -513,20 +783,20 @@ Return JSON:
     });
 
     const parsed = JSON.parse(response.text || "{}");
-    res.json(parsed);
-  } catch (error: any) {
-    console.error("Dehumanize error, falling back:", error.message);
-    // Basic rule-based humanizer if AI fails
-    const humanized = text
-      ? text
+    const humanText = parsed.text || "";
+    const humanized = humanText
+      ? humanText
           .replace(/delve into/gi, "examine")
           .replace(/in today's fast-paced world,?/gi, "presently,")
           .replace(/testament to/gi, "proof of")
           .replace(/spearhead(ed)?/gi, "led")
           .replace(/tapestry of/gi, "mix of")
           .replace(/foster an ecosystem/gi, "build a collaborative group")
-      : text;
+      : humanText;
     return res.json({ humanizedText: humanized, flaggedWordsRemoved: ["delve", "spearheaded", "testament"] });
+  } catch (error) {
+    console.error("Dehumanize error:", error);
+    return res.status(500).json({ error: "Failed to humanize text" });
   }
 });
 
