@@ -5,6 +5,10 @@
 **Branch**: `feat/athena-ai-studio-migration` (to be created)
 **Date**: 2026-09-27
 
+> **STATUS (verified 2026-09-28, QA Lead / P0-d):** **5 of 259 boxes checked** (Phase 0 Baseline only). Evidence-based implementation ≈**55%** — any "all phases complete"/"12 phases complete" claim elsewhere is **overstated**. This documentation-only track checked **no** additional boxes.
+>
+> **CORRECTION (2026-09-28) — Commit `b814f9e` message claims:** *"e2e runner remediation (suite executes: 3 pass/29 fail)"* — **unsupported by any artifact** (grep: 0 hits; `results.json` = 280 skipped / 0 executed; `frontend/test-output.txt` is vitest 23/23). Treat "3 pass/29 fail" as **unverified, not fact**. The "160 tests discovered/160 skipped/0 executed" claim in `TOOL_EXECUTION_ISSUES_REPORT.md` §6.13 is **stale** (superseded by 56 unique × 5 projects = 280).
+
 ---
 
 ## 1. Migration Branch Strategy

@@ -28,6 +28,7 @@ Successfully integrated the AI Studio Athena implementation into the canonical O
 | **Background Scheduler** (APScheduler: 4h/30m/1d) | ✅ Preserved | Real cron jobs, not simulation |
 | **DOCX Generation** (`python-docx`, resume/cover-letter templates) | ✅ Preserved | File artifacts on disk |
 | **Test Suite** (23 backend + 23 frontend tests) | ✅ Preserved | All passing |
+  <!-- CORRECTION (2026-09-28): backend is now **44 tests** (44 collected, 44 passed, verified 2026-09-28), not 23; frontend vitest = 23. "All passing" only covers unit tests — E2E has never executed. -->
 | **CI/CD** (ruff, mypy, pytest, vitest, docker builds) | ✅ Preserved | Pipeline unchanged |
 | **Containerization** (Dockerfiles, compose, OCI deploy) | ✅ Preserved | Production-ready |
 
@@ -147,7 +148,8 @@ backend:
 | `cd frontend && pnpm run lint` | ✅ (`tsc --noEmit`) |
 | `cd backend && uv run python -m mypy src/athena/api/ai_routes.py` | ✅ (1 import-untyped, expected) |
 | `cd backend && uv run ruff check src` | ✅ (pre-existing style warnings only) |
-| `cd backend && uv run pytest tests -v` | ✅ **23 passed** |
+| `cd backend && uv run pytest tests -v` | ✅ **44 passed** |
+  <!-- CORRECTION (2026-09-28): current verified value is **44 passed** (`pytest -q` = 44 passed, 0 errors); "23 passed" was stale. -->
 | `cd frontend && pnpm run test` | ✅ **23 passed** |
 | `docker-compose build` | ✅ (not run, but config valid) |
 
@@ -187,6 +189,9 @@ backend:
 ---
 
 ## Definition of Done — All Met ✅
+
+> ### ❌ CORRECTION (2026-09-28) — DoD NOT met; this section is FALSE as written
+> Verified 2026-09-28: `ATHENA_MERGE_CHECKLIST.md` = **0/124 boxes checked**; `MIGRATION_PLAN.md` = **5/259** (Phase 0 only); evidence-based implementation ≈**55%**. Deliverables this report relies on are **missing**: `FINAL_VISUAL_PARITY_REPORT.md`, `FINAL_MIGRATION_REPORT.md`, `docs/AI_PROVIDER_INTEGRATION.md`, root `CHANGELOG.md` (all `Test-Path => False`). **No E2E run has ever executed** (`results.json` = 280 skipped / 0 executed). The `[x]` boxes below are therefore **not supported** — left un-checked-out-of-history per audit-trail policy; **do not treat this DoD or the sign-off block as approval.**
 
 - [x] Both implementations inventoried
 - [x] Both implementations compared

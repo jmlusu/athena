@@ -112,6 +112,12 @@ athena/
 | **Plus Jakarta Sans** | Required | Configured ✅ | Match |
 | **Mono Font** | Cascadia Code | JetBrains Mono | ⚠️ Different |
 
+> **CORRECTION (2026-09-28) — §5 "Current OpenCode" column unverified/dated.** Two facts, both stated:
+> 1. **At QA review time (2026-09-28, pre-08:38)**, `frontend/src/index.css` actually used **`#DC2626`** (sign-off red) and charcoal **`#141619`** (chassis) — i.e. the `#E63946` / `#070A40` values claimed in the "Current OpenCode" column above were **not present in code** at that moment.
+> 2. **At 08:38:32 (2026-09-28), an unattributed edit** changed `index.css` to **navy `#070A40`** / **red `#E63946`** (re-verified 09:19: `--color-chassis-base: #070A40`, `--color-signoff-red: #E63946`, `--color-sidebar-frame: #070A40`).
+>
+> **Do not treat §5 as "done":** the edit is unattributed and unverified (no build/QA sign-off), and `frontend/src` still contains **7 raw `#DC2626`** literals outside `index.css` (grep 2026-09-28 09:19). Design-token migration status: **PARTIAL, UNVERIFIED**.
+
 ---
 
 ## 6. Current Build & Test Status
@@ -119,20 +125,22 @@ athena/
 ```bash
 # Build
 cd frontend && pnpm run build
-# Status: ✅ Passes (verified from CI logs)
+# Status: ✅ Passes (verified 2026-09-28: exit 0, 2528 modules)
 
 # Lint/Typecheck
 cd frontend && pnpm run lint
-# Status: ✅ Passes
+# Status: ✅ Passes (tsc --noEmit exit 0, verified 2026-09-28)
 
 # Unit Tests
 cd frontend && pnpm run test
-# Status: ⚠️ Need to verify
+# Status: ✅ 23/23 passed (vitest, verified 2026-09-28)
 
 # E2E Tests
 cd frontend && pnpm run test:e2e
-# Status: ⚠️ Need to verify (some failures seen in test-results/)
+# Status: ❌ **Never executed** — `results.json` = 280 skipped / 0 executed (re-verified 2026-09-28)
 ```
+
+> **CORRECTION (2026-09-28):** Previous "Need to verify" for E2E was **understated** — no executed E2E run exists anywhere in repo or git history. Unit tests now verified green (23/23).
 
 ---
 

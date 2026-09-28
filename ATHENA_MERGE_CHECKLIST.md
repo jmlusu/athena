@@ -6,6 +6,10 @@
 **Target:** `main`  
 **Definition of Done:** All phases ✅, all validation gates ✅, `FINAL_INTEGRATION_REPORT.md` complete.
 
+> **STATUS (verified 2026-09-28, QA Lead / P0-d):** **0 of 124 boxes checked** — 0% formal completion; evidence-based implementation ≈55%. The DoD's referenced `FINAL_INTEGRATION_REPORT.md` "All Met" claim is **corrected as FALSE** in that document (2026-09-28). This track is documentation-only and **has not checked any boxes**; no sign-off has been granted.
+>
+> **CORRECTION (2026-09-28) — Commit `b814f9e` message claims:** *"e2e runner remediation (suite executes: 3 pass/29 fail)"* — **unsupported by any artifact** (grep: 0 hits; `results.json` = 280 skipped / 0 executed; `frontend/test-output.txt` is vitest 23/23). Treat "3 pass/29 fail" as **unverified, not fact**.
+
 ---
 
 ## Phase 0 — Prerequisites

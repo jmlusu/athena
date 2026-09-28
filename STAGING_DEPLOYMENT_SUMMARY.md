@@ -1,6 +1,13 @@
 # Athena AI Studio - Staging Deployment Summary
 
-## Deployment Status: ✅ READY FOR STAKEHOLDER SIGN-OFF (Gate 4)
+> ## ⚠️ CORRECTION (2026-09-28) — STALE / UNVERIFIED: DO NOT TREAT AS SIGNED OFF
+>
+> The "READY FOR STAKEHOLDER SIGN-OFF (Gate 4)" status below is dated **2026-09-27** and is **contradicted by a later live probe** (recorded in `TOOL_EXECUTION_ISSUES_REPORT.md` §6.3): `/jobs` → **HTTP 500**, `/receipts` → **404**, `/stats` → **404**; the staging image contained none of the claimed new endpoints.
+>
+> **This document has NOT been re-verified since that probe (no re-run on 2026-09-28).** Treat Gate 4 as **not met** and this summary as **STALE/unverified** until a fresh probe reproduces every health-check row below. Do not cite it as sign-off evidence.
+
+## Deployment Status: ❌ **NOT READY** — Gate 4 **not met** (corrected 2026-09-28)
+> **CORRECTION (2026-09-28):** The original "✅ READY FOR STAKEHOLDER SIGN-OFF (Gate 4)" claim is **false** — live probe (2026-09-27) showed `/jobs` → HTTP 500, `/receipts` → 404, `/stats` → 404; staging image contained none of the claimed new endpoints. Not re-verified 2026-09-28.
 
 **Date:** 2026-09-27  
 **Environment:** Staging  
