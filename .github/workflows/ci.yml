@@ -130,6 +130,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
+      # Backend deps ship ~2GB of CUDA wheels (cudnn/cublas/triton); with the
+      # uv cache, the venv layer, and chromium the build needs far more than
+      # the runner's default free space (previous run died with ENOSPC).
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost || true
+          sudo docker image prune -af || true
+          df -h /
+
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
