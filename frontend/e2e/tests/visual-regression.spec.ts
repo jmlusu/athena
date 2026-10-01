@@ -15,11 +15,15 @@ const VIEWPORTS = [
 ];
 
 // Mask definitions for dynamic elements per screen.
-// Only elements whose pixels genuinely change run-to-run are masked;
-// masks baked into the passing baselines (02, 06, 11) are left untouched.
+// Only elements whose pixels genuinely change run-to-run are masked.
+// Selectors are comma-separated CSS lists (all matches are masked).
 const MASKS: Record<string, string | undefined> = {
-  '01-pipeline-command-desktop': '[data-testid="cron-countdown"]',
-  '02-mountain-momentum-chart': '[data-testid="tooltip"]',
+  // Skills bars: compatibility value uses Math.random() per load and the
+  // count-up bar width animates for 700ms (Dashboard.tsx / SkillBar).
+  '01-pipeline-command-desktop':
+    '[data-testid="cron-countdown"], [aria-label="Skills compatibility bars"]',
+  '02-mountain-momentum-chart':
+    '[data-testid="tooltip"], [aria-label="Skills compatibility bars"]',
   '06-document-studio-proposal': '[data-testid="opportunity-badge"]',
   // Sign-off gate renders a live timestamp + Date.now() audit token in this div.
   '07-form-filler-signoff-gate': '[data-testid="sign-off-modal"] .text-red-800',
@@ -221,15 +225,14 @@ function makeTest(screen: ScreenConfig, viewport: { width: number; height: numbe
     // test.slow() at suite level handles this; extra timeout as safety
     await page.waitForTimeout(200);
 
-    // Capture screenshot with mask for dynamic elements
+    // Capture screenshot with mask for dynamic elements.
+    // Options MUST be the first argument: Playwright ignores the second arg
+    // when the first is an object (toHaveScreenshot(options) form).
     const maskSelector = MASKS[screen.maskKey];
-    await expect(page).toHaveScreenshot(
-      {},
-      {
-        mask: maskSelector ? page.locator(maskSelector) : undefined,
-        animations: 'disabled',
-      }
-    );
+    await expect(page).toHaveScreenshot({
+      mask: maskSelector ? page.locator(maskSelector) : undefined,
+      animations: 'disabled',
+    });
   });
 }
 
