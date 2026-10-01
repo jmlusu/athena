@@ -70,7 +70,9 @@ jobs:
           E2E_API_URL: http://127.0.0.1:8001
           E2E_API_KEY: dev-admin-key
           CI: true
-        run: pnpm run test:e2e -- --project=chromium
+        # pnpm run forwards a literal "--" that turns --project into a file
+        # filter (all 5 projects then run and die on uninstalled browsers).
+        run: pnpm exec playwright test --config e2e/playwright.config.ts --project=chromium
 
       - name: Upload Playwright HTML report
         if: always()
