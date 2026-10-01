@@ -31,8 +31,16 @@ def main():
     print(f"ATHENA_DATA_DIR set to: {os.environ.get('ATHENA_DATA_DIR')}")
     sys.stdout.flush()
 
-    # Use venv python to ensure Python 3.12+ for PEP 695 syntax
-    venv_python = os.path.join(os.path.dirname(__file__), ".venv", "Scripts", "python.exe")
+    # Use venv python to ensure Python 3.12+ for PEP 695 syntax.
+    # Windows venvs live in Scripts/, POSIX venvs in bin/.
+    venv_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv")
+    if os.name == "nt":
+        venv_python = os.path.join(venv_dir, "Scripts", "python.exe")
+    else:
+        venv_python = os.path.join(venv_dir, "bin", "python")
+    if not os.path.exists(venv_python):
+        # No venv (e.g. uv-managed interpreter already active) - use ourselves.
+        venv_python = sys.executable
 
     # Run uvicorn using subprocess with venv python
     subprocess.run(

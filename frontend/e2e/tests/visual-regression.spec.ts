@@ -230,7 +230,7 @@ function makeTest(screen: ScreenConfig, viewport: { width: number; height: numbe
     // when the first is an object (toHaveScreenshot(options) form).
     const maskSelector = MASKS[screen.maskKey];
     await expect(page).toHaveScreenshot({
-      mask: maskSelector ? page.locator(maskSelector) : undefined,
+      mask: maskSelector ? [page.locator(maskSelector)] : undefined,
       animations: 'disabled',
     });
   });

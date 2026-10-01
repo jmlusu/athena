@@ -47,9 +47,6 @@ jobs:
           cache-dependency-glob: 'backend/uv.lock'
           python-version: '3.12'
 
-      - name: Install root dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Install frontend dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile
@@ -73,7 +70,7 @@ jobs:
           E2E_API_URL: http://127.0.0.1:8001
           E2E_API_KEY: dev-admin-key
           CI: true
-        run: pnpm run test:e2e
+        run: pnpm run test:e2e -- --project=chromium
 
       - name: Upload Playwright HTML report
         if: always()

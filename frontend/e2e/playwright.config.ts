@@ -34,7 +34,15 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   testMatch: ['**/*.spec.ts'],
-  testIgnore: ['**/src/**', '**/lib/**', '**/node_modules/**', '**/dist/**'],
+  testIgnore: [
+    '**/src/**',
+    '**/lib/**',
+    '**/node_modules/**',
+    '**/dist/**',
+    // Visual baselines are committed for win32 only; CI runs on linux where
+    // they cannot exist (fonts/rasterization differ), so skip them there.
+    ...(process.env.CI ? ['**/visual-regression.spec.ts'] : []),
+  ],
   reporter: [
     ['html', { outputFolder: path.join(CONFIG_DIR, 'test-results/html-report') }],
     ['json', { outputFile: path.join(CONFIG_DIR, 'test-results/results.json') }],
