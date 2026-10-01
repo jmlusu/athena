@@ -55,6 +55,7 @@ from weasyprint.text.fonts import FontConfiguration
 
 font_config = FontConfiguration()
 
+
 async def generate_pdf(html_content: str, base_url: str = "") -> bytes:
     """Convert HTML to PDF using WeasyPrint."""
     html = HTML(string=html_content, base_url=base_url)
@@ -72,6 +73,7 @@ async def generate_pdf(html_content: str, base_url: str = "") -> bytes:
 ```python
 # parser.py
 import pdfplumber
+
 
 def parse_pdf(file_bytes: bytes) -> str:
     """Extract text from PDF bytes."""
@@ -103,10 +105,10 @@ The AI Studio integration added print styles in `frontend/src/index.css`:
 ```python
 # In generator.py generate_resume / generate_cover_letter / generate_document
 async def generate_resume(
-    self, 
-    profile: UserProfile, 
-    job: Job, 
-    output_format: str = "docx"  # "docx" | "html" | "pdf" | "both"
+    self,
+    profile: UserProfile,
+    job: Job,
+    output_format: str = "docx",  # "docx" | "html" | "pdf" | "both"
 ) -> DocumentOutput:
     # ... existing logic ...
     if output_format in ("pdf", "both"):

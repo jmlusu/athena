@@ -199,6 +199,10 @@ export const AthenaDashboard: React.FC = () => {
     setFormFillerOpen(true);
   };
 
+  const handleTailorResume = (job: Job) => {
+    navigate(`/documents/${job.id}`);
+  };
+
   const handleMetricFilter = (_metric: string) => {
     // Could integrate with PipelineKanbanBoard filter logic
   };
@@ -263,6 +267,7 @@ export const AthenaDashboard: React.FC = () => {
             jobs={jobs}
             onJobClick={handleJobClick}
             onFormFiller={handleFormFiller}
+            onTailorClick={handleTailorResume}
             onJobStatusChange={handleJobStatusChange}
           />
         </div>
@@ -494,7 +499,6 @@ export const AthenaDashboard: React.FC = () => {
                 : FALLBACK_APPLICANT_PROFILE
             }
             onSubmitSuccess={(oppId, receipt) => {
-              setFormFillerOpen(false);
               console.log('Form submitted:', oppId, receipt);
             }}
           />

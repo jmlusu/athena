@@ -37,7 +37,11 @@ def global_lock_id() -> str:
 
 class ArtifactLock:
     def __init__(
-        self, lock_path: Path, acquired_by: str, acquired_at: datetime, ttl: int | None = None,
+        self,
+        lock_path: Path,
+        acquired_by: str,
+        acquired_at: datetime,
+        ttl: int | None = None,
     ):
         self.lock_path = lock_path
         self.acquired_by = acquired_by
@@ -67,7 +71,10 @@ class ArtifactLock:
 
 
 def try_acquire_artifact_lock(
-    entity: str, entity_id: str, agent_id: str, ttl: int | None = None,
+    entity: str,
+    entity_id: str,
+    agent_id: str,
+    ttl: int | None = None,
 ) -> ArtifactLock | None:
     lock_path = Path(lock_id_for(entity, entity_id))
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -173,7 +180,10 @@ def scan_for_stale_locks(current_agent_id: str) -> int:
 
 
 def acquire_artifact_lock_context(
-    entity: str, entity_id: str, agent_id: str, ttl: int | None = None,
+    entity: str,
+    entity_id: str,
+    agent_id: str,
+    ttl: int | None = None,
 ) -> ArtifactLock | None:
     lock = try_acquire_artifact_lock(entity, entity_id, agent_id, ttl)
     if lock is None:

@@ -191,7 +191,9 @@ class SubmitApplicationRequest(BaseModel):
     job_title: str
     company: str
     applicant_name: str
-    authorization_signature: str
+    # Optional here so the route's explicit 400 (with a clear message) fires
+    # instead of Pydantic's generic 422 validation error.
+    authorization_signature: Optional[str] = None
     authorized_at: Optional[UTCDateTime] = None
 
 

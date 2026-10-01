@@ -44,16 +44,45 @@ const INITIAL_EDUCATION = {
   year: "",
 };
 
+const DEFAULT_PREFERENCES: JobPreferences = {
+  keywords: [],
+  excluded_keywords: [],
+  locations: [],
+  job_types: [],
+  preferred_sources: [],
+  remote_only: false,
+  visa_sponsorship_required: false,
+};
+
+const normalizeProfile = (p: AIApplicantProfile): AIApplicantProfile => ({
+  ...p,
+  skills: p.skills ?? [],
+  experience: (p.experience ?? []).map((e) => ({ ...e, bullets: e.bullets ?? [] })),
+  education: p.education ?? [],
+  certifications: p.certifications ?? [],
+  preferences: {
+    ...DEFAULT_PREFERENCES,
+    ...p.preferences,
+    keywords: p.preferences?.keywords ?? [],
+    excluded_keywords: p.preferences?.excluded_keywords ?? [],
+    locations: p.preferences?.locations ?? [],
+    job_types: p.preferences?.job_types ?? [],
+    preferred_sources: p.preferences?.preferred_sources ?? [],
+    remote_only: p.preferences?.remote_only ?? false,
+    visa_sponsorship_required: p.preferences?.visa_sponsorship_required ?? false,
+  },
+});
+
 export const ApplicantProfile: React.FC<ApplicantProfileProps> = ({
   profile,
   onUpdateProfile,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [localProfile, setLocalProfile] = useState<AIApplicantProfile>(profile);
+  const [localProfile, setLocalProfile] = useState<AIApplicantProfile>(normalizeProfile(profile));
   const [activeTab, setActiveTab] = useState<"overview" | "experience" | "education" | "skills" | "certifications" | "preferences">("overview");
 
   useEffect(() => {
-    setLocalProfile(profile);
+    setLocalProfile(normalizeProfile(profile));
   }, [profile]);
 
   const handleChange = (field: string, value: any) => {
@@ -96,7 +125,7 @@ export const ApplicantProfile: React.FC<ApplicantProfileProps> = ({
   };
 
   const handleCancel = () => {
-    setLocalProfile(profile);
+    setLocalProfile(normalizeProfile(profile));
     setIsEditing(false);
   };
 

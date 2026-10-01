@@ -34,7 +34,7 @@ import {
   listProfiles,
   listJobs,
 } from "../../lib/athena/api";
-import { cn } from "../../lib/athena/utils";
+import { cn, downloadMarkdown } from "../../lib/athena/utils";
 import { jobToOpportunity, userProfileToAthenaApplicantProfile } from "../../lib/athena/mappers";
 import { Button, AccentButton, OutlineButton, GhostButton, PrimaryButton } from "@/components/athena/ui/Button";
 import { Badge, StatusPill } from "@/components/athena/ui/Badge";
@@ -262,10 +262,10 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
   // Auto-generate documents when job is loaded (AI health check may not reflect mocked endpoints in tests)
   useEffect(() => {
     if (currentOpp && applicantProfile && !isGenerating) {
-      // Longer delay to ensure test's waitForGeneration() registers waiter first
+      // Reduced delay for test responsiveness; test's waitForGeneration() registers waiter first
       const timer = setTimeout(() => {
         handleRegenerateDocument();
-      }, 5000);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [currentOpp, applicantProfile]);
@@ -424,26 +424,37 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
     window.print();
   };
 
-  const handleCopyMarkdown = () => {
-    let content = "";
+  const buildMarkdown = (): string => {
     if (activeTab === "resume") {
-      content = `# ${resumeData.fullName}\n**${resumeData.title}**\n${resumeData.contact.location} | ${resumeData.contact.email} | ${resumeData.contact.phone}\n\n## Executive Summary\n${resumeData.summary}\n\n## Core Competencies\n${resumeData.skills.join(", ")}\n\n## Professional Experience\n${resumeData.experience
+      return `# ${resumeData.fullName}\n**${resumeData.title}**\n${resumeData.contact?.location || ""} | ${resumeData.contact?.email || ""} | ${resumeData.contact?.phone || ""}\n\n## Executive Summary\n${resumeData.summary}\n\n## Core Competencies\n${(resumeData.skills ?? []).join(", ")}\n\n## Professional Experience\n${(resumeData.experience ?? [])
         .map(
           (e) =>
-            `### ${e.role} - ${e.company} (${e.period})\n${e.bullets.map((b) => `- ${b}`).join("\n")}`
+            `### ${e.role} - ${e.company} (${e.period})\n${(e.bullets ?? []).map((b) => `- ${b}`).join("\n")}`
         )
         .join("\n\n")}`;
     } else if (activeTab === "cover_letter") {
-      content = `${coverLetterData.date}\n\n${coverLetterData.recipient}\n\n${coverLetterData.greeting}\n\n${coverLetterData.paragraphs?.join("\n\n")}\n\n${coverLetterData.closing}\n${coverLetterData.signature}`;
-    } else {
-      content = `# ${proposalData.title}\n**Client:** ${proposalData.recipient}\n**Date:** ${proposalData.date}\n\n## Executive Summary\n${proposalData.executiveSummary}\n\n${proposalData.sections
-        ?.map((s) => `### ${s.heading}\n${s.body}`)
-        .join("\n\n")}\n\n${proposalData.closing}\n${proposalData.signature}`;
+      return `${coverLetterData.date}\n\n${coverLetterData.recipient}\n\n${coverLetterData.greeting}\n\n${(coverLetterData.paragraphs ?? []).join("\n\n")}\n\n${coverLetterData.closing}\n${coverLetterData.signature}`;
     }
+    return `# ${proposalData.title}\n**Client:** ${proposalData.recipient}\n**Date:** ${proposalData.date}\n\n## Executive Summary\n${proposalData.executiveSummary}\n\n${(proposalData.sections ?? [])
+      .map((s) => `### ${s.heading}\n${s.body}`)
+      .join("\n\n")}\n\n${proposalData.closing}\n${proposalData.signature}`;
+  };
 
-    navigator.clipboard.writeText(content);
+  const handleCopyMarkdown = () => {
+    navigator.clipboard.writeText(buildMarkdown());
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleDownloadMarkdown = () => {
+    const markdown = buildMarkdown();
+    if (!markdown.trim()) return;
+    const kebabTitle = (currentOpp?.title || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    downloadMarkdown(markdown, `${kebabTitle || "athena-document"}.md`);
   };
 
   // Render loading state for jobId but no currentOpp yet
@@ -490,7 +501,7 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                 <option value="">Select an opportunity...</option>
                 {opportunities.map((o) => (
                   <option key={o.source_job_id || o.id} value={o.source_job_id || o.id}>
-                    {o.category.toUpperCase()}: {o.title} ({o.company}) - ATS: {o.atsScore}%
+                    {o.category ? `${o.category.toUpperCase()}: ` : ""}{o.title} ({o.company}) - ATS: {o.atsScore}%
                   </option>
                 ))}
               </select>
@@ -562,6 +573,17 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
           >
             <Copy className="w-3.5 h-3.5 text-text-secondary" />
             <span>{copied ? "Copied!" : "Copy Markdown"}</span>
+          </Button>
+
+          {/* Download Markdown */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDownloadMarkdown}
+            data-testid="download-markdown-btn"
+          >
+            <Download className="w-3.5 h-3.5 text-text-secondary" />
+            <span>Download Markdown</span>
           </Button>
 
           {/* Print / PDF Export */}
@@ -657,11 +679,11 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                   {resumeData.fullName}
                 </h1>
                 <div className="text-xs font-mono text-text-secondary space-x-2">
-                  <span>{resumeData.contact.location}</span>
+                  <span>{resumeData.contact?.location}</span>
                   <span>•</span>
-                  <span>{resumeData.contact.phone}</span>
+                  <span>{resumeData.contact?.phone}</span>
                   <span>•</span>
-                  <span>{resumeData.contact.email}</span>
+                  <span>{resumeData.contact?.email}</span>
                 </div>
               </div>
               <div className="text-sm font-semibold uppercase tracking-widest text-brand-orange mt-1 font-mono">
@@ -690,7 +712,7 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                       Core Competencies
                     </h3>
                     <div className="flex flex-wrap gap-1.5">
-                      {resumeData.skills.map((skill, idx) => (
+                      {(resumeData.skills ?? []).map((skill, idx) => (
                         <span
                           key={idx}
                           className="text-[11px] bg-surface-muted text-ink px-2 py-0.5 rounded border border-slate font-medium"
@@ -707,7 +729,7 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                       Certifications
                     </h3>
                     <div className="space-y-1 text-xs text-text-secondary">
-                      {resumeData.certifications.map((cert, idx) => (
+                      {(resumeData.certifications ?? []).map((cert, idx) => (
                         <div key={idx} className="flex items-start gap-1.5">
                           <span className="text-brand-orange font-bold">•</span>
                           <span>{cert}</span>
@@ -722,7 +744,7 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                       Education
                     </h3>
                     <div className="space-y-2 text-xs">
-                      {resumeData.education.map((edu, idx) => (
+                      {(resumeData.education ?? []).map((edu, idx) => (
                         <div key={idx} className="space-y-0.5">
                           <div className="font-semibold text-ink">{edu.degree}</div>
                           <div className="text-text-secondary text-[11px]">{edu.institution} ({edu.year})</div>
@@ -738,7 +760,7 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                     Selected Professional Engagements & Consultancies
                   </h3>
                   <div className="space-y-4">
-                    {resumeData.experience.map((exp, idx) => (
+                    {(resumeData.experience ?? []).map((exp, idx) => (
                       <div key={idx} className="space-y-1.5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs">
                           <span className="font-bold text-ink text-sm">{exp.role}</span>
@@ -748,7 +770,7 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                           {exp.company} — {exp.location}
                         </div>
                         <ul className="space-y-1 text-xs text-text-secondary list-disc list-outside pl-4">
-                          {exp.bullets.map((b, bIdx) => (
+                          {(exp.bullets ?? []).map((b, bIdx) => (
                             <li key={bIdx} className="leading-relaxed">
                               {b}
                             </li>
@@ -768,14 +790,14 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                     Professional Experience
                   </h3>
                   <div className="space-y-4">
-                    {resumeData.experience.map((exp, idx) => (
+                    {(resumeData.experience ?? []).map((exp, idx) => (
                       <div key={idx} className="space-y-1">
                         <div className="flex justify-between items-baseline text-xs">
                           <span className="font-bold text-ink text-sm">{exp.role} — {exp.company}</span>
                           <span className="text-text-secondary font-mono">{exp.period} | {exp.location}</span>
                         </div>
                         <ul className="space-y-1 text-xs text-text-secondary list-disc list-outside pl-4 pt-1">
-                          {exp.bullets.map((b, bIdx) => (
+                          {(exp.bullets ?? []).map((b, bIdx) => (
                             <li key={bIdx} className="leading-relaxed">
                               {b}
                             </li>
@@ -793,7 +815,7 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                       Technical & Operational Competencies
                     </h3>
                     <div className="flex flex-wrap gap-1 text-xs">
-                      {resumeData.skills.map((s, i) => (
+                      {(resumeData.skills ?? []).map((s, i) => (
                         <span key={i} className="px-2 py-0.5 bg-surface-muted rounded text-[11px] font-medium">
                           {s}
                         </span>
@@ -806,7 +828,7 @@ export const DocumentStudio: React.FC<DocumentStudioProps> = ({
                       Education & Credentials
                     </h3>
                     <div className="space-y-1 text-xs text-text-secondary">
-                      {resumeData.education.map((e, i) => (
+                      {(resumeData.education ?? []).map((e, i) => (
                         <div key={i}>
                           <span className="font-semibold">{e.degree}</span> — {e.institution} ({e.year})
                         </div>

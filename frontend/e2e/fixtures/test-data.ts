@@ -10,7 +10,16 @@ export const TEST_PROFILE = {
   id: 'test-profile-1',
   email: 'test@athena.local',
   full_name: 'Test User',
-  skills: ['Python', 'TypeScript', 'React', 'FastAPI', 'PostgreSQL', 'AWS', 'Docker', 'Kubernetes'],
+  skills: [
+    { name: 'Python', level: 'expert', years_experience: 8 },
+    { name: 'TypeScript', level: 'advanced', years_experience: 5 },
+    { name: 'React', level: 'advanced', years_experience: 4 },
+    { name: 'FastAPI', level: 'expert', years_experience: 6 },
+    { name: 'PostgreSQL', level: 'advanced', years_experience: 7 },
+    { name: 'AWS', level: 'advanced', years_experience: 5 },
+    { name: 'Docker', level: 'advanced', years_experience: 6 },
+    { name: 'Kubernetes', level: 'intermediate', years_experience: 3 },
+  ],
   experience: [
     {
       id: 'exp-1',
@@ -20,6 +29,7 @@ export const TEST_PROFILE = {
       end_date: null,
       description: 'Built scalable microservices using Python and TypeScript',
       technologies: ['Python', 'TypeScript', 'AWS', 'Docker'],
+      achievements: [],
     },
     {
       id: 'exp-2',
@@ -29,6 +39,7 @@ export const TEST_PROFILE = {
       end_date: '2021-12-31',
       description: 'Developed full-stack applications with React and FastAPI',
       technologies: ['React', 'FastAPI', 'PostgreSQL'],
+      achievements: [],
     },
   ],
   education: [
@@ -206,20 +217,34 @@ export const FALLBACK_AI_RESPONSES = {
     changes: ['spearheaded → led', 'testament to → demonstrated', 'delve into → analyze'],
   },
   'submit-application': {
-    receipt: {
-      id: 'receipt-1',
-      confirmationHash: 'sha256:abc123def456789',
-      submittedAt: '2026-09-26T10:00:00Z',
-      signatory: 'Test User',
-      followUpDate: '2026-10-03T10:00:00Z',
-      jobTitle: 'Senior Python Engineer',
-      company: 'AI Innovations Inc',
-    },
-    followUpEmail: 'Subject: Follow-up on Application - Senior Python Engineer\n\nDear Hiring Team,\n\nI submitted my application on September 26, 2026...',
+    status: 'SUBMITTED',
+    receipt_id: 'ATH-RCPT-100001',
+    confirmation_hash: 'sha256:abc123def456789',
+    submitted_at: '2026-09-26T10:00:00Z',
+    job_title: 'Senior Python Engineer',
+    company: 'AI Innovations Inc',
+    applicant_name: 'Test User',
+    authorized_by: 'Test User',
+    authorized_at: '2026-09-26T10:00:00Z',
+    next_follow_up_date: '2026-10-03',
   },
   'n8n-dispatch': {
     success: true,
     executionId: 'exec-12345',
     response: { status: 'triggered', workflow: 'athena-pipeline' },
   },
+};
+
+export const TEST_RECEIPT = {
+  receipt_id: 'ATH-RCPT-100001',
+  confirmation_hash: 'sha256:abc123def456789',
+  submitted_at: '2026-09-26T10:00:00Z',
+  job_title: 'Senior Python Engineer',
+  company: 'AI Innovations Inc',
+  applicant_name: 'Test User',
+  authorized_by: 'Test User',
+  authorized_at: '2026-09-26T10:00:00Z',
+  portal_name: 'Athena Direct Dispatch Engine',
+  follow_up_date: '2026-10-03',
+  status: 'SUBMITTED',
 };

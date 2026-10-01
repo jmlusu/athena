@@ -14,6 +14,16 @@ const PORT = 3000;
 
 app.use(express.json({ limit: "15mb" }));
 
+// Malformed JSON bodies return JSON 400 instead of Express' HTML default.
+// Registered before all routes, so it only catches body-parser errors raised above.
+app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err && err.type === "entity.parse.failed") {
+    res.status(400).json({ error: "Malformed JSON body: could not parse request payload" });
+    return;
+  }
+  next(err);
+});
+
 // Initialize Gemini SDK lazily/safely
 function getGeminiClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -309,7 +319,18 @@ app.post("/api/lock/stale", (req, res) => {
 
 // ATS Scoring Engine with LLM
 app.post("/api/ai/score-ats", async (req, res) => {
+  const scoringStartMs = performance.now();
   const { jobTitle, company, description, requirements, applicantProfile, itemType } = req.body;
+
+  // NFR-PERF-001: single send point so every response (success, no-key fallback
+  // and Gemini-error fallback) carries X-Scoring-Ms + one [metrics] log line.
+  const respondScore = (payload: any, model: string, fallback: boolean) => {
+    const durationMs = Math.round(performance.now() - scoringStartMs);
+    res.setHeader("X-Scoring-Ms", String(durationMs));
+    console.log(`[metrics] score-ats duration=${durationMs}ms model=${model} fallback=${fallback}`);
+    return res.json(payload);
+  };
+
   try {
     const ai = getGeminiClient();
 
@@ -323,15 +344,19 @@ app.post("/api/ai/score-ats", async (req, res) => {
       });
       const ratio = reqList.length ? matched / reqList.length : 0.85;
       const baseScore = Math.min(97, Math.max(68, Math.round(72 + ratio * 24)));
-      return res.json({
-        atsScore: baseScore,
-        matchCategory: baseScore >= 90 ? "CRITICAL_MATCH" : baseScore >= 80 ? "FLAGGED_REVIEW" : "STANDARD",
-        matchedSkills: reqList.slice(0, Math.max(2, matched)),
-        missingSkills: reqList.slice(matched),
-        strengths: ["Strong domain background in southern African development & consulting", "Proven delivery track record"],
-        recommendation: baseScore >= 90 ? "Immediate auto-application recommended" : "Tailor resume highlights prior to submission",
-        dehumanizedPitch: "I bring direct cross-functional experience delivering measurable outcomes in complex operating environments.",
-      });
+      return respondScore(
+        {
+          atsScore: baseScore,
+          matchCategory: baseScore >= 90 ? "CRITICAL_MATCH" : baseScore >= 80 ? "FLAGGED_REVIEW" : "STANDARD",
+          matchedSkills: reqList.slice(0, Math.max(2, matched)),
+          missingSkills: reqList.slice(matched),
+          strengths: ["Strong domain background in southern African development & consulting", "Proven delivery track record"],
+          recommendation: baseScore >= 90 ? "Immediate auto-application recommended" : "Tailor resume highlights prior to submission",
+          dehumanizedPitch: "I bring direct cross-functional experience delivering measurable outcomes in complex operating environments.",
+        },
+        "deterministic",
+        true
+      );
     }
 
     const prompt = `You are an elite Applicant Tracking System (ATS) algorithmic evaluator and executive hiring partner.
@@ -373,10 +398,10 @@ Return strict JSON matching this schema:
     });
 
     const parsed = JSON.parse(response.text || "{}");
-    res.json(parsed);
+    return respondScore(parsed, "gemini-3.8-flash", false);
   } catch (error: any) {
     console.error("ATS scoring error, falling back:", error.message);
-    // Fallback to deterministic calculation on AI failure
+    // Fallback to deterministic calculation on AI failure (includes Gemini 503)
     const reqList: string[] = Array.isArray(requirements) ? requirements : [];
     const profileText = JSON.stringify(applicantProfile || {}).toLowerCase();
     let matched = 0;
@@ -385,15 +410,19 @@ Return strict JSON matching this schema:
     });
     const ratio = reqList.length ? matched / reqList.length : 0.85;
     const baseScore = Math.min(97, Math.max(68, Math.round(72 + ratio * 24)));
-    return res.json({
-      atsScore: baseScore,
-      matchCategory: baseScore >= 90 ? "CRITICAL_MATCH" : baseScore >= 80 ? "FLAGGED_REVIEW" : "STANDARD",
-      matchedSkills: reqList.slice(0, Math.max(2, matched)),
-      missingSkills: reqList.slice(matched),
-      strengths: ["Strong domain background in southern African development & consulting", "Proven delivery track record"],
-      recommendation: baseScore >= 90 ? "Immediate auto-application recommended" : "Tailor resume highlights prior to submission",
-      dehumanizedPitch: "I bring direct cross-functional experience delivering measurable outcomes in complex operating environments.",
-    });
+    return respondScore(
+      {
+        atsScore: baseScore,
+        matchCategory: baseScore >= 90 ? "CRITICAL_MATCH" : baseScore >= 80 ? "FLAGGED_REVIEW" : "STANDARD",
+        matchedSkills: reqList.slice(0, Math.max(2, matched)),
+        missingSkills: reqList.slice(matched),
+        strengths: ["Strong domain background in southern African development & consulting", "Proven delivery track record"],
+        recommendation: baseScore >= 90 ? "Immediate auto-application recommended" : "Tailor resume highlights prior to submission",
+        dehumanizedPitch: "I bring direct cross-functional experience delivering measurable outcomes in complex operating environments.",
+      },
+      "gemini-3.8-flash",
+      true
+    );
   }
 });
 
@@ -752,7 +781,7 @@ app.post("/api/ai/dehumanize", async (req, res) => {
             .replace(/tapestry of/gi, "mix of")
             .replace(/foster an ecosystem/gi, "build a collaborative group")
         : text;
-      return res.json({ humanizedText: humanized, flaggedWordsRemoved: ["delve", "spearheaded", "testament"] });
+    return res.json({ humanizedText: humanized, flaggedWordsRemoved: ["delve", "spearheaded", "testament"] });
     }
 
     const prompt = `You are a world-class editor specializing in "Dehumanizing" AI text to make it sound unmistakably human, natural, confident, and authentic.
@@ -783,7 +812,11 @@ Return JSON:
     });
 
     const parsed = JSON.parse(response.text || "{}");
-    const humanText = parsed.text || "";
+    // The prompt asks the model for `humanizedText`; older callers used `text`.
+    const humanText = parsed.humanizedText || parsed.text || "";
+    const flaggedWordsRemoved = Array.isArray(parsed.flaggedWordsRemoved)
+      ? parsed.flaggedWordsRemoved
+      : ["delve", "spearheaded", "testament"];
     const humanized = humanText
       ? humanText
           .replace(/delve into/gi, "examine")
@@ -793,7 +826,7 @@ Return JSON:
           .replace(/tapestry of/gi, "mix of")
           .replace(/foster an ecosystem/gi, "build a collaborative group")
       : humanText;
-    return res.json({ humanizedText: humanized, flaggedWordsRemoved: ["delve", "spearheaded", "testament"] });
+    return res.json({ humanizedText: humanized, flaggedWordsRemoved });
   } catch (error) {
     console.error("Dehumanize error:", error);
     return res.status(500).json({ error: "Failed to humanize text" });
@@ -977,6 +1010,35 @@ app.post("/api/n8n/dispatch-webhook", (req, res) => {
       itemsHandled: Array.isArray(payload?.items) ? payload.items.length : 1,
       targetAction: payload?.action || "AUTO_GENERATE_DOCUMENTS",
     },
+  });
+});
+
+// Inbound n8n Webhook Receiver (FR-N8N-002)
+// Accepts trigger events from external n8n workflows / cron nodes.
+app.post("/api/webhooks/n8n", (req, res) => {
+  const body = req.body;
+
+  // Defensive: express.json yields {} for a missing body, so an empty object
+  // counts as missing. n8n payload shapes vary - only require a JSON object.
+  if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).length === 0) {
+    return res.status(400).json({ error: "Invalid payload: expected a non-empty JSON object from n8n" });
+  }
+
+  const { event, eventType, workflow } = body;
+  const receivedEvent = event != null ? String(event) : eventType != null ? String(eventType) : "unknown";
+  const receivedWorkflow = workflow != null ? String(workflow) : "athena-pipeline";
+  const executionId = `n8n-exec-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+
+  console.log(
+    `[n8n] inbound webhook received event=${receivedEvent} workflow=${receivedWorkflow} executionId=${executionId}`
+  );
+
+  res.json({
+    received: true,
+    executionId,
+    workflow: receivedWorkflow,
+    event: receivedEvent,
+    timestamp: new Date().toISOString(),
   });
 });
 

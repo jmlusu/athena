@@ -89,12 +89,13 @@ export function jobToOpportunity(job: Job): Opportunity & { source_job_id: strin
 function experienceToEntry(exp: Experience): AIApplicantProfile['experience'][number] {
   const start = exp.start_date;
   const end = exp.current ? 'Present' : exp.end_date ?? '';
+  const achievements = exp.achievements ?? [];
   return {
     role: exp.title,
     company: exp.company,
     period: end ? `${start} - ${end}` : start,
     location: exp.location ?? '',
-    bullets: exp.description ? [exp.description, ...exp.achievements] : exp.achievements,
+    bullets: exp.description ? [exp.description, ...achievements] : achievements,
   };
 }
 

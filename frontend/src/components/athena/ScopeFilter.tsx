@@ -68,6 +68,7 @@ export const ScopeFilter: React.FC<ScopeFilterProps> = ({
               <button
                 key={id}
                 onClick={() => onSelectCategory(id as OpportunityCategory | "all")}
+                data-testid={`category-${id}`}
                 className={`py-1.5 rounded font-medium text-xs transition-all tactile ${isActive ? activeColor : inactiveColor}`}
               >
                 {label}

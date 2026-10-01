@@ -5,6 +5,8 @@ the Canonical Metrics Registry lives in TypeScript as the single source of
 truth (see docs/METRICS_REGISTRY_GUIDE.md).
 """
 
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -15,7 +17,7 @@ from athena.store import AthenaDB
 OK = 200
 
 
-def test_prometheus_metrics_format():
+def test_prometheus_metrics_format() -> None:
     """_build_metrics should produce valid Prometheus text-format output."""
     stats = {
         "total_jobs": 100,
@@ -34,19 +36,19 @@ def test_prometheus_metrics_format():
     assert "# TYPE" in output
 
 
-def test_compute_conversion_rate_zero_new_jobs():
+def test_compute_conversion_rate_zero_new_jobs() -> None:
     """new=0 must return 0.0 (2,557 Fix zero-guard, no division by zero)."""
     stats = {"criticalMatch": 45, "flaggedReview": 10, "new": 0}
     assert compute_conversion_rate(stats) == 0.0
 
 
-def test_compute_conversion_rate_known_values():
+def test_compute_conversion_rate_known_values() -> None:
     """(criticalMatch + flaggedReview) / new * 100 for known inputs."""
     stats = {"criticalMatch": 45, "flaggedReview": 10, "new": 100}
     assert compute_conversion_rate(stats) == pytest.approx(55.0)
 
 
-def test_compute_conversion_rate_negative_or_missing_keys():
+def test_compute_conversion_rate_negative_or_missing_keys() -> None:
     """Negative or missing keys fall back to the safe 0.0 default."""
     assert compute_conversion_rate({}) == 0.0
     assert compute_conversion_rate({"new": -5}) == 0.0
@@ -54,7 +56,7 @@ def test_compute_conversion_rate_negative_or_missing_keys():
     assert compute_conversion_rate({"new": 100}) == 0.0
 
 
-def test_metrics_endpoint_format(tmp_path, monkeypatch):
+def test_metrics_endpoint_format(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The /metrics endpoint still serves valid Prometheus text format."""
     db = AthenaDB(base_dir=tmp_path / "athena")
     monkeypatch.setattr("athena.metrics.prometheus.athena_db", db)

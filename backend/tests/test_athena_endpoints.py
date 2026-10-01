@@ -157,12 +157,16 @@ def test_list_receipts_returns_only_receipt_apps(client, temp_db, sample_job, sa
 def test_list_receipts_sorted_desc_and_paginated(client, temp_db, sample_profile):
     temp_db.add_application(
         make_application(
-            sample_profile.id, "ATH-RCPT-OLD", datetime(2026, 9, 1, 9, 0, tzinfo=UTC),
+            sample_profile.id,
+            "ATH-RCPT-OLD",
+            datetime(2026, 9, 1, 9, 0, tzinfo=UTC),
         ),
     )
     temp_db.add_application(
         make_application(
-            sample_profile.id, "ATH-RCPT-NEW", datetime(2026, 9, 22, 15, 0, tzinfo=UTC),
+            sample_profile.id,
+            "ATH-RCPT-NEW",
+            datetime(2026, 9, 22, 15, 0, tzinfo=UTC),
         ),
     )
 
@@ -188,7 +192,9 @@ def test_list_receipts_sorted_desc_and_paginated(client, temp_db, sample_profile
 def test_list_receipts_filters_by_profile(client, temp_db, sample_profile):
     temp_db.add_application(
         make_application(
-            sample_profile.id, "ATH-RCPT-MINE", datetime(2026, 9, 20, 10, 30, tzinfo=UTC),
+            sample_profile.id,
+            "ATH-RCPT-MINE",
+            datetime(2026, 9, 20, 10, 30, tzinfo=UTC),
         ),
     )
     other = UserProfile(id=uuid4(), email="other@example.com", full_name="Other User")
@@ -198,7 +204,8 @@ def test_list_receipts_filters_by_profile(client, temp_db, sample_profile):
     )
 
     response = client.get(
-        f"{BASE}/receipts", params={"user_profile_id": str(sample_profile.id)},
+        f"{BASE}/receipts",
+        params={"user_profile_id": str(sample_profile.id)},
     )
 
     assert response.status_code == OK

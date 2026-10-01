@@ -282,6 +282,7 @@ class DocumentGenerateResponse(BaseModel):
 
 class DocumentResponse(BaseModel):
     """Response for a single document in a user profile."""
+
     id: UUID
     name: str
     type: Literal["resume", "cover_letter", "certification", "portfolio", "other"]
@@ -297,6 +298,7 @@ class DocumentResponse(BaseModel):
 
 class ReceiptResponse(BaseModel):
     """Receipt for a submitted application."""
+
     receipt_id: str
     confirmation_hash: str
     submitted_at: UTCDateTime
@@ -313,5 +315,6 @@ class ReceiptResponse(BaseModel):
 
 class ReceiptListResponse(BaseModel):
     """List of receipts."""
+
     receipts: list[ReceiptResponse]
     total: int

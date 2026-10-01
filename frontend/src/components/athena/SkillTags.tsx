@@ -42,7 +42,7 @@ const IMPORTANCE_COLORS = {
 } as const;
 
 export const SkillTags: React.FC<SkillTagsProps> = ({
-  skills,
+  skills: skillsProp,
   title,
   showCategory = true,
   showLevel = false,
@@ -50,6 +50,7 @@ export const SkillTags: React.FC<SkillTagsProps> = ({
   className,
   variant = 'chips',
 }) => {
+  const skills = skillsProp ?? [];
   const visibleSkills = maxVisible ? skills.slice(0, maxVisible) : skills;
   const hiddenCount = maxVisible && skills.length > maxVisible ? skills.length - maxVisible : 0;
 

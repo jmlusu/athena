@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Download, Save, Loader2, Eye, EyeOff, Copy, Check, FileText, Image, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
-import { cn } from '@/lib/athena/utils';
+import { cn, downloadMarkdown } from '@/lib/athena/utils';
 import { ATSGauge } from '@/components/athena/ATSGauge';
 import type { Document } from '@/lib/athena/types';
+
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
 type EditorMode = 'resume' | 'cover_letter';
 type ViewMode = 'split' | 'preview' | 'editor';
@@ -192,7 +200,12 @@ Sincerely,
     // Would call API to save document
   };
 
-  const handleDownload = (format: 'docx' | 'pdf') => {
+  const handleDownload = (format: 'docx' | 'pdf' | 'markdown') => {
+    if (format === 'markdown') {
+      if (!content.trim()) return;
+      downloadMarkdown(content, 'athena-document.md');
+      return;
+    }
     // Would generate and download document
   };
 
@@ -205,14 +218,14 @@ Sincerely,
     return content
       .split('\n')
       .map(line => {
-        if (line.startsWith('# ')) return `<h1>${line.slice(2)}</h1>`;
-        if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
-        if (line.startsWith('### ')) return `<h3>${line.slice(4)}</h3>`;
-        if (line.startsWith('- ')) return `<li>${line.slice(2)}</li>`;
-        if (line.match(/^\d+\. /)) return `<li>${line.replace(/^\d+\. /, '')}</li>`;
-        if (line.startsWith('**') && line.endsWith('**')) return `<p><strong>${line.slice(2, -2)}</strong></p>`;
-        if (line.startsWith('*') && line.endsWith('*')) return `<p><em>${line.slice(1, -1)}</em></p>`;
-        return `<p>${line}</p>`;
+        if (line.startsWith('# ')) return `<h1>${escapeHtml(line.slice(2))}</h1>`;
+        if (line.startsWith('## ')) return `<h2>${escapeHtml(line.slice(3))}</h2>`;
+        if (line.startsWith('### ')) return `<h3>${escapeHtml(line.slice(4))}</h3>`;
+        if (line.startsWith('- ')) return `<li>${escapeHtml(line.slice(2))}</li>`;
+        if (line.match(/^\d+\. /)) return `<li>${escapeHtml(line.replace(/^\d+\. /, ''))}</li>`;
+        if (line.startsWith('**') && line.endsWith('**')) return `<p><strong>${escapeHtml(line.slice(2, -2))}</strong></p>`;
+        if (line.startsWith('*') && line.endsWith('*')) return `<p><em>${escapeHtml(line.slice(1, -1))}</em></p>`;
+        return `<p>${escapeHtml(line)}</p>`;
       })
       .join('\n');
   };
@@ -318,6 +331,15 @@ Sincerely,
               >
                 <Image className="w-4 h-4" />
                 <span>.pdf</span>
+              </button>
+              <button
+                onClick={() => handleDownload('markdown')}
+                disabled={!content.trim()}
+                data-testid="download-markdown-btn"
+                className="tactile px-3 py-2 text-sm font-medium text-ls-grey-dark border-l border-white/[0.07] hover:bg-ls-red/10 hover:text-ls-red transition-colors flex items-center gap-1 disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                <span>.md</span>
               </button>
             </div>
           </div>

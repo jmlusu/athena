@@ -67,6 +67,11 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
   const [typedSignature, setTypedSignature] = useState(applicantProfile.legal_authorized_signer);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [submittedReceipt, setSubmittedReceipt] = useState<ApplicationReceipt | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen) setSubmittedReceipt(null);
+  }, [isOpen, opportunity.id]);
 
   const handleFieldChange = (field: string, val: string) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
@@ -112,6 +117,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
           notes: "Application formally dispatched with applicant digital power-of-attorney authorization.",
         };
 
+        setSubmittedReceipt(receipt);
         onSubmitSuccess(opportunity.id, receipt);
       } else {
         throw new Error("Submission failed");
@@ -133,6 +139,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
         status: "SUBMITTED",
         notes: "Authorized submission logged successfully.",
       };
+      setSubmittedReceipt(receipt);
       onSubmitSuccess(opportunity.id, receipt);
     } finally {
       setIsSubmitting(false);
@@ -155,21 +162,21 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
           <GhostButton type="button" size="sm" onClick={onClose} data-testid="cancel-btn">
             Cancel
           </GhostButton>
-          <DangerButton type="submit" size="sm" disabled={isSubmitting || !isAuthorized} data-testid="submit-application-btn">
+          <DangerButton type="submit" form="form-filler-form" size="sm" disabled={isSubmitting || !isAuthorized || !!submittedReceipt} data-testid="submit-application-btn">
             <Send className="w-3.5 h-3.5" />
-            <span>{isSubmitting ? "Dispatched..." : "Authorize & Submit Application"}</span>
+            <span>{isSubmitting ? "Dispatched..." : submittedReceipt ? "Application Submitted" : "Authorize & Submit Application"}</span>
           </DangerButton>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+      <form id="form-filler-form" onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
         {/* Target Role Pill */}
         <div className="bg-brand-orange/10 border border-brand-orange/30 p-3 rounded-lg flex items-center justify-between text-xs" data-testid="form-filler-company">
           <div>
             <span className="text-[10px] font-mono uppercase text-brand-orange font-bold">
               Target Opportunity
             </span>
-            <div className="font-bold text-ink">{opportunity.title}</div>
+            <div className="font-bold text-ink" data-testid="form-filler-job-title">{opportunity.title}</div>
             <div className="text-text-secondary text-[11px]">
               {opportunity.company} • {opportunity.location} • ATS Match: {opportunity.atsScore}%
             </div>
@@ -190,6 +197,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 type="text"
                 value={formData.fullName}
                 onChange={(e) => handleFieldChange("fullName", e.target.value)}
+                data-testid="full-name"
                 className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
               />
             </div>
@@ -200,6 +208,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleFieldChange("email", e.target.value)}
+                data-testid="email"
                 className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
               />
             </div>
@@ -210,6 +219,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 type="text"
                 value={formData.phone}
                 onChange={(e) => handleFieldChange("phone", e.target.value)}
+                data-testid="phone"
                 className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
               />
             </div>
@@ -220,6 +230,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 type="text"
                 value={formData.location}
                 onChange={(e) => handleFieldChange("location", e.target.value)}
+                data-testid="location"
                 className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
               />
             </div>
@@ -230,6 +241,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 type="text"
                 value={formData.workAuthorization}
                 onChange={(e) => handleFieldChange("workAuthorization", e.target.value)}
+                data-testid="work-authorization"
                 className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
               />
             </div>
@@ -240,6 +252,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 type="text"
                 value={formData.salaryExpectation}
                 onChange={(e) => handleFieldChange("salaryExpectation", e.target.value)}
+                data-testid="salary-expectation"
                 className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none sunken"
               />
             </div>
@@ -261,6 +274,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 rows={2}
                 value={formData.screeningAnswer1}
                 onChange={(e) => handleFieldChange("screeningAnswer1", e.target.value)}
+                data-testid="screening-answer-1"
                 className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none leading-relaxed sunken"
               />
             </div>
@@ -273,6 +287,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
                 rows={2}
                 value={formData.screeningAnswer2}
                 onChange={(e) => handleFieldChange("screeningAnswer2", e.target.value)}
+                data-testid="screening-answer-2"
                 className="w-full px-3 py-1.5 bg-surface-white border border-slate rounded-md text-ink focus:ring-1 focus:ring-brand-orange focus:outline-none leading-relaxed sunken"
               />
             </div>
@@ -354,7 +369,7 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
         )}
 
         {/* Receipt Display (after successful submission) */}
-        {isSubmitting && !errorMsg && (
+        {submittedReceipt && (
           <div className="p-4 bg-emerald-50 border-2 border-success-emerald rounded-xl space-y-3" data-testid="application-receipt">
             <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
               <CheckCircle2 className="w-4 h-4 text-success-emerald" />
@@ -363,34 +378,23 @@ export const FormFillerModal: React.FC<FormFillerModalProps> = ({
             <div className="grid grid-cols-2 gap-3 text-xs font-mono text-emerald-950">
               <div className="bg-surface-white p-2 rounded border border-emerald-200">
                 <div className="text-success-emerald font-bold">Confirmation Hash</div>
-                <div data-testid="confirmation-hash">SHA256-AUTH-{Date.now().toString(36).toUpperCase()}</div>
+                <div data-testid="confirmation-hash">{submittedReceipt.confirmationHash}</div>
               </div>
               <div className="bg-surface-white p-2 rounded border border-emerald-200">
                 <div className="text-success-emerald font-bold">Submitted At</div>
-                <div data-testid="submitted-at">{new Date().toLocaleString()}</div>
+                <div data-testid="submitted-at">{new Date(submittedReceipt.submittedAt).toLocaleString()}</div>
               </div>
               <div className="bg-surface-white p-2 rounded border border-emerald-200">
                 <div className="text-success-emerald font-bold">Signatory</div>
-                <div data-testid="signatory">{typedSignature}</div>
+                <div data-testid="signatory">{submittedReceipt.authorizedBy}</div>
               </div>
               <div className="bg-surface-white p-2 rounded border border-emerald-200">
                 <div className="text-success-emerald font-bold">Follow-Up Date</div>
-                <div data-testid="follow-up-date">{new Date(Date.now() + 7 * 86400000).toLocaleDateString()}</div>
+                <div data-testid="follow-up-date">{new Date(submittedReceipt.followUpDate).toLocaleDateString()}</div>
               </div>
             </div>
           </div>
         )}
-
-        {/* Form Actions */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate">
-          <GhostButton type="button" size="sm" onClick={onClose} data-testid="cancel-btn">
-            Cancel
-          </GhostButton>
-          <DangerButton type="submit" size="sm" disabled={isSubmitting || !isAuthorized} data-testid="submit-application-btn">
-            <Send className="w-3.5 h-3.5" />
-            <span>{isSubmitting ? "Dispatched..." : "Authorize & Submit Application"}</span>
-          </DangerButton>
-        </div>
       </form>
     </Modal>
   );

@@ -31,7 +31,8 @@ export class DocumentStudioPage {
     const url = jobId ? `/documents/${jobId}` : '/documents';
     await this.page.goto(url);
     await this.page.waitForLoadState('networkidle');
-    await this.resumeTab.waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for loading spinner to disappear (jobId + isLoadingJob + !currentOpp)
+    await this.page.locator('[role="status"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
   }
 
   async selectJob(jobId: string) {
@@ -106,6 +107,8 @@ export class DocumentStudioPage {
     await this.page.waitForResponse(response => 
       (response.url().includes('/tailor-resume') || response.url().includes('/tailor-document')) && response.status() === 200
     );
+    // Response arrival ≠ React commit; settle so content assertions see updated state.
+    await this.page.waitForLoadState('networkidle');
   }
 
   async isProposalTabVisible() {

@@ -53,8 +53,8 @@ def compute_conversion_rate(stats: dict) -> float:
     is (criticalMatch + flaggedReview) / new * 100. Returns 0 when
     stats.new is missing or <= 0.
     """
-    new_jobs = stats.get("new", 0)
-    critical_and_flagged = stats.get("criticalMatch", 0) + stats.get("flaggedReview", 0)
+    new_jobs: float = stats.get("new", 0)
+    critical_and_flagged: float = stats.get("criticalMatch", 0) + stats.get("flaggedReview", 0)
     if new_jobs > 0:
         return (critical_and_flagged / new_jobs) * 100
     return 0

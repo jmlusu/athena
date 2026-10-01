@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/test-fixtures';
-import { TEST_PROFILE, TEST_JOBS, TEST_API_KEY, FALLBACK_AI_RESPONSES, SEED_API_CALLS } from '../fixtures/test-data';
+import { TEST_PROFILE, TEST_JOBS, TEST_API_KEY, FALLBACK_AI_RESPONSES, SEED_API_CALLS, TEST_RECEIPT } from '../fixtures/test-data';
 
 test.describe('Full Pipeline: Scrape → Score → Tailor → Sign-off → Receipt', () => {
   test.beforeEach(async ({ page }) => {
@@ -23,20 +23,34 @@ test.describe('Full Pipeline: Scrape → Score → Tailor → Sign-off → Recei
       }
     });
 
-    // Mock backend API calls for test data
+    // Mock backend API calls for test data.
+    // GET /jobs → fixture list; GET /jobs/{id} → single fixture job.
+    // Specs reference fixture ids ('job-high-score', …) which match the
+    // global-setup seed keys — all other specs use the same convention.
+    await page.route('**/api/v1/athena/jobs**', async route => {
+      const request = route.request();
+      if (request.method() === 'GET') {
+        const jobId = new URL(request.url()).pathname.match(/\/jobs\/([^/?]+)$/)?.[1];
+        if (jobId) {
+          const job = TEST_JOBS.find(j => j.id === jobId);
+          if (job) {
+            await route.fulfill({ json: job });
+          } else {
+            await route.fulfill({ status: 404, json: { detail: 'Job not found' } });
+          }
+        } else {
+          await route.fulfill({ json: { jobs: TEST_JOBS, total: TEST_JOBS.length, limit: 50, offset: 0 } });
+        }
+      } else {
+        await route.fulfill({ json: request.postDataJSON() });
+      }
+    });
+
     await page.route('**/api/v1/athena/profiles**', async route => {
       if (route.request().method() === 'GET') {
         await route.fulfill({ json: [TEST_PROFILE] });
       } else {
         await route.fulfill({ json: TEST_PROFILE });
-      }
-    });
-
-    await page.route('**/api/v1/athena/jobs**', async route => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({ json: { jobs: TEST_JOBS, total: TEST_JOBS.length, limit: 50, offset: 0 } });
-      } else {
-        await route.fulfill({ json: route.request().postDataJSON() });
       }
     });
 
@@ -47,7 +61,22 @@ test.describe('Full Pipeline: Scrape → Score → Tailor → Sign-off → Recei
         await route.fulfill({ json: { ...TEST_PROFILE, id: 'app-new' } });
       }
     });
+
+    await page.route('**/api/v1/athena/receipts**', async route => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({ json: { receipts: [TEST_RECEIPT], total: 1 } });
+      } else {
+        await route.continue();
+      }
+    });
   });
+
+  // Job ID constants: fixture ids matching TEST_JOBS (and global-setup seed keys)
+  const JOB_HIGH_SCORE_ID = 'job-high-score';
+  const JOB_MEDIUM_SCORE_ID = 'job-medium-score';
+  const JOB_LOW_SCORE_ID = 'job-low-score';
+  const JOB_CONSULTANCY_ID = 'job-consultancy';
+  const JOB_MALAWI_LOCAL_ID = 'job-malawi-local';
 
   test('Complete pipeline: scrape → score → tailor resume → sign-off → receipt', async ({
     dashboardPage,
@@ -64,10 +93,10 @@ test.describe('Full Pipeline: Scrape → Score → Tailor → Sign-off → Recei
     expect(await highScoreJobs.count()).toBeGreaterThan(0);
 
     // Step 2: Click "Tailor Resume" on high-scoring job
-    await dashboardPage.clickTailorResume('job-high-score');
+    await dashboardPage.clickTailorResume(JOB_HIGH_SCORE_ID);
 
     // Step 3: Document Studio opens with tailored resume
-    await documentStudioPage.goto('job-high-score');
+    await documentStudioPage.goto(JOB_HIGH_SCORE_ID);
     await documentStudioPage.waitForGeneration();
 
     // Verify resume content
@@ -87,7 +116,7 @@ test.describe('Full Pipeline: Scrape → Score → Tailor → Sign-off → Recei
     // Step 6: Open Form Filler modal (from dashboard or document studio)
     await dashboardPage.goto();
     await dashboardPage.waitForPipelineLoad();
-    await dashboardPage.clickFormFiller('job-high-score');
+    await dashboardPage.clickFormFiller(JOB_HIGH_SCORE_ID);
 
     // Step 7: Complete sign-off in Form Filler
     await formFillerPage.waitForModal();
@@ -101,23 +130,19 @@ test.describe('Full Pipeline: Scrape → Score → Tailor → Sign-off → Recei
       fullName: 'Test User',
       email: 'test@athena.local',
       phone: '+1-555-0123',
-      linkedin: 'https://linkedin.com/in/testuser',
       location: 'Remote',
       workAuthorization: 'US Citizen',
     });
 
     // Fill compensation (monthly MWK for Lilongwe)
     await formFillerPage.fillCompensationFields({
-      rateType: 'monthly',
-      currency: 'MWK',
-      amount: '3500000',
+      salaryExpectation: 'MWK 3,500,000 / month',
     });
 
     // Fill screening answers
     await formFillerPage.fillScreeningAnswers({
-      'years-experience': '7',
-      'python-level': 'Expert',
-      'aws-certified': 'Yes - Solutions Architect',
+      answer1: '7 years delivering production Python systems for fintech and public-sector platforms.',
+      answer2: 'Comfortable with remote-first async collaboration and Lilongwe-based on-site engagements.',
     });
 
     // Step 8: Complete HITL gate - authorization checkbox + typed signature
@@ -150,12 +175,12 @@ test.describe('Full Pipeline: Scrape → Score → Tailor → Sign-off → Recei
 
     // Step 13: Verify 7-day follow-up draft
     const followUpDraft = await receiptsPage.getFollowUpDraft();
-    expect(followUpDraft).toContain('Follow-up');
+    expect(followUpDraft).toContain('Follow-Up');
     expect(followUpDraft.length).toBeGreaterThan(50);
 
     // Step 14: Copy follow-up draft
     const copiedText = await receiptsPage.copyFollowUpDraft();
-    expect(copiedText).toContain('Follow-up');
+    expect(copiedText).toContain('Senior Python Engineer');
   });
 
   test('Auto-apply threshold triggers application for jobs ≥90 ATS', async ({ dashboardPage }) => {

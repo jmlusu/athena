@@ -154,7 +154,10 @@ class AthenaStore[T: BaseModel]:
         entity_type = self.__class__.__name__.replace("AthenaStore", "").lower()
         entity_id = str(getattr(obj, self.id_field))
         lock = acquire_artifact_lock_context(
-            entity_type, entity_id, self._agent_id, ttl=600,
+            entity_type,
+            entity_id,
+            self._agent_id,
+            ttl=600,
         )
         if lock is None:
             raise RuntimeError(  # noqa: TRY003
@@ -172,7 +175,10 @@ class AthenaStore[T: BaseModel]:
         entity_type = self.__class__.__name__.replace("AthenaStore", "").lower()
         entity_id = str(getattr(obj, self.id_field))
         lock = acquire_artifact_lock_context(
-            entity_type, entity_id, self._agent_id, ttl=600,
+            entity_type,
+            entity_id,
+            self._agent_id,
+            ttl=600,
         )
         if lock is None:
             raise RuntimeError(  # noqa: TRY003
@@ -193,7 +199,10 @@ class AthenaStore[T: BaseModel]:
         # We need the ID as a string to generate the lock ID
         id_str = str(id)
         lock = acquire_artifact_lock_context(
-            entity_type, id_str, self._agent_id, ttl=600,
+            entity_type,
+            id_str,
+            self._agent_id,
+            ttl=600,
         )
         if lock is None:
             raise RuntimeError(f"Could not acquire lock on {entity_type}/{id_str}")  # noqa: TRY003

@@ -44,7 +44,12 @@ export class DashboardPage {
   }
 
   async clickTailorResume(jobId: string) {
-    await this.page.locator(`[data-testid="job-card"][data-job-id="${jobId}"] [data-testid="tailor-resume-btn"]`).click();
+    const jobCard = this.page.locator(`[data-testid="job-card"][data-job-id="${jobId}"]`);
+    await jobCard.waitFor({ state: 'visible', timeout: 15000 });
+    const btn = jobCard.locator('[data-testid="tailor-resume-btn"]');
+    await btn.waitFor({ state: 'visible', timeout: 10000 });
+    await btn.scrollIntoViewIfNeeded();
+    await btn.click();
   }
 
   async clickFormFiller(jobId: string) {

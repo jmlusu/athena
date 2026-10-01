@@ -10,6 +10,7 @@ interface PipelineKanbanBoardProps {
   onJobClick: (job: Job) => void;
   onJobStatusChange: (jobId: string, newStatus: JobStatus) => Promise<void>;
   onFormFiller?: (job: Job) => void;
+  onTailorClick?: (job: Job) => void;
   onDragStart?: (job: Job) => void;
   className?: string;
 }
@@ -34,6 +35,7 @@ export const PipelineKanbanBoard: React.FC<PipelineKanbanBoardProps> = ({
   onJobClick,
   onJobStatusChange,
   onFormFiller,
+  onTailorClick,
   onDragStart,
   className,
 }) => {
@@ -278,6 +280,7 @@ export const PipelineKanbanBoard: React.FC<PipelineKanbanBoardProps> = ({
                 jobs={stageJobs}
                 onJobClick={onJobClick}
                 onFormFiller={onFormFiller}
+                onTailorClick={onTailorClick}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}

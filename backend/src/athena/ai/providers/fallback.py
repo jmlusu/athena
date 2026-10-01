@@ -10,6 +10,7 @@ from athena.api.ai_schemas import (
     DehumanizeResponse,
     N8nDispatchRequest,
     N8nDispatchResponse,
+    N8nReceipt,
     ScrapeLiveRequest,
     ScrapeLiveResponse,
     ScrapeLiveListing,
@@ -97,7 +98,7 @@ class FallbackProvider(AthenaAIProvider):
             )
 
         resume = {
-            "fullName": full_name,
+            "full_name": full_name,
             "title": job.get("title")
             and f"Principal Consultant & {job['title']}"
             or "Senior Technology & Operations Specialist",
@@ -463,9 +464,10 @@ class FallbackProvider(AthenaAIProvider):
                 },
             ],
             receipt=N8nReceipt(
-                items_handled=len(request.payload.get("items", []))
-                if request.payload.get("items")
-                else 1,
+                items_handled=len(
+                    request.payload.get("items") or request.payload.get("job_ids") or []
+                )
+                or 1,
                 target_action=request.payload.get("action", "AUTO_GENERATE_DOCUMENTS"),
             ),
         )

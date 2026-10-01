@@ -49,37 +49,25 @@ export class FormFillerPage {
     fullName?: string;
     email?: string;
     phone?: string;
-    linkedin?: string;
-    portfolio?: string;
     location?: string;
     workAuthorization?: string;
   }) {
     if (data.fullName) await this.identityFields.locator('[data-testid="full-name"]').fill(data.fullName);
     if (data.email) await this.identityFields.locator('[data-testid="email"]').fill(data.email);
     if (data.phone) await this.identityFields.locator('[data-testid="phone"]').fill(data.phone);
-    if (data.linkedin) await this.identityFields.locator('[data-testid="linkedin"]').fill(data.linkedin);
-    if (data.portfolio) await this.identityFields.locator('[data-testid="portfolio"]').fill(data.portfolio);
     if (data.location) await this.identityFields.locator('[data-testid="location"]').fill(data.location);
-    if (data.workAuthorization) await this.identityFields.locator('[data-testid="work-authorization"]').selectOption(data.workAuthorization);
+    if (data.workAuthorization) await this.identityFields.locator('[data-testid="work-authorization"]').fill(data.workAuthorization);
   }
 
   async fillCompensationFields(data: {
-    rateType?: 'monthly' | 'daily' | 'hourly';
-    currency?: 'MWK' | 'USD' | 'EUR';
-    amount?: string;
-    expectedSalary?: string;
+    salaryExpectation?: string;
   }) {
-    if (data.rateType) await this.compensationFields.locator('[data-testid="rate-type"]').selectOption(data.rateType);
-    if (data.currency) await this.compensationFields.locator('[data-testid="currency"]').selectOption(data.currency);
-    if (data.amount) await this.compensationFields.locator('[data-testid="amount"]').fill(data.amount);
-    if (data.expectedSalary) await this.compensationFields.locator('[data-testid="expected-salary"]').fill(data.expectedSalary);
+    if (data.salaryExpectation) await this.modal.locator('[data-testid="salary-expectation"]').fill(data.salaryExpectation);
   }
 
-  async fillScreeningAnswers(answers: Record<string, string>) {
-    for (const [question, answer] of Object.entries(answers)) {
-      const input = this.screeningAnswers.locator(`[data-testid="screening-${question}"]`);
-      await input.fill(answer);
-    }
+  async fillScreeningAnswers(answers: { answer1?: string; answer2?: string }) {
+    if (answers.answer1) await this.screeningAnswers.locator('[data-testid="screening-answer-1"]').fill(answers.answer1);
+    if (answers.answer2) await this.screeningAnswers.locator('[data-testid="screening-answer-2"]').fill(answers.answer2);
   }
 
   async checkAuthorization() {

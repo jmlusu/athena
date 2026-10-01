@@ -296,6 +296,7 @@ export interface PipelineColumnProps {
   jobs: Job[];
   onJobClick: (job: Job) => void;
   onFormFiller?: (job: Job) => void;
+  onTailorClick?: (job: Job) => void;
   onDragStart?: (job: Job) => void;
   onDragOver?: (e: React.DragEvent, status: JobStatus) => void;
   onDrop?: (e: React.DragEvent, status: JobStatus) => void;

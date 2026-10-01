@@ -62,12 +62,12 @@ test.describe('Document Studio: Resume Generation, Layouts, Print', () => {
 
   test('Cover Letter tab: generates tailored cover letter', async ({ documentStudioPage }) => {
     await documentStudioPage.goto('job-high-score');
+    const generation = documentStudioPage.waitForGeneration();
     await documentStudioPage.clickCoverLetterTab();
-    await documentStudioPage.waitForGeneration();
+    await generation;
 
-    const content = await documentStudioPage.getDocumentContent();
-    expect(content).toContain('Dear Hiring Manager');
-    expect(content).toContain('Test User');
+    await expect(documentStudioPage.documentContent).toContainText('Dear Hiring Manager');
+    await expect(documentStudioPage.documentContent).toContainText('Test User');
   });
 
   test('Proposal tab: visible for consultancy jobs, generates 4-section proposal', async ({ documentStudioPage }) => {

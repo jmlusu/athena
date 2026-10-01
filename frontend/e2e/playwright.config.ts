@@ -52,7 +52,11 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Required for navigator.clipboard.readText()/writeText() in the receipts step.
+        permissions: ['clipboard-read', 'clipboard-write'],
+      },
     },
     {
       name: 'firefox',
@@ -78,10 +82,10 @@ export default defineConfig({
     testMatch: ['**/visual-regression.spec.ts'],
     testDir: path.join(CONFIG_DIR, 'tests'),
   },
-  webServer: [
+webServer: [
     {
-      // Real module path: athena.api.app:app (athena.api.server:app does not exist).
-      command: `uv run uvicorn athena.api.app:app --host 127.0.0.1 --port ${API_PORT}`,
+      // Use Python wrapper script for reliable Windows env passing
+      command: `python run_backend_test.py "${DATA_DIR}" "${API_KEY}" ${API_PORT}`,
       cwd: BACKEND_DIR,
       url: `${API_URL}/health`,
       reuseExistingServer: !process.env.CI,

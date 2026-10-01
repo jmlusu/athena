@@ -235,7 +235,7 @@ export const JobDetail: React.FC = () => {
                   Requirements
                 </h2>
                 <ul className="space-y-3">
-                  {job.requirements.map((req, i) => (
+                  {(job.requirements ?? []).map((req, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-ls-grey-dark p-3 rounded-lg bg-ls-grey-light/50">
                       <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                       <span>{req}</span>
@@ -252,7 +252,7 @@ export const JobDetail: React.FC = () => {
                   Responsibilities
                 </h2>
                 <ul className="space-y-3">
-                  {job.responsibilities.map((resp, i) => (
+                  {(job.responsibilities ?? []).map((resp, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-ls-grey-dark p-3 rounded-lg bg-ls-grey-light/50">
                       <Sparkles className="w-4 h-4 text-ls-cyan flex-shrink-0 mt-0.5" />
                       <span>{resp}</span>
@@ -271,7 +271,7 @@ export const JobDetail: React.FC = () => {
                 Benefits
               </h2>
               <div className="flex flex-wrap gap-2">
-                {job.benefits.map((benefit, i) => (
+                {(job.benefits ?? []).map((benefit, i) => (
                   <span key={i} className="px-3 py-1.5 sunken rounded-lg text-white text-sm font-medium border border-white/10">
                     {benefit}
                   </span>

@@ -6,6 +6,7 @@ export class ReceiptsPage {
   readonly emptyState: Locator;
   readonly followUpDraft: Locator;
   readonly copyFollowUpButton: Locator;
+  readonly generateFollowUpButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -13,6 +14,7 @@ export class ReceiptsPage {
     this.emptyState = page.locator('[data-testid="receipts-empty"]');
     this.followUpDraft = page.locator('[data-testid="follow-up-draft"]');
     this.copyFollowUpButton = page.locator('[data-testid="copy-follow-up-btn"]');
+    this.generateFollowUpButton = page.locator('[data-testid="followup-generate-btn"]');
   }
 
   async goto() {
@@ -27,13 +29,13 @@ export class ReceiptsPage {
   async getReceiptDetails(index: number) {
     const card = this.receiptCards.nth(index);
     return {
-      jobTitle: await card.locator('[data-testid="receipt-job-title"]').textContent(),
-      company: await card.locator('[data-testid="receipt-company"]').textContent(),
-      confirmationHash: await card.locator('[data-testid="receipt-hash"]').textContent(),
-      submittedAt: await card.locator('[data-testid="receipt-submitted"]').textContent(),
-      signatory: await card.locator('[data-testid="receipt-signatory"]').textContent(),
-      followUpDate: await card.locator('[data-testid="receipt-followup"]').textContent(),
-      status: await card.locator('[data-testid="receipt-status"]').textContent(),
+      jobTitle: await card.getAttribute('data-receipt-job-title'),
+      company: await card.getAttribute('data-receipt-company'),
+      confirmationHash: await card.getAttribute('data-receipt-hash'),
+      submittedAt: await card.getAttribute('data-receipt-submitted'),
+      signatory: await card.getAttribute('data-receipt-signatory'),
+      followUpDate: await card.getAttribute('data-receipt-followup'),
+      status: await card.getAttribute('data-receipt-status'),
     };
   }
 
@@ -42,13 +44,24 @@ export class ReceiptsPage {
   }
 
   async getFollowUpDraft() {
+    await this.generateFollowUpButton.click();
     await this.followUpDraft.waitFor({ state: 'visible', timeout: 5000 });
     return this.followUpDraft.textContent();
   }
 
-  async copyFollowUpDraft() {
+  async copyFollowUpDraft(): Promise<string> {
     await this.copyFollowUpButton.click();
-    return this.page.evaluate(() => navigator.clipboard.readText());
+    let copied = '';
+    await expect
+      .poll(
+        async () => {
+          copied = await this.page.evaluate(() => navigator.clipboard.readText());
+          return copied;
+        },
+        { timeout: 3000, message: 'clipboard should contain the copied follow-up draft' }
+      )
+      .not.toBe('');
+    return copied;
   }
 
   async isEmpty() {

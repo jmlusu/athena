@@ -13,8 +13,9 @@ import {
   ChevronRight,
   Sparkles,
 } from "lucide-react";
-import { Opportunity, ApplicationReceipt } from "../../lib/athena/types";
+import { Opportunity, ApplicationReceipt, ReceiptResponse } from "../../lib/athena/types";
 import { cn } from "../../lib/athena/utils";
+import { listReceipts } from "../../lib/athena/api";
 import { Button, GhostButton, AccentButton, OutlineButton } from "@/components/athena/ui/Button";
 import { Badge } from "@/components/athena/ui/Badge";
 import { LinkedInExportModal } from "./LinkedInExportModal";
@@ -24,9 +25,74 @@ interface ReceiptsProps {
   onOpenFollowUpModal?: (opp: Opportunity) => void;
 }
 
+const RECEIPT_STATUSES: ApplicationReceipt["status"][] = [
+  "SUBMITTED",
+  "ACKNOWLEDGED",
+  "INTERVIEW_INVITE",
+  "OFFER_EXTENDED",
+];
+
+function receiptToOpportunity(r: ReceiptResponse): Opportunity {
+  const receipt: ApplicationReceipt = {
+    receiptId: r.receipt_id,
+    confirmationHash: r.confirmation_hash,
+    submittedAt: r.submitted_at,
+    jobTitle: r.job_title,
+    company: r.company,
+    applicantName: r.applicant_name,
+    authorizedBy: r.authorized_by,
+    authorizedAt: r.authorized_at,
+    portalName: r.portal_name,
+    followUpDate: r.follow_up_date,
+    status: (RECEIPT_STATUSES as string[]).includes(r.status)
+      ? (r.status as ApplicationReceipt["status"])
+      : "SUBMITTED",
+    notes: r.notes,
+  };
+  return {
+    id: r.receipt_id,
+    title: r.job_title,
+    company: r.company,
+    location: "Remote",
+    category: "job",
+    scope: "international-remote",
+    platform: "Corporate",
+    description: "",
+    requirements: [],
+    salaryOrBudget: "",
+    deadline: "",
+    atsScore: 0,
+    postedDate: r.submitted_at,
+    status: "submitted",
+    isFlagged: false,
+    receipt,
+  };
+}
+
 export const Receipts: React.FC<ReceiptsProps> = ({ opportunities = [] }) => {
+  // Receipts fetched from the backend ledger when no caller-provided opportunities exist
+  const [fetchedOpportunities, setFetchedOpportunities] = useState<Opportunity[]>([]);
+
+  React.useEffect(() => {
+    if (opportunities.length > 0) return;
+    let cancelled = false;
+    listReceipts()
+      .then((res) => {
+        if (!cancelled) setFetchedOpportunities((res.receipts ?? []).map(receiptToOpportunity));
+      })
+      .catch(() => {
+        if (!cancelled) setFetchedOpportunities([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [opportunities.length]);
+
   // Collect all opportunities that have receipts
-  const submittedItems = opportunities.filter((o) => o.receipt || o.status === "submitted");
+  const submittedItems = [
+    ...opportunities.filter((o) => o.receipt || o.status === "submitted"),
+    ...fetchedOpportunities,
+  ];
   const [selectedReceipt, setSelectedReceipt] = useState<ApplicationReceipt | null>(
     submittedItems[0]?.receipt || null
   );
@@ -34,6 +100,14 @@ export const Receipts: React.FC<ReceiptsProps> = ({ opportunities = [] }) => {
   const [copiedDraft, setCopiedDraft] = useState(false);
   const [selectedOpp, setSelectedOpp] = useState<Opportunity | null>(() => submittedItems[0] ?? null);
   const [exportOpen, setExportOpen] = useState(false);
+
+  // Default the certificate panel to the first available receipt (e.g. after async fetch)
+  React.useEffect(() => {
+    if (!selectedReceipt && submittedItems.length > 0) {
+      setSelectedReceipt(submittedItems[0].receipt || null);
+      setSelectedOpp(submittedItems[0]);
+    }
+  }, [submittedItems, selectedReceipt]);
 
   const handleCopyDraft = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -224,6 +298,7 @@ export const Receipts: React.FC<ReceiptsProps> = ({ opportunities = [] }) => {
                       variant="accent"
                       size="sm"
                       onClick={() => setShowFollowUpDraft(!showFollowUpDraft)}
+                      data-testid="followup-generate-btn"
                     >
                       <Mail className="w-3.5 h-3.5" />
                       <span>{showFollowUpDraft ? "Hide Follow-Up Draft" : "Generate Professional Follow-Up Email"}</span>

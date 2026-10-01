@@ -413,7 +413,7 @@ export function getJobTypeLabel(type: JobType): string {
     internship: 'Internship',
     temporary: 'Temporary',
   };
-  return labels[type] || type;
+  return labels[type] || type || 'Job';
 }
 
 export function getJobSourceLabel(source: JobSource): string {

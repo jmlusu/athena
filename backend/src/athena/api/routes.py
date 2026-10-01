@@ -254,17 +254,19 @@ async def list_receipts(
 ):
     """List application receipts (applications with receipt_data)."""
     apps = athena_db.get_applications(user_profile_id, None, None)
-    
+
     # Filter to only applications with receipt data
     receipts = []
     for app in apps:
         if app.receipt_data and app.receipt_data.get("receipt_id"):
             job = athena_db.get_job(app.job_id)
             profile = athena_db.get_user_profile(app.user_profile_id)
-            
+
             receipt = ReceiptResponse(
                 receipt_id=app.receipt_data.get("receipt_id", f"ATH-RCPT-{str(app.id)[:8]}"),
-                confirmation_hash=app.receipt_data.get("confirmation_hash", f"SHA256-{str(app.id)}"),
+                confirmation_hash=app.receipt_data.get(
+                    "confirmation_hash", f"SHA256-{str(app.id)}"
+                ),
                 submitted_at=app.submitted_at or app.created_at,
                 job_title=job.title if job else "Unknown Position",
                 company=job.company if job else "Unknown Company",
@@ -272,17 +274,19 @@ async def list_receipts(
                 authorized_by=app.receipt_data.get("authorized_by", "System"),
                 authorized_at=app.receipt_data.get("authorized_at", app.created_at),
                 portal_name=app.receipt_data.get("portal_name", "Athena Direct"),
-                follow_up_date=app.receipt_data.get("follow_up_date", (app.created_at).strftime("%Y-%m-%d")),
+                follow_up_date=app.receipt_data.get(
+                    "follow_up_date", (app.created_at).strftime("%Y-%m-%d")
+                ),
                 status=app.receipt_data.get("status", "SUBMITTED"),
                 notes=app.receipt_data.get("notes"),
             )
             receipts.append(receipt)
-    
+
     # Sort by submitted_at descending (tolerates legacy naive timestamps)
     receipts.sort(key=lambda r: sort_key_utc(r.submitted_at), reverse=True)
     total = len(receipts)
-    receipts = receipts[offset:offset + limit]
-    
+    receipts = receipts[offset : offset + limit]
+
     return ReceiptListResponse(receipts=receipts, total=total)
 
 
@@ -290,15 +294,17 @@ async def list_receipts(
 async def get_receipt(receipt_id: str):
     """Get a specific receipt by ID."""
     apps = athena_db.get_applications(None, None, None)
-    
+
     for app in apps:
         if app.receipt_data and app.receipt_data.get("receipt_id") == receipt_id:
             job = athena_db.get_job(app.job_id)
             profile = athena_db.get_user_profile(app.user_profile_id)
-            
+
             return ReceiptResponse(
                 receipt_id=app.receipt_data.get("receipt_id", f"ATH-RCPT-{str(app.id)[:8]}"),
-                confirmation_hash=app.receipt_data.get("confirmation_hash", f"SHA256-{str(app.id)}"),
+                confirmation_hash=app.receipt_data.get(
+                    "confirmation_hash", f"SHA256-{str(app.id)}"
+                ),
                 submitted_at=app.submitted_at or app.created_at,
                 job_title=job.title if job else "Unknown Position",
                 company=job.company if job else "Unknown Company",
@@ -306,11 +312,13 @@ async def get_receipt(receipt_id: str):
                 authorized_by=app.receipt_data.get("authorized_by", "System"),
                 authorized_at=app.receipt_data.get("authorized_at", app.created_at),
                 portal_name=app.receipt_data.get("portal_name", "Athena Direct"),
-                follow_up_date=app.receipt_data.get("follow_up_date", (app.created_at).strftime("%Y-%m-%d")),
+                follow_up_date=app.receipt_data.get(
+                    "follow_up_date", (app.created_at).strftime("%Y-%m-%d")
+                ),
                 status=app.receipt_data.get("status", "SUBMITTED"),
                 notes=app.receipt_data.get("notes"),
             )
-    
+
     raise HTTPException(status_code=404, detail="Receipt not found")
 
 
@@ -321,14 +329,14 @@ async def list_profile_documents(profile_id: UUID):
     profile = athena_db.get_user_profile(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    
+
     documents = []
     for doc in profile.documents:
         if isinstance(doc, dict):
             documents.append(DocumentResponse(**doc))
         else:
             documents.append(DocumentResponse.model_validate(doc))
-    
+
     return documents
 
 
@@ -341,12 +349,12 @@ async def upload_profile_document(
     profile = athena_db.get_user_profile(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    
+
     # Convert to dict for storage
     doc_dict = document.model_dump()
     profile.documents.append(doc_dict)
     athena_db.update_user_profile(profile)
-    
+
     return document
 
 
@@ -356,17 +364,18 @@ async def delete_profile_document(profile_id: UUID, document_id: UUID):
     profile = athena_db.get_user_profile(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    
+
     # Find and remove the document
     original_count = len(profile.documents)
     profile.documents = [
-        doc for doc in profile.documents
+        doc
+        for doc in profile.documents
         if str(doc.get("id") if isinstance(doc, dict) else doc.id) != str(document_id)
     ]
-    
+
     if len(profile.documents) == original_count:
         raise HTTPException(status_code=404, detail="Document not found")
-    
+
     athena_db.update_user_profile(profile)
     return {"success": True}
 
@@ -377,7 +386,7 @@ async def get_combined_stats():
     """Get combined statistics for dashboard."""
     pipeline_stats = await get_pipeline_stats()
     scraping_stats = await get_scraping_stats()
-    
+
     return {
         "pipeline": pipeline_stats.model_dump(),
         "scraping": scraping_stats.model_dump(),
@@ -490,7 +499,7 @@ async def trigger_scrape(request: ScrapeJobRequest, background_tasks: Background
     if os.getenv("ATHENA_TEST_MODE") == "true":
         from datetime import datetime, UTC
         from uuid import uuid4
-        
+
         # Return the seeded test jobs (5 jobs from global-setup)
         mock_scrape_job = ScrapeJobResponse(
             id=uuid4(),
@@ -509,7 +518,7 @@ async def trigger_scrape(request: ScrapeJobRequest, background_tasks: Background
             created_at=datetime.now(UTC),
         )
         return mock_scrape_job
-    
+
     config = ScrapeConfig(
         query=request.query,
         location=request.location,

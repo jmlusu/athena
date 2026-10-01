@@ -81,6 +81,7 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
   jobs,
   onJobClick,
   onFormFiller,
+  onTailorClick,
   onDragStart,
   onDragOver,
   onDrop,
@@ -163,6 +164,7 @@ export const PipelineColumn: React.FC<PipelineColumnInternalProps> = ({
               job={job}
               onClick={() => onJobClick(job)}
               onFormFiller={onFormFiller}
+              onTailorClick={onTailorClick}
               compact
               showActions
             />

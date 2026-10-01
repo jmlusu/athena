@@ -134,7 +134,7 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
           <section className="space-y-3">
             <h3 className="font-heading text-base font-bold text-ink">Requirements</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {opportunity.requirements.map((req, i) => (
+              {(opportunity.requirements ?? []).map((req, i) => (
                 <div key={i} className="flex items-start gap-2 p-3 bg-surface-white border border-slate rounded-lg">
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-orange mt-1.5 flex-shrink-0" />
                   <span className="text-sm text-text-secondary">{req}</span>

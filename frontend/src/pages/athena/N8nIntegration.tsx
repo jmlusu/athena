@@ -18,7 +18,7 @@ import { Button, GhostButton, AccentButton, OutlineButton, PrimaryButton } from 
 import { Badge } from "@/components/athena/ui/Badge";
 
 export const N8nIntegration: React.FC = () => {
-  const [webhookUrl, setWebhookUrl] = useState("http://localhost:3000/api/webhooks/n8n");
+  const [webhookUrl, setWebhookUrl] = useState("https://n8n.athena-ops.internal/webhook/athena-pipeline-trigger");
   const [testPayload, setTestPayload] = useState(
     JSON.stringify(
       {

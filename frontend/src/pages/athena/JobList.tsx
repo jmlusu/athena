@@ -677,7 +677,7 @@ export const JobList: React.FC = () => {
                           'px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono border',
                           job.job_type === 'consultancy' ? 'tint-consultancy' : 'tint-job'
                         )}>
-                          {getJobTypeLabel(job.job_type).toUpperCase()}
+                          {(getJobTypeLabel(job.job_type) || 'Job').toUpperCase()}
                         </span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono bg-surface-muted border border-slate text-text-secondary">
                           {getJobSourceLabel(job.source)}
@@ -799,7 +799,7 @@ export const JobList: React.FC = () => {
                       Requirements
                     </h3>
                     <ul className="space-y-2">
-                      {selectedJob.requirements.map((req, i) => (
+                      {(selectedJob.requirements ?? []).map((req, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
                           <span className="w-1.5 h-1.5 rounded-full bg-brand-orange mt-1.5 flex-shrink-0" />
                           {req}
@@ -816,7 +816,7 @@ export const JobList: React.FC = () => {
                       Responsibilities
                     </h3>
                     <ul className="space-y-2">
-                      {selectedJob.responsibilities.map((resp, i) => (
+                      {(selectedJob.responsibilities ?? []).map((resp, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-text-secondary">
                           <span className="w-1.5 h-1.5 rounded-full bg-success-emerald mt-1.5 flex-shrink-0" />
                           {resp}
