@@ -12,7 +12,6 @@
     "isolatedModules": true,
     "noEmit": true,
     "types": ["@playwright/test", "node"],
-    "baseUrl": ".",
     "paths": {
       "@/*": ["../src/*"]
     }

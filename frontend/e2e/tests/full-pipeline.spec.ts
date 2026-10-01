@@ -176,7 +176,7 @@ test.describe('Full Pipeline: Scrape → Score → Tailor → Sign-off → Recei
     // Step 13: Verify 7-day follow-up draft
     const followUpDraft = await receiptsPage.getFollowUpDraft();
     expect(followUpDraft).toContain('Follow-Up');
-    expect(followUpDraft.length).toBeGreaterThan(50);
+    expect(followUpDraft!.length).toBeGreaterThan(50);
 
     // Step 14: Copy follow-up draft
     const copiedText = await receiptsPage.copyFollowUpDraft();

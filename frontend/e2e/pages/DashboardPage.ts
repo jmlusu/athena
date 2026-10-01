@@ -104,7 +104,7 @@ export class DashboardPage {
 
   async getStatsCards() {
     const cards = await this.statsCards.all();
-    const stats = {};
+    const stats: Record<string, string> = {};
     for (const card of cards) {
       const label = await card.locator('[data-testid="metric-label"]').textContent();
       const value = await card.locator('[data-testid="metric-value"]').textContent();

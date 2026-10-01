@@ -22,9 +22,11 @@ const MASKS: Record<string, string | undefined> = {
   // count-up bar width animates for 700ms (Dashboard.tsx / SkillBar).
   '01-pipeline-command-desktop':
     '[data-testid="cron-countdown"], [aria-label="Skills compatibility bars"]',
-  '02-mountain-momentum-chart':
-    '[data-testid="tooltip"], [aria-label="Skills compatibility bars"]',
-  '06-document-studio-proposal': '[data-testid="opportunity-badge"]',
+  '02-mountain-momentum-chart': '[aria-label="Skills compatibility bars"]',
+  // Proposal header prints new Date().toLocaleDateString() (DocumentStudio.tsx:909)
+  // with no fixed seed; mask the Date span inside the paper.
+  '06-document-studio-proposal':
+    '[data-testid="document-content"] span:has-text("Date:")',
   // Sign-off gate renders a live timestamp + Date.now() audit token in this div.
   '07-form-filler-signoff-gate': '[data-testid="sign-off-modal"] .text-red-800',
   '11-n8n-workflow-nodes': '[data-testid="execution-response"]',

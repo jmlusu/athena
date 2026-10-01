@@ -92,13 +92,10 @@ test.describe('Document Studio: Resume Generation, Layouts, Print', () => {
     await documentStudioPage.goto('job-high-score');
     await documentStudioPage.waitForGeneration();
 
-    // Set up print handling
-    let printTriggered = false;
-    page.on('print', () => { printTriggered = true; });
-
+    // No reliable 'print' event exists on Page; headless Chrome opens no
+    // dialog - assert the button is present and clickable instead.
     await documentStudioPage.print();
-    
-    // In headless mode, print event may not fire, but button should be clickable
+
     await expect(documentStudioPage.printButton).toBeEnabled();
   });
 

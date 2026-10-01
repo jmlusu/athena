@@ -50,7 +50,7 @@ export default defineConfig({
   ],
   use: {
     baseURL: WEB_URL,
-    trace: 'retry',
+    trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',
     extraHTTPHeaders: {
@@ -84,12 +84,6 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     },
   ],
-  // Visual regression test project: runs only visual-regression.spec.ts
-  // with masks, baselines, and viewport comparisons. All other tests are excluded.
-  visualRegression: {
-    testMatch: ['**/visual-regression.spec.ts'],
-    testDir: path.join(CONFIG_DIR, 'tests'),
-  },
 webServer: [
     {
       // Use Python wrapper script for reliable Windows env passing

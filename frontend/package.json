@@ -12,6 +12,7 @@
     "dev": "vite",
     "build": "tsc --noEmit --pretty false && vite build",
     "lint": "tsc --noEmit --pretty false",
+    "lint:e2e": "tsc -p e2e/tsconfig.json",
     "test": "vitest run",
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "test:e2e:headed": "playwright test --headed",
