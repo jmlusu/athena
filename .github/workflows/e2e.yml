@@ -6,6 +6,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      update_visual:
+        description: 'Regenerate Linux visual baselines (uploads artifact, skips full suite)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -67,6 +72,7 @@ jobs:
         run: pnpm build
 
       - name: Run E2E tests
+        if: github.event_name != 'workflow_dispatch' || !inputs.update_visual
         working-directory: frontend
         env:
           E2E_BASE_URL: http://localhost:8530
@@ -76,6 +82,25 @@ jobs:
         # pnpm run forwards a literal "--" that turns --project into a file
         # filter (all 5 projects then run and die on uninstalled browsers).
         run: pnpm exec playwright test --config e2e/playwright.config.ts --project=chromium
+
+      - name: Regenerate Linux visual baselines
+        if: github.event_name == 'workflow_dispatch' && inputs.update_visual
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:8530
+          E2E_API_URL: http://127.0.0.1:8001
+          E2E_API_KEY: dev-admin-key
+          CI: true
+          E2E_UPDATE_VISUAL: '1'
+        run: pnpm exec playwright test --config e2e/playwright.config.ts --project=chromium visual-regression --update-snapshots=all
+
+      - name: Upload Linux visual baselines
+        if: github.event_name == 'workflow_dispatch' && inputs.update_visual
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-visual-baselines
+          path: frontend/e2e/tests/visual-regression.spec.ts-snapshots/*-chromium-linux.png
+          retention-days: 7
 
       - name: Upload Playwright HTML report
         if: always()
