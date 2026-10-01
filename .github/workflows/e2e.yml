@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
   actions: write
+  # PR test-summary comment (POST /issues/{n}/comments on a pull request)
+  issues: write
+  pull-requests: write
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -121,8 +124,16 @@ jobs:
             const resultsPath = path.join(process.env.GITHUB_WORKSPACE, 'frontend/e2e/test-results/results.json');
             if (fs.existsSync(resultsPath)) {
               const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
-              const passed = results.suites.reduce((acc, suite) => acc + suite.specs.filter(s => s.ok).length, 0);
-              const failed = results.suites.reduce((acc, suite) => acc + suite.specs.filter(s => !s.ok).length, 0);
+              // JSON reporter top-level suites hold their specs in child
+              // suites (test.describe blocks), so count recursively.
+              const countOk = (suites, ok) => suites.reduce(
+                (acc, suite) =>
+                  acc + (suite.specs || []).filter(s => s.ok === ok).length
+                     + (suite.suites ? countOk(suite.suites, ok) : 0),
+                0,
+              );
+              const passed = countOk(results.suites, true);
+              const failed = countOk(results.suites, false);
               const total = passed + failed;
               
               const body = `## 🎭 Playwright E2E Test Results
