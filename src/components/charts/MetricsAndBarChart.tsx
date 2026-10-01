@@ -5,11 +5,23 @@ import { Opportunity } from "../../types";
 interface MetricsAndBarChartProps {
   opportunities: Opportunity[];
   onCardClick?: (filterType: string) => void;
+  stats?: StatsData;
+}
+
+interface StatsData {
+  discovered: number;
+  critical_matches: number;
+  flagged_matches: number;
+  awaiting_signoff: number;
+  submitted: number;
+  skills_distribution: Array<{ label: string; count: number; percentage: number; color: string }>;
+  pipeline_trend: Array<{ stage: string; count: number }>;
 }
 
 export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
   opportunities,
   onCardClick,
+  stats,
 }) => {
   const total = opportunities.length;
   const criticalMatches = opportunities.filter((o) => o.atsScore >= 90).length;
@@ -17,8 +29,15 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
   const awaitingSignoff = opportunities.filter((o) => o.status === "awaiting_signoff").length;
   const submitted = opportunities.filter((o) => o.status === "submitted" || Boolean(o.receipt)).length;
 
-  // Domain skills distribution calculation
-  const skillsDistribution = [
+  // Use provided stats data, fall back to defaults if not available
+  const statsDiscovered = stats?.discovered ?? total;
+  const statsCritical = stats?.critical_matches ?? criticalMatches;
+  const statsFlagged = stats?.flagged_matches ?? flaggedMatches;
+  const statsAwaitingSignoff = stats?.awaiting_signoff ?? awaitingSignoff;
+  const statsSubmitted = stats?.submitted ?? submitted;
+
+  // Skills distribution from stats or default data
+  const skillsDistribution = stats?.skills_distribution ?? [
     { label: "Systems Architecture & MIS", count: 18, percentage: 92, color: "bg-[#F97316]" },
     { label: "n8n & Workflow Automation", count: 14, percentage: 88, color: "bg-[#18181B]" },
     { label: "Lilongwe Public Sector & USAID", count: 16, percentage: 95, color: "bg-emerald-600" },
@@ -26,8 +45,8 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
     { label: "Consultancy Advisory & Proposals", count: 15, percentage: 90, color: "bg-[#DC2626]" },
   ];
 
-  // Pipeline stage trend points for line graph with data point markers
-  const trendPoints = [
+  // Pipeline stage trend points from stats or default data
+  const trendPoints = stats?.pipeline_trend ?? [
     { stage: "Scraped", count: 32 },
     { stage: "Evaluated", count: 28 },
     { stage: "≥90 Tailored", count: 19 },

@@ -1,27 +1,25 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Minus, Target, Users, DollarSign, Clock, Award, RefreshCw, Download, FileText } from 'lucide-react';
-import { MetricCard, MetricCardLarge, StatCounter } from '@/components/athena/MetricCard';
-import { AreaChart, MountainAreaChart, CircularGaugeChart } from '@/components/athena/AreaChart';
-import { JobCard } from '@/components/athena/JobCard';
-import { PipelineColumn } from '@/components/athena/PipelineColumn';
-import { ATSGauge, MiniATSGauge } from '@/components/athena/ATSGauge';
+import { MetricCardLarge, StatCounter } from '@/components/athena/MetricCard';
+import { LayeredMountainChart } from '@/components/athena/charts/LayeredMountainChart';
+import { MetricsAndBarChart } from '@/components/athena/charts/MetricsAndBarChart';
+import { PipelineKanbanBoard } from '@/components/athena/pipeline/PipelineKanbanBoard';
 import { cn, formatRelativeTime, groupBy, sortBy } from '@/lib/athena/utils';
-import { listJobs, getPipelineStats, getScrapingStats, triggerScrape } from '@/lib/athena/api';
-import type { Job, JobStatus, PipelineStatsResponse } from '@/lib/athena/types';
-
-const PIPELINE_STAGES: Array<{ status: JobStatus; title: string; order: number }> = [
-  { status: 'new', title: 'New', order: 1 },
-  { status: 'fetched', title: 'Fetched', order: 2 },
-  { status: 'matched', title: 'Matched', order: 3 },
-  { status: 'scored', title: 'Scored', order: 4 },
-  { status: 'applied', title: 'Applied', order: 5 },
-  { status: 'interview', title: 'Interview', order: 6 },
-  { status: 'offer', title: 'Offer', order: 7 },
-];
+import { listJobs, getPipelineStats, getScrapingStats, triggerScrape, listProfiles, submitApplication } from '@/lib/athena/api';
+import { jobToOpportunity, userProfileToApplicantProfile } from '@/lib/athena/mappers';
+import { buildStatsShapeFromJobs } from '@/lib/athena/metrics-registry';
+import { DEFAULT_AUTOMATION_SETTINGS, FALLBACK_APPLICANT_PROFILE } from '@/lib/athena/settings';
+import type { Job, JobStatus, PipelineStatsResponse, AutomationSettings, UserProfile } from '@/lib/athena/types';
+import { OpportunityDetailModal } from './OpportunityDetailModal';
+import { LinkedInExportModal } from './LinkedInExportModal';
+import { SignOffModal } from './SignOffModal';
+import { FormFillerModal } from './FormFillerModal';
+import { AutomationControls } from '@/components/athena/AutomationControls';
 
 export const AthenaDashboard: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<PipelineStatsResponse | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
@@ -29,11 +27,18 @@ export const AthenaDashboard: React.FC = () => {
   const [matchTierDistribution, setMatchTierDistribution] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
-  const [draggedJob, setDraggedJob] = useState<Job | null>(null);
-  const metricsContainerRef = useRef<HTMLDivElement>(null);
-  const filtersContainerRef = useRef<HTMLDivElement>(null);
+  const [pipelineSources, setPipelineSources] = useState<Array<{ name: string; globalRemote: number; lilongweHub: number; consultancies: number }>>([]);
+  const [skillsData, setSkillsData] = useState<Array<{ skill: string; compatibility: number; category: 'technical' | 'soft' | 'language' }>>([]);
+  const [applicantName, setApplicantName] = useState('Applicant');
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [automationSettings, setAutomationSettings] = useState<AutomationSettings>(DEFAULT_AUTOMATION_SETTINGS);
+  const [activeJob, setActiveJob] = useState<Job | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [signOffOpen, setSignOffOpen] = useState(false);
+  const [formFillerOpen, setFormFillerOpen] = useState(false);
+  const [signOffSubmitting, setSignOffSubmitting] = useState(false);
 
-  // Load data on mount
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -41,33 +46,80 @@ export const AthenaDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsData, jobsData, scrapeData] = await Promise.all([
+      const [statsData, jobsData, scrapeData, profiles] = await Promise.all([
         getPipelineStats(),
         listJobs({ limit: 100 }),
         getScrapingStats(),
+        listProfiles().catch(() => []),
       ]);
 
-      const jobs = Array.isArray(jobsData?.jobs) ? jobsData.jobs : [];
+      const jobsList = Array.isArray(jobsData?.jobs) ? jobsData.jobs : [];
 
       setStats(statsData);
-      setJobs(jobs);
-      setRecentJobs(jobs.slice(0, 5));
+      setJobs(jobsList);
+      setRecentJobs(jobsList.slice(0, 5));
+      setProfiles(profiles);
+      if (profiles.length > 0 && profiles[0].full_name) {
+        setApplicantName(profiles[0].full_name);
+      }
 
-      // Calculate ATS score distribution
-      const atsScores = jobs.filter(j => j.ats_score !== undefined).map(j => j.ats_score!);
+      // ATS score distribution
+      const atsScores = jobsList.filter(j => j.ats_score !== undefined).map(j => j.ats_score!);
       if (atsScores.length > 0) {
         const distribution = calculateATSDistribution(atsScores);
         setAtsDistribution(distribution);
       }
 
-      // Calculate match tier distribution
+      // Match tier distribution
       const tierDist: Record<string, number> = {};
-      jobs.forEach(job => {
+      jobsList.forEach(job => {
         if (job.match_tier) {
           tierDist[job.match_tier] = (tierDist[job.match_tier] || 0) + 1;
         }
       });
       setMatchTierDistribution(tierDist);
+
+      // Pipeline sources data for LayeredMountainChart
+      const sourceGroups = groupBy(jobsList, 'source');
+      const sourceData = Object.entries(sourceGroups).map(([source, sourceJobs]) => {
+        const types = groupBy(sourceJobs, 'job_type');
+        return {
+          name: source,
+          globalRemote: (types.remote_ok?.length || 0) + (types.we_work_remotely?.length || 0) + (types.remote_co?.length || 0),
+          lilongweHub: (types.malawi_jobs?.length || 0) + (types.malawi_work?.length || 0) + (types.jobs_malawi?.length || 0),
+          consultancies: types.consultancy?.length || 0,
+        };
+      });
+      setPipelineSources(sourceData);
+
+      // Skills data from job requirements
+      const allSkills: Record<string, { count: number; category: 'technical' | 'soft' | 'language' }> = {};
+      jobsList.forEach(job => {
+        job.requirements?.forEach(req => {
+          const lowerReq = req.toLowerCase();
+          let category: 'technical' | 'soft' | 'language' = 'technical';
+          if (['communication', 'leadership', 'teamwork', 'problem solving', 'adaptability'].some(s => lowerReq.includes(s))) {
+            category = 'soft';
+          } else if (['english', 'spanish', 'french', 'chichewa', 'portuguese', 'arabic'].some(s => lowerReq.includes(s))) {
+            category = 'language';
+          }
+          allSkills[req] = {
+            count: (allSkills[req]?.count || 0) + 1,
+            category,
+          };
+        });
+      });
+
+      const topSkills = Object.entries(allSkills)
+        .sort(([, a], [, b]) => b.count - a.count)
+        .slice(0, 8)
+        .map(([skill, data]) => ({
+          skill,
+          compatibility: Math.min(95, Math.max(40, data.count * 12 + Math.random() * 20)),
+          category: data.category,
+        }));
+      setSkillsData(topSkills);
+
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
@@ -91,49 +143,49 @@ export const AthenaDashboard: React.FC = () => {
     return distribution;
   };
 
-  const handleDragStart = (job: Job) => {
-    setDraggedJob(job);
-  };
-
-  const handleDragOver = (e: React.DragEvent, targetStatus: JobStatus) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetStatus: JobStatus) => {
-    e.preventDefault();
-    if (!draggedJob) return;
-
-    if (draggedJob.status !== targetStatus) {
-      try {
-        // Update job status via API
-        // await updateJob(draggedJob.id, { status: targetStatus });
-
-        // Optimistic update
-        setJobs(prev => prev.map(job =>
-          job.id === draggedJob.id ? { ...job, status: targetStatus } : job
-        ));
-
-        // Reload stats
-        const newStats = await getPipelineStats();
-        setStats(newStats);
-      } catch (error) {
-        console.error('Failed to update job status:', error);
-      }
+  const handleJobStatusChange = async (jobId: string, newStatus: JobStatus) => {
+    try {
+      setJobs(prev => prev.map(job =>
+        job.id === jobId ? { ...job, status: newStatus } : job
+      ));
+      const newStats = await getPipelineStats();
+      setStats(newStats);
+    } catch (error) {
+      console.error('Failed to update job status:', error);
+      throw error;
     }
-    setDraggedJob(null);
   };
 
   const handleJobClick = (job: Job) => {
-    // Navigate to job detail - would use a modal or navigate to /athena/jobs/:id
-    console.log('Job clicked:', job);
+    setActiveJob(job);
+    setDetailOpen(true);
+  };
+
+  const handleSignOff = async (signature: string) => {
+    if (!activeJob) return;
+    setSignOffSubmitting(true);
+    try {
+      await submitApplication({
+        application_id: activeJob.id,
+        job_title: activeJob.title,
+        company: activeJob.company,
+        applicant_name: applicantName,
+        authorization_signature: signature,
+        authorized_at: new Date().toISOString(),
+      });
+      await handleJobStatusChange(activeJob.id, 'applied');
+      setSignOffOpen(false);
+    } catch (error) {
+      console.error('Application sign-off failed:', error);
+    } finally {
+      setSignOffSubmitting(false);
+    }
   };
 
   const handleScrape = async () => {
     setScraping(true);
     try {
       await triggerScrape({ query: 'software engineer', max_results: 50 });
-      // Reload data after scrape
       await loadDashboardData();
     } catch (error) {
       console.error('Scrape failed:', error);
@@ -142,28 +194,34 @@ export const AthenaDashboard: React.FC = () => {
     }
   };
 
-  // Inject metrics into right sidebar
-  useEffect(() => {
-    if (metricsContainerRef.current && stats) {
-      metricsContainerRef.current.innerHTML = '';
-      // In a real app, this would render React components into the container
-      // For now, we'll use the main content area for metrics
-    }
-  }, [stats]);
+  const handleFormFiller = (job: Job) => {
+    setActiveJob(job);
+    setFormFillerOpen(true);
+  };
+
+  const handleTailorResume = (job: Job) => {
+    navigate(`/documents/${job.id}`);
+  };
+
+  const handleMetricFilter = (_metric: string) => {
+    // Could integrate with PipelineKanbanBoard filter logic
+  };
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-ls-red/30 border-t-ls-red rounded-full animate-spin" aria-hidden="true" />
-          <p className="font-body text-ls-grey-dark">Loading Athena dashboard...</p>
+          <div className="w-12 h-12 border-4 border-brand-orange/30 border-t-brand-orange rounded-full animate-spin" aria-hidden="true" />
+          <p className="font-body text-text-secondary">Loading Athena dashboard...</p>
         </div>
       </div>
     );
   }
 
-  // Group jobs by status for pipeline
-  const jobsByStatus = groupBy(jobs, 'status');
+  // Derived stats for MetricsAndBarChart — canonical derivation via metrics
+  // registry (criticalMatch/flaggedReview/signOffPending/submitted computed
+  // once in buildStatsShapeFromJobs, not hand-rolled here)
+  const statsShape = buildStatsShapeFromJobs(jobs, stats);
 
   return (
     <div className="h-full flex flex-col">
@@ -171,8 +229,8 @@ export const AthenaDashboard: React.FC = () => {
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="font-display font-black text-2xl sm:text-3xl text-ls-navy">Pipeline Dashboard</h1>
-            <p className="font-body text-sm text-ls-grey-dark mt-1">
+            <h1 className="font-heading font-bold text-2xl sm:text-3xl text-ink">Pipeline Dashboard</h1>
+            <p className="font-body text-sm text-text-secondary mt-1">
               Track your job applications from discovery to offer
             </p>
           </div>
@@ -180,132 +238,137 @@ export const AthenaDashboard: React.FC = () => {
             <button
               onClick={handleScrape}
               disabled={scraping}
-              className="tactile flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-ls-white text-ls-grey-dark font-medium text-sm hover:border-ls-red/40 hover:text-ls-red transition-all disabled:opacity-50"
+              data-testid="trigger-scrape"
+              className="tactile flex items-center gap-2 px-4 py-2 rounded-lg border border-slate bg-surface-white text-text-secondary font-medium text-sm hover:border-brand-orange/40 hover:text-brand-orange transition-all disabled:opacity-50"
             >
               <RefreshCw className={cn('w-4 h-4', scraping && 'animate-spin')} aria-hidden="true" />
               <span className="font-body font-medium text-sm">Scrape Jobs</span>
             </button>
-            <button className="tactile flex items-center gap-2 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors">
+            <button className="tactile flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-orange text-white font-bold text-sm hover:bg-brand-orange-hover transition-colors">
               <Download className="w-4 h-4" aria-hidden="true" />
               <span>Export</span>
             </button>
           </div>
         </div>
 
-        {/* Key Metrics Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" role="region" aria-label="Key metrics">
-          <MetricCardLarge
-            title="Total Jobs"
-            value={stats?.total_jobs || 0}
-            subtitle="in pipeline"
-            description="All discovered positions"
-            trend={stats && stats.total_jobs > 0 ? 'up' : 'stable'}
-            trendValue={stats ? `+${stats.new} new` : undefined}
-            icon={<Target className="w-6 h-6" />}
-            accentColor="navy"
-          />
-          <MetricCardLarge
-            title="Avg ATS Score"
-            value={stats ? Math.round(stats.avg_ats_score) : 0}
-            subtitle="%"
-            description="Keyword + semantic match"
-            trend={stats && stats.avg_ats_score > 70 ? 'up' : 'down'}
-            trendValue={stats ? `${Math.round(stats.avg_ats_score)}%` : undefined}
-            icon={<Award className="w-6 h-6" />}
-            accentColor="orange"
-          />
-          <MetricCardLarge
-            title="Applications"
-            value={stats ? stats.applied + stats.interview + stats.offer : 0}
-            subtitle="active"
-            description="Submitted + interviewing"
-            trend="up"
-            icon={<FileText className="w-6 h-6" />}
-            accentColor="cyan"
-          />
-          <MetricCardLarge
-            title="Offers"
-            value={stats?.offer || 0}
-            subtitle="received"
-            description="Pending decisions"
-            trend={stats && stats.offer > 0 ? 'up' : 'stable'}
-            icon={<Award className="w-6 h-6" />}
-            accentColor="emerald"
-          />
-        </div>
+        {/* Metrics & Charts Section - Replaces old metric cards + MountainAreaChart */}
+        <MetricsAndBarChart
+          stats={statsShape}
+          skillsData={skillsData}
+          onMetricClick={handleMetricFilter}
+        />
       </div>
 
-      {/* Main Content: Pipeline Board + Right Sidebar Content */}
+      {/* Main Content: Pipeline Board + Right Sidebar */}
       <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
-        {/* Pipeline Kanban Board */}
-        <div className="flex-1 min-w-0 lg:max-w-[calc(100%-320px)]">
-          <div className="bg-ls-white raised border border-white/[0.07] rounded-xl overflow-hidden">
-            {/* Pipeline Header */}
-            <div className="px-4 py-3 border-b border-white/[0.07] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="font-display font-bold text-lg text-ls-navy">Job Pipeline</h2>
-              <div className="flex items-center gap-2 text-xs text-ls-grey-dark">
-                {stats && (
-                  <>
-                    <span className="px-2 py-0.5 rounded-md bg-ls-cyan/15 text-ls-cyan font-bold">New: {stats.new}</span>
-                    <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 font-bold">Scored: {stats.scored}</span>
-                    <span className="px-2 py-0.5 rounded-md bg-ls-red/15 text-ls-red font-bold">Applied: {stats.applied}</span>
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-bold">Offers: {stats.offer}</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Pipeline Columns */}
-            <div className="overflow-x-auto pb-4" role="region" aria-label="Job pipeline kanban board">
-              <div className="flex gap-4 min-w-max p-4" style={{ minWidth: PIPELINE_STAGES.length * 340 }}>
-                {PIPELINE_STAGES.map((stage) => (
-                  <PipelineColumn
-                    key={stage.status}
-                    status={stage.status}
-                    title={stage.title}
-                    jobs={jobsByStatus[stage.status] || []}
-                    onJobClick={handleJobClick}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* Pipeline Kanban Board - Full width on mobile, 2/3 on desktop */}
+        <div className="flex-1 min-w-0 lg:w-2/3">
+          <PipelineKanbanBoard
+            jobs={jobs}
+            onJobClick={handleJobClick}
+            onFormFiller={handleFormFiller}
+            onTailorClick={handleTailorResume}
+            onJobStatusChange={handleJobStatusChange}
+          />
         </div>
 
-        {/* Right Sidebar Content Area (mirrored in main content for desktop) */}
-        <div className="lg:w-80 flex-shrink-0 hidden lg:block">
+        {/* Right Sidebar - Analytics & Insights */}
+        <div className="lg:w-1/3 flex-shrink-0 hidden lg:block">
           <div className="space-y-6">
-            {/* ATS Score Distribution */}
-            <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-bold text-base text-ls-navy">ATS Score Distribution</h3>
-              </div>
-              <MountainAreaChart
-                data={atsDistribution}
-                height={200}
-                colors={['#FFA928', '#E63946', '#67E8F9']}
+            {/* Autonomous Controls */}
+            <AutomationControls
+              settings={automationSettings}
+              onUpdateSettings={patch =>
+                setAutomationSettings(prev => ({ ...prev, ...patch }))
+              }
+              pendingCount={jobs.filter(j => j.status === 'scored').length}
+              onTriggerCron={handleScrape}
+            />
+
+            {/* Pipeline Sources - Layered Mountain Chart */}
+            <div className="bg-surface-white raised border border-slate rounded-xl p-5">
+              <h3 className="font-heading font-bold text-base text-ink mb-4">Pipeline Sources</h3>
+              <LayeredMountainChart
+                data={pipelineSources}
+                height={260}
               />
-              <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+              <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded" style={{ background: 'linear-gradient(90deg, #FFA928, #E63946)' }} />
-                  <span className="font-body text-ls-grey-dark">High Match</span>
+                  <span className="w-3 h-3 rounded" style={{ background: 'linear-gradient(90deg, #F97316, #EA580C)' }} />
+                  <span className="font-body text-text-secondary">Global Remote</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded bg-ls-cyan/60" />
-                  <span className="font-body text-ls-grey-dark">Low Match</span>
+                  <span className="w-3 h-3 rounded" style={{ background: '#1E2024' }} />
+                  <span className="font-body text-text-secondary">Lilongwe Hub</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded" style={{ background: 'repeating-linear-gradient(90deg, #DC2626, #DC2626 4px, transparent 4px, transparent 8px)' }} />
+                  <span className="font-body text-text-secondary">Consultancies</span>
                 </div>
               </div>
+            </div>
+
+            {/* ATS Score Distribution - Using AreaChart for compatibility */}
+            <div className="bg-surface-white raised border border-slate rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-heading font-bold text-base text-ink">ATS Score Distribution</h3>
+              </div>
+              {atsDistribution.length > 0 ? (
+                <>
+                  <div style={{ height: 200 }} className="mb-4">
+                    <svg width="100%" height="100%" viewBox="0 0 400 200" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="ats-gradient-1" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#FFA928" stopOpacity="0.3" />
+                          <stop offset="100%" stopColor="#FFA928" stopOpacity="0.02" />
+                        </linearGradient>
+                        <linearGradient id="ats-gradient-2" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#E63946" stopOpacity="0.25" />
+                          <stop offset="100%" stopColor="#E63946" stopOpacity="0.01" />
+                        </linearGradient>
+                        <linearGradient id="ats-gradient-3" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor="#67E8F9" stopOpacity="0.2" />
+                          <stop offset="100%" stopColor="#67E8F9" stopOpacity="0.01" />
+                        </linearGradient>
+                      </defs>
+                      {/* Mountain layers */}
+                      {['#67E8F9', '#E63946', '#FFA928'].map((color, idx) => (
+                        <polygon
+                          key={idx}
+                          points={atsDistribution.map((d, i) => {
+                            const x = 40 + i * 320 / Math.max(1, atsDistribution.length - 1);
+                            const y = 180 - (d.count / Math.max(...atsDistribution.map(d => d.count), 1)) * 150 * (0.8 - idx * 0.2);
+                            return `${x},${y}`;
+                          }).join(' ') + ' 360,180 40,180'}
+                          fill={`url(#ats-gradient-${idx + 1})`}
+                        />
+                      ))}
+                    </svg>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded" style={{ background: 'linear-gradient(90deg, #FFA928, #E63946)' }} />
+                      <span className="font-body text-text-secondary">High Match</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded" style={{ background: '#67E8F9' }} />
+                      <span className="font-body text-text-secondary">Low Match</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center sunken rounded-xl border border-slate">
+                  <span className="font-body text-sm text-white">No ATS score data</span>
+                </div>
+              )}
             </div>
 
             {/* Match Tier Breakdown */}
-            <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5">
-              <h3 className="font-display font-bold text-base text-ls-navy mb-4">Match Tier Breakdown</h3>
+            <div className="bg-surface-white raised border border-slate rounded-xl p-5">
+              <h3 className="font-heading font-bold text-base text-ink mb-4">Match Tier Breakdown</h3>
               <div className="space-y-3">
                 {([
-                  { tier: 'excellent', label: 'Excellent (90+)', color: '#34D399' },
+                  { tier: 'excellent', label: 'Excellent (90+)', color: '#10B981' },
                   { tier: 'good', label: 'Good (80-89)', color: '#60A5FA' },
                   { tier: 'fair', label: 'Fair (70-79)', color: '#FBBF24' },
                   { tier: 'poor', label: 'Poor (<70)', color: '#F87171' },
@@ -316,11 +379,11 @@ export const AthenaDashboard: React.FC = () => {
                   return (
                     <div key={tier} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-body text-ls-grey-dark flex items-center gap-2">
+                        <span className="font-body text-text-secondary flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
                           {label}
                         </span>
-                        <span className="font-display font-bold text-ls-navy">{count} ({percentage}%)</span>
+                        <span className="font-heading font-bold text-ink">{count} ({percentage}%)</span>
                       </div>
                       <div className="h-1.5 sunken rounded-full overflow-hidden">
                         <div
@@ -335,50 +398,112 @@ export const AthenaDashboard: React.FC = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5">
-              <h3 className="font-display font-bold text-base text-ls-navy mb-4">Quick Stats</h3>
+            <div className="bg-surface-white raised border border-slate rounded-xl p-5">
+              <h3 className="font-heading font-bold text-base text-ink mb-4">Quick Stats</h3>
               <div className="space-y-3">
                 <StatCounter
                   value={stats?.by_source ? Object.values(stats.by_source).reduce((a, b) => a + b, 0) : 0}
                   label="Sources Tracked"
                   format="plain"
-                  accentColor="cyan"
+                  variant="discovered"
                   className="readout [&_span]:font-mono! [&_span]:tabular-nums"
                 />
                 <StatCounter
                   value={stats?.by_type ? Object.keys(stats.by_type).length : 0}
                   label="Job Types"
                   format="plain"
-                  accentColor="amber"
+                  variant="flagged"
                   className="readout [&_span]:font-mono! [&_span]:tabular-nums"
                 />
                 <StatCounter
                   value={stats?.total_jobs || 0}
                   label="Total Tracked"
                   format="comma"
-                  accentColor="navy"
+                  variant="discovered"
                   className="readout [&_span]:font-mono! [&_span]:tabular-nums"
                 />
               </div>
             </div>
 
             {/* Recent Scrapes */}
-            <div className="bg-ls-white raised border border-white/[0.07] rounded-xl p-5">
+            <div className="bg-surface-white raised border border-slate rounded-xl p-5">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-bold text-base text-ls-navy">Recent Scrapes</h3>
-                <button onClick={handleScrape} disabled={scraping} className="tactile rounded-md px-2 py-0.5 text-xs text-ls-cyan hover:text-ls-red font-bold">
+                <h3 className="font-heading font-bold text-base text-ink">Recent Scrapes</h3>
+                <button onClick={handleScrape} disabled={scraping} className="tactile rounded-md px-2 py-0.5 text-xs text-linkedin-blue hover:text-signoff-red font-bold">
                   {scraping ? 'Scraping...' : 'Run Scrape'}
                 </button>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="font-body text-ls-grey-dark">Last scrape: {formatRelativeTime(new Date().toISOString())}</p>
-                <p className="font-body text-ls-grey-dark">Jobs found: {stats?.new || 0} new</p>
-                <p className="font-body text-ls-grey-dark">Avg match: {stats ? Math.round(stats.avg_match_score) : 0}%</p>
+                <p className="font-body text-text-secondary">Last scrape: {formatRelativeTime(new Date().toISOString())}</p>
+                <p className="font-body text-text-secondary">Jobs found: {stats?.new || 0} new</p>
+                <p className="font-body text-text-secondary">Avg match: {stats ? Math.round(stats.avg_match_score) : 0}%</p>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Job detail + export + sign-off modals (stacked one at a time) */}
+      {activeJob && (
+        <>
+          <OpportunityDetailModal
+            isOpen={detailOpen}
+            onClose={() => setDetailOpen(false)}
+            opportunity={jobToOpportunity(activeJob)}
+            onExportLinkedIn={() => {
+              setDetailOpen(false);
+              setExportOpen(true);
+            }}
+            onInspectDocuments={() => {
+              setDetailOpen(false);
+              navigate('/documents');
+            }}
+            onSignOff={() => {
+              setDetailOpen(false);
+              setSignOffOpen(true);
+            }}
+            onOpenFormFiller={() => {
+              setDetailOpen(false);
+              setFormFillerOpen(true);
+            }}
+          />
+          <LinkedInExportModal
+            isOpen={exportOpen}
+            onClose={() => setExportOpen(false)}
+            opportunity={jobToOpportunity(activeJob)}
+            applicantName={applicantName}
+            onOpenLinkedIn={() =>
+              window.open(
+                activeJob.application_url || 'https://www.linkedin.com/jobs/',
+                '_blank',
+                'noopener,noreferrer',
+              )
+            }
+          />
+          <SignOffModal
+            isOpen={signOffOpen}
+            onClose={() => setSignOffOpen(false)}
+            onSubmit={handleSignOff}
+            opportunityTitle={activeJob.title}
+            opportunityCompany={activeJob.company}
+            applicantName={applicantName}
+            isSubmitting={signOffSubmitting}
+          />
+          <FormFillerModal
+            isOpen={formFillerOpen}
+            onClose={() => setFormFillerOpen(false)}
+            opportunity={jobToOpportunity(activeJob)}
+            applicantProfile={
+              profiles.length > 0
+                ? userProfileToApplicantProfile(profiles[0])
+                : FALLBACK_APPLICANT_PROFILE
+            }
+            onSubmitSuccess={(oppId, receipt) => {
+              console.log('Form submitted:', oppId, receipt);
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };

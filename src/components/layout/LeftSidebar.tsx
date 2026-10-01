@@ -34,6 +34,7 @@ interface LeftSidebarProps {
   selectedCategory: OpportunityCategory | "all";
   onSelectCategory: (category: OpportunityCategory | "all") => void;
   cronState: CronScheduleState;
+  cronFiring?: boolean;
   onTriggerCronNow: () => void;
 }
 
@@ -45,6 +46,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
   selectedCategory,
   onSelectCategory,
   cronState,
+  cronFiring,
   onTriggerCronNow,
 }) => {
   const formatSeconds = (totalSeconds: number) => {
@@ -263,10 +265,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
         {/* Manual Instant Trigger Button */}
         <button
           onClick={onTriggerCronNow}
-          className="w-full flex items-center justify-center gap-2 py-1.5 bg-[#2A2E37] hover:bg-[#343944] text-white text-xs rounded-lg font-medium transition-colors border border-[#3E4452]"
+          disabled={cronFiring}
+          className="w-full flex items-center justify-center gap-2 py-1.5 bg-[#2A2E37] hover:bg-[#343944] text-white text-xs rounded-lg font-medium transition-colors border border-[#3E4452] disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <RotateCw className="w-3 h-3 text-[#F97316]" />
-          <span>Execute 4h Cycle Now</span>
+          <RotateCw className={`w-3 h-3 text-[#F97316] ${cronFiring ? "animate-spin" : ""}`} />
+          <span>{cronFiring ? "Running..." : "Execute 4h Cycle Now"}</span>
         </button>
 
         <div className="text-[10px] text-[#64748B] text-center font-mono">

@@ -3,6 +3,8 @@ from urllib.parse import quote_plus, urljoin
 
 from bs4 import BeautifulSoup
 
+from athena.timeutils import ensure_utc
+
 from ..models import Job, JobSource, JobType
 from .base import BaseScraper
 
@@ -333,7 +335,9 @@ class RemoteOKScraper(BaseScraper):
             posted = None
             if item.get("date"):
                 try:
-                    posted = datetime.fromisoformat(str(item["date"]).replace("Z", "+00:00"))
+                    posted = ensure_utc(
+                        datetime.fromisoformat(str(item["date"]).replace("Z", "+00:00")),
+                    )
                 except ValueError:
                     posted = None
 

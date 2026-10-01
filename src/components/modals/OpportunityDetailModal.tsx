@@ -145,7 +145,7 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
                 Required Qualifications & Skills
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#334155]">
-                {opportunity.requirements.map((req, i) => (
+                {opportunity.requirements?.map((req, i) => (
                   <div key={i} className="flex items-start gap-1.5 bg-[#F8F9FA] p-2 rounded border border-[#E2E8F0]">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                     <span>{req}</span>

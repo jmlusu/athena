@@ -11,7 +11,7 @@ export const RouteError: React.FC = () => {
   return (
     <div role="alert" className="flex flex-col items-center justify-center py-16 px-4 text-center">
       <div className="w-16 h-16 sunken rounded-full flex items-center justify-center mb-4">
-        <AlertTriangle className="w-8 h-8 text-ls-red" aria-hidden="true" />
+        <AlertTriangle className="w-8 h-8 text-signoff-red" aria-hidden="true" />
       </div>
 
       <h2 className="font-display font-bold text-lg text-ls-navy mb-2">Something went wrong</h2>
@@ -22,7 +22,7 @@ export const RouteError: React.FC = () => {
         </p>
       )}
 
-      <pre className="sunken w-full max-w-xl rounded-lg px-4 py-3 mb-4 font-mono text-xs text-ls-grey-dark text-left whitespace-pre-wrap break-words">
+      <pre className="sunken w-full max-w-xl rounded-lg px-4 py-3 mb-4 font-mono text-xs text-white text-left whitespace-pre-wrap break-words">
         {message}
       </pre>
 
@@ -33,7 +33,7 @@ export const RouteError: React.FC = () => {
       <button
         type="button"
         onClick={() => navigate('/')}
-        className="tactile mt-4 px-6 py-2.5 rounded-lg bg-ls-red text-[#14161A] font-bold text-sm hover:brightness-110 transition-colors"
+        className="tactile mt-4 px-6 py-2.5 rounded-lg bg-signoff-red text-white font-bold text-sm hover:bg-signoff-red-hover transition-colors"
       >
         Retry
       </button>

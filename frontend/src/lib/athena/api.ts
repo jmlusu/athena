@@ -9,16 +9,41 @@ import type {
   PipelineStatsResponse,
   ScrapeJob,
   MatchJobsResponse,
+  DocumentGenerateResponse,
   JobSource,
   JobType,
   JobStatus,
   MatchTier,
+  Document,
+  ReceiptResponse,
+  ReceiptListResponse,
 } from './types';
 
-const API_BASE = import.meta.env.VITE_ATHENA_API_BASE || '/api/v1/athena';
+// AI Studio types (from aiTypes.ts)
+import type {
+  ATSScoreRequest,
+  ATSScoreResponse as AIATSScoreResponse,
+  TailorResumeRequest,
+  TailorResumeResponse,
+  TailorDocumentRequest,
+  TailorDocumentResponse,
+  DehumanizeRequest,
+  DehumanizeResponse,
+  ScrapeLiveRequest,
+  ScrapeLiveResponse,
+  N8nDispatchRequest,
+  N8nDispatchResponse,
+  SubmitApplicationRequest,
+  SubmitApplicationResponse,
+  AIHealthResponse,
+} from './aiTypes';
+
+// Safely access Vite env variables (undefined in non-Vite contexts like Playwright tests)
+const _importMetaEnv: Record<string, unknown> = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : {};
+const API_BASE = (_importMetaEnv.VITE_ATHENA_API_BASE as string) || '/api/v1/athena';
 // Athena's admin key — required on all write (POST/PUT/PATCH/DELETE) endpoints.
-// Override via VITE_ATHENA_API_KEY at build time; defaults to the backend dev fallback.
-const API_KEY = import.meta.env.VITE_ATHENA_API_KEY || 'dev-admin-key';
+ // Override via VITE_ATHENA_API_KEY at build time; defaults to the backend dev fallback.
+ const API_KEY = (_importMetaEnv.VITE_ATHENA_API_KEY as string) || 'dev-admin-key';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -75,7 +100,8 @@ export async function listJobs(filters: JobFilter = {}): Promise<JobListResponse
     && typeof body.total === 'number'
     && typeof body.limit === 'number'
     && typeof body.offset === 'number';
-  if (!canonical && import.meta.env.DEV && !jobsShapeWarned) {
+  const isDev = _importMetaEnv.DEV === true;
+  if (!canonical && isDev && !jobsShapeWarned) {
     jobsShapeWarned = true;
     console.warn(`listJobs: unexpected response shape from ${url}`, body);
   }
@@ -102,6 +128,44 @@ export async function updateJob(jobId: string, updates: Partial<Job>): Promise<J
 
 export async function deleteJob(jobId: string): Promise<void> {
   await fetch(`${API_BASE}/jobs/${jobId}`, { method: 'DELETE' });
+}
+
+// Job action endpoints
+export async function applyToJob(
+  jobId: string,
+  payload: { user_profile_id: string; resume_id: string; cover_letter_id?: string },
+): Promise<Application> {
+  return fetchJson<Application>(`${API_BASE}/jobs/${jobId}/apply`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function tailorResume(
+  jobId: string,
+  payload: { user_profile_id: string; output_format?: 'docx' | 'pdf' | 'both' },
+): Promise<DocumentGenerateResponse> {
+  return fetchJson<DocumentGenerateResponse>(`${API_BASE}/jobs/${jobId}/tailor-resume`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function generateCoverLetter(
+  jobId: string,
+  payload: { user_profile_id: string; output_format?: 'docx' | 'pdf' | 'both' },
+): Promise<DocumentGenerateResponse> {
+  return fetchJson<DocumentGenerateResponse>(`${API_BASE}/jobs/${jobId}/cover-letter`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function flagJob(jobId: string, payload?: { reason?: string }): Promise<Job> {
+  return fetchJson<Job>(`${API_BASE}/jobs/${jobId}/flag`, {
+    method: 'POST',
+    body: JSON.stringify(payload ?? {}),
+  });
 }
 
 // User Profile endpoints
@@ -229,6 +293,56 @@ export async function getSchedulerStatus(): Promise<{ running: boolean; jobs: Ar
   return fetchJson(`${API_BASE}/scheduler/status`);
 }
 
+// Receipts endpoints
+export async function listReceipts(filters?: {
+  user_profile_id?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<ReceiptListResponse> {
+  const params = new URLSearchParams();
+  if (filters?.user_profile_id) params.append('user_profile_id', filters.user_profile_id);
+  if (filters?.limit) params.append('limit', String(filters.limit));
+  if (filters?.offset) params.append('offset', String(filters.offset));
+  return fetchJson<ReceiptListResponse>(`${API_BASE}/receipts?${params.toString()}`);
+}
+
+export async function getReceipt(receiptId: string): Promise<ReceiptResponse> {
+  return fetchJson<ReceiptResponse>(`${API_BASE}/receipts/${receiptId}`);
+}
+
+// Profile Documents endpoints
+export async function listProfileDocuments(profileId: string): Promise<Document[]> {
+  return fetchJson<Document[]>(`${API_BASE}/profiles/${profileId}/documents`);
+}
+
+export async function uploadProfileDocument(
+  profileId: string,
+  document: Document,
+): Promise<Document> {
+  return fetchJson<Document>(`${API_BASE}/profiles/${profileId}/documents`, {
+    method: 'POST',
+    body: JSON.stringify(document),
+  });
+}
+
+export async function deleteProfileDocument(profileId: string, documentId: string): Promise<{ success: boolean }> {
+  await fetch(`${API_BASE}/profiles/${profileId}/documents/${documentId}`, { method: 'DELETE' });
+  return { success: true };
+}
+
+// Combined Stats endpoint
+export async function getCombinedStats(): Promise<{
+  pipeline: PipelineStatsResponse;
+  scraping: {
+    recent_scrapes: ScrapeJob[];
+    total_jobs_scraped: number;
+    total_new_jobs: number;
+    last_scrape_at?: string;
+  };
+}> {
+  return fetchJson(`${API_BASE}/stats`);
+}
+
 // Helper functions for UI — dark skeuomorphic chips: bg-{hue}-500/15 text-{hue}-300 border-{hue}-500/30
 export function getJobStatusColor(status: JobStatus): string {
   const colors: Record<JobStatus, string> = {
@@ -237,6 +351,7 @@ export function getJobStatusColor(status: JobStatus): string {
     matched: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
     scored: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
     applied: 'bg-ls-red/15 text-ls-red border-ls-red/40',
+    flagged: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
     interview: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
     offer: 'bg-green-500/15 text-green-300 border-green-500/30',
     rejected: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
@@ -298,7 +413,7 @@ export function getJobTypeLabel(type: JobType): string {
     internship: 'Internship',
     temporary: 'Temporary',
   };
-  return labels[type] || type;
+  return labels[type] || type || 'Job';
 }
 
 export function getJobSourceLabel(source: JobSource): string {
@@ -321,4 +436,59 @@ export function getJobSourceLabel(source: JobSource): string {
     other: 'Other',
   };
   return labels[source] || source;
+}
+
+// AI Studio Integration Endpoints
+
+export async function aiHealth(): Promise<AIHealthResponse> {
+  return fetchJson<AIHealthResponse>(`${API_BASE}/ai/health`);
+}
+
+export async function scoreATS(request: ATSScoreRequest): Promise<AIATSScoreResponse> {
+  return fetchJson<AIATSScoreResponse>(`${API_BASE}/ai/score-ats`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function tailorResumeAI(request: TailorResumeRequest): Promise<TailorResumeResponse> {
+  return fetchJson<TailorResumeResponse>(`${API_BASE}/ai/tailor-resume`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function tailorDocumentAI(request: TailorDocumentRequest): Promise<TailorDocumentResponse> {
+  return fetchJson<TailorDocumentResponse>(`${API_BASE}/ai/tailor-document`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function dehumanizeText(request: DehumanizeRequest): Promise<DehumanizeResponse> {
+  return fetchJson<DehumanizeResponse>(`${API_BASE}/ai/dehumanize`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function scrapeLive(request: ScrapeLiveRequest): Promise<ScrapeLiveResponse> {
+  return fetchJson<ScrapeLiveResponse>(`${API_BASE}/ai/scrape-live`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function dispatchN8n(request: N8nDispatchRequest): Promise<N8nDispatchResponse> {
+  return fetchJson<N8nDispatchResponse>(`${API_BASE}/ai/n8n/dispatch`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function submitApplication(request: SubmitApplicationRequest): Promise<SubmitApplicationResponse> {
+  return fetchJson<SubmitApplicationResponse>(`${API_BASE}/ai/submit-application`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
 }

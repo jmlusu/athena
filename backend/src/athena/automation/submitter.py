@@ -11,7 +11,7 @@ import asyncio
 import logging
 import os
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -56,7 +56,7 @@ class LocalApprovalGate:
             "tool": tool,
             "args": args,
             "status": "pending",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
         request_file.write_text(json.dumps(request_data, indent=2))
         logger.info("Created local approval request %s for task %s", request_id, task_id)
@@ -177,7 +177,7 @@ class SubmissionResult:
     fields_filled: dict[str, bool] = field(default_factory=dict)
     required_fields_missing: list[str] = field(default_factory=list)
     retry_count: int = 0
-    started_at: datetime = field(default_factory=datetime.now)
+    started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
     approval_request_id: str | None = None
     approved: bool | None = None
@@ -253,7 +253,7 @@ class ApplicationSubmitter:
         self._current_resume = resume
         self._current_cover_letter = cover_letter
         self._result = SubmissionResult(job_id=job.id)
-        self._result.started_at = datetime.now()
+        self._result.started_at = datetime.now(UTC)
 
         # Create or use existing application record
         if application is None:
@@ -473,9 +473,9 @@ class ApplicationSubmitter:
 
         # Poll for approval
         timeout = self.config.approval_timeout_minutes * 60
-        start_time = datetime.now()
+        start_time = datetime.now(UTC)
 
-        while (datetime.now() - start_time).total_seconds() < timeout:
+        while (datetime.now(UTC) - start_time).total_seconds() < timeout:
             result = self.hitl_gate.resume_approved(request_id)
             if result is True:
                 logger.info("Application approved by human")
@@ -589,7 +589,7 @@ class ApplicationSubmitter:
         if self._current_application:
             if stage == SubmissionStage.COMPLETED:
                 self._current_application.status = ApplicationStatus.SUBMITTED
-                self._current_application.submitted_at = datetime.now()
+                self._current_application.submitted_at = datetime.now(UTC)
                 if self._result.confirmation_number:
                     self._current_application.receipt_data["confirmation_number"] = (
                         self._result.confirmation_number
@@ -605,12 +605,12 @@ class ApplicationSubmitter:
                 self._current_application.status = ApplicationStatus.WITHDRAWN
                 self._current_application.notes = "Cancelled by user"
 
-            self._current_application.updated_at = datetime.now()
+            self._current_application.updated_at = datetime.now(UTC)
             athena_db.update_application(self._current_application)
 
     async def _finalize(self) -> None:
         """Finalize submission and save results."""
-        self._result.completed_at = datetime.now()
+        self._result.completed_at = datetime.now(UTC)
 
         # Save audit trail
         if self.config.save_audit_trail and self.browser:
@@ -619,7 +619,7 @@ class ApplicationSubmitter:
                 self.config.audit_dir.mkdir(parents=True, exist_ok=True)
                 audit_file = (
                     self.config.audit_dir
-                    / f"submission_{self._result.application_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    / f"submission_{self._result.application_id}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
                 )
                 import json
 

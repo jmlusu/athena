@@ -14,8 +14,8 @@ export default defineConfig({
     host: process.env.HOST || '0.0.0.0',
     port: Number(process.env.PORT) || 1111,
     allowedHosts: true,
-    proxy: {
-      '/api/v1/athena': process.env.ATHENA_BACKEND_URL || 'http://127.0.0.1:8000'
+proxy: {
+      '/api/v1/athena': process.env.ATHENA_BACKEND_URL || 'http://127.0.0.1:3000'
     }
   }
 });

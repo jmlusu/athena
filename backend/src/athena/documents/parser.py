@@ -10,7 +10,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -289,7 +289,7 @@ class DocumentParser(ABC):
         return {
             "title": title,
             "company": company,
-            "start_date": start_date or datetime.now(),
+            "start_date": start_date or datetime.now(UTC),
             "end_date": end_date,
             "current": current,
             "description": description,

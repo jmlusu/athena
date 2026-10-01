@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Compass,
   Briefcase,
@@ -62,11 +62,70 @@ export default function App() {
 
   // 4-Hour Cron State
   const [cronState, setCronState] = useState<CronScheduleState>(initialCronState);
+  const [cronFiring, setCronFiring] = useState(false);
+  const cronInFlightRef = useRef(false);
 
   // Modals & Selected Objects
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [signOffOpportunity, setSignOffOpportunity] = useState<Opportunity | null>(null);
   const [showNotificationToast, setShowNotificationToast] = useState<string | null>(null);
+
+  // Backend-backed cron cycle: hits the same live-scrape endpoint the Scraper view uses
+  const runCronCycle = async (type: "job" | "consultancy" | "all") => {
+    if (cronInFlightRef.current) return;
+    cronInFlightRef.current = true;
+    setCronFiring(true);
+
+    const label = type.toUpperCase();
+    const searchType = type === "job" ? "jobs" : type === "consultancy" ? "consultancies" : "all";
+    try {
+      const res = await fetch("/api/ai/scrape-live", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locationFilter: "all",
+          searchType,
+          resumeSkills: applicantProfile.skills,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const count = Array.isArray(data.listings) ? data.listings.length : 0;
+      setShowNotificationToast(
+        `4-Hour ${label} cron cycle completed - ${count} new listings discovered.`
+      );
+      setTimeout(() => setShowNotificationToast(null), 5000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "network error";
+      setShowNotificationToast(`4-Hour ${label} cron cycle failed - ${message}.`);
+      setTimeout(() => setShowNotificationToast(null), 5000);
+    } finally {
+      cronInFlightRef.current = false;
+      setCronFiring(false);
+    }
+  };
+
+  const triggerCronRefresh = (type: "job" | "consultancy" | "all") => {
+    runCronCycle(type);
+  };
+
+  // Keep the countdown timer firing through the latest handler without restarting it
+  const cronRefreshRef = useRef(triggerCronRefresh);
+  useEffect(() => {
+    cronRefreshRef.current = triggerCronRefresh;
+  });
+
+  const handleTriggerCronNow = () => {
+    if (cronFiring) return;
+    setCronState((prev) => ({
+      ...prev,
+      jobSecondsRemaining: 14400,
+      consultancySecondsRemaining: 14400,
+      lastJobRun: new Date().toLocaleTimeString(),
+      lastConsultancyRun: new Date().toLocaleTimeString(),
+    }));
+    triggerCronRefresh("all");
+  };
 
   // 4-Hour Countdown Timer Effect
   useEffect(() => {
@@ -77,11 +136,11 @@ export default function App() {
 
         if (newJob <= 0) {
           newJob = 14400; // Reset 4 hours (4 * 3600)
-          triggerCronRefresh("job");
+          cronRefreshRef.current("job");
         }
         if (newCons <= 0) {
           newCons = 14400; // Reset 4 hours
-          triggerCronRefresh("consultancy");
+          cronRefreshRef.current("consultancy");
         }
 
         return {
@@ -94,22 +153,6 @@ export default function App() {
 
     return () => clearInterval(timer);
   }, []);
-
-  const triggerCronRefresh = (type: "job" | "consultancy" | "all") => {
-    setShowNotificationToast(`4-Hour ${type.toUpperCase()} cron cycle triggered automated discovery.`);
-    setTimeout(() => setShowNotificationToast(null), 5000);
-  };
-
-  const handleTriggerCronNow = () => {
-    setCronState((prev) => ({
-      ...prev,
-      jobSecondsRemaining: 14400,
-      consultancySecondsRemaining: 14400,
-      lastJobRun: new Date().toLocaleTimeString(),
-      lastConsultancyRun: new Date().toLocaleTimeString(),
-    }));
-    triggerCronRefresh("all");
-  };
 
   // Opportunity Status Updater
   const handleUpdateStatus = (id: string, newStatus: PipelineStatus) => {
@@ -170,6 +213,7 @@ export default function App() {
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           cronState={cronState}
+          cronFiring={cronFiring}
           onTriggerCronNow={handleTriggerCronNow}
         />
 

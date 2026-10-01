@@ -169,19 +169,49 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
     window.print();
   };
 
-  const handleCopyMarkdown = () => {
-    let content = "";
+  const buildMarkdown = () => {
     if (activeTab === "resume") {
-      content = `# ${resumeData.fullName}\n**${resumeData.title}**\n${resumeData.contact.location} | ${resumeData.contact.email} | ${resumeData.contact.phone}\n\n## Executive Summary\n${resumeData.summary}\n\n## Core Competencies\n${resumeData.skills.join(", ")}\n\n## Professional Experience\n${resumeData.experience.map((e) => `### ${e.role} - ${e.company} (${e.period})\n${e.bullets.map((b) => `- ${b}`).join("\n")}`).join("\n\n")}`;
+      return `# ${resumeData.fullName}\n**${resumeData.title}**\n${resumeData.contact?.location || ""} | ${resumeData.contact?.email || ""} | ${resumeData.contact?.phone || ""}\n\n## Executive Summary\n${resumeData.summary}\n\n## Core Competencies\n${resumeData.skills?.join(", ") || ""}\n\n## Professional Experience\n${resumeData.experience?.map((e) => `### ${e.role} - ${e.company} (${e.period})\n${e.bullets?.map((b) => `- ${b}`).join("\n") || ""}`).join("\n\n") || ""}`;
     } else if (activeTab === "cover_letter") {
-      content = `${coverLetterData.date}\n\n${coverLetterData.recipient}\n\n${coverLetterData.greeting}\n\n${coverLetterData.paragraphs?.join("\n\n")}\n\n${coverLetterData.closing}\n${coverLetterData.signature}`;
-    } else {
-      content = `# ${proposalData.title}\n**Client:** ${proposalData.recipient}\n**Date:** ${proposalData.date}\n\n## Executive Summary\n${proposalData.executiveSummary}\n\n${proposalData.sections?.map((s) => `### ${s.heading}\n${s.body}`).join("\n\n")}\n\n${proposalData.closing}\n${proposalData.signature}`;
+      return `${coverLetterData.date}\n\n${coverLetterData.recipient}\n\n${coverLetterData.greeting}\n\n${coverLetterData.paragraphs?.join("\n\n")}\n\n${coverLetterData.closing}\n${coverLetterData.signature}`;
     }
+    return `# ${proposalData.title}\n**Client:** ${proposalData.recipient}\n**Date:** ${proposalData.date}\n\n## Executive Summary\n${proposalData.executiveSummary}\n\n${proposalData.sections?.map((s) => `### ${s.heading}\n${s.body}`).join("\n\n")}\n\n${proposalData.closing}\n${proposalData.signature}`;
+  };
 
-    navigator.clipboard.writeText(content);
+  const buildMarkdownFilename = () => {
+    const rawTitle =
+      activeTab === "cover_letter"
+        ? coverLetterData.title
+        : activeTab === "proposal"
+        ? proposalData.title
+        : currentOpp?.title || resumeData.title;
+    const slug = (rawTitle || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80)
+      .replace(/-+$/, "");
+    return slug ? `${slug}.md` : "athena-document.md";
+  };
+
+  const handleCopyMarkdown = () => {
+    navigator.clipboard.writeText(buildMarkdown());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownloadMarkdown = () => {
+    const content = buildMarkdown();
+    if (!content.trim()) return;
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = buildMarkdownFilename();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -205,7 +235,7 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs text-[#64748B]">Tailored for:</span>
               <select
-                value={currentOpp.id}
+                value={currentOpp?.id ?? ""}
                 onChange={(e) => {
                   const opp = opportunities.find((o) => o.id === e.target.value);
                   if (opp) onSelectOpportunity(opp);
@@ -214,7 +244,7 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
               >
                 {opportunities.map((o) => (
                   <option key={o.id} value={o.id}>
-                    {o.category.toUpperCase()}: {o.title} ({o.company}) - ATS: {o.atsScore}%
+                    {(o.category || "other").toUpperCase()}: {o.title} ({o.company}) - ATS: {o.atsScore}%
                   </option>
                 ))}
               </select>
@@ -275,6 +305,17 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
           >
             <Copy className="w-3.5 h-3.5 text-[#64748B]" />
             <span>{copied ? "Copied!" : "Copy"}</span>
+          </button>
+
+          {/* Download Markdown */}
+          <button
+            onClick={handleDownloadMarkdown}
+            disabled={!buildMarkdown().trim()}
+            data-testid="download-markdown-btn"
+            className="px-3 py-1.5 bg-[#F4F5F7] hover:bg-[#E2E8F0] text-[#18181B] text-xs font-medium rounded-lg border border-[#CBD5E1] flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-3.5 h-3.5 text-[#64748B]" />
+            <span>Download .md</span>
           </button>
 
           {/* Print / PDF Export */}
@@ -347,11 +388,11 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
                   {resumeData.fullName}
                 </h1>
                 <div className="text-xs font-mono text-[#475569] space-x-2">
-                  <span>{resumeData.contact.location}</span>
+                  <span>{resumeData.contact?.location}</span>
                   <span>•</span>
-                  <span>{resumeData.contact.phone}</span>
+                  <span>{resumeData.contact?.phone}</span>
                   <span>•</span>
-                  <span>{resumeData.contact.email}</span>
+                  <span>{resumeData.contact?.email}</span>
                 </div>
               </div>
               <div className="text-sm font-semibold uppercase tracking-widest text-[#F97316] mt-1 font-mono">
@@ -380,7 +421,7 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
                       Core Competencies
                     </h3>
                     <div className="flex flex-wrap gap-1.5">
-                      {resumeData.skills.map((skill, idx) => (
+                      {resumeData.skills?.map((skill, idx) => (
                         <span
                           key={idx}
                           className="text-[11px] bg-[#F4F5F7] text-[#1E293B] px-2 py-0.5 rounded border border-[#E2E8F0] font-medium"
@@ -428,7 +469,7 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
                     Selected Professional Engagements & Consultancies
                   </h3>
                   <div className="space-y-4">
-                    {resumeData.experience.map((exp, idx) => (
+                    {resumeData.experience?.map((exp, idx) => (
                       <div key={idx} className="space-y-1.5">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs">
                           <span className="font-bold text-[#18181B] text-sm">{exp.role}</span>
@@ -438,7 +479,7 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
                           {exp.company} — {exp.location}
                         </div>
                         <ul className="space-y-1 text-xs text-[#334155] list-disc list-outside pl-4">
-                          {exp.bullets.map((b, bIdx) => (
+                          {exp.bullets?.map((b, bIdx) => (
                             <li key={bIdx} className="leading-relaxed">
                               {b}
                             </li>
@@ -458,14 +499,14 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
                     Professional Experience
                   </h3>
                   <div className="space-y-4">
-                    {resumeData.experience.map((exp, idx) => (
+                    {resumeData.experience?.map((exp, idx) => (
                       <div key={idx} className="space-y-1">
                         <div className="flex justify-between items-baseline text-xs">
                           <span className="font-bold text-[#18181B] text-sm">{exp.role} — {exp.company}</span>
                           <span className="text-[#64748B] font-mono">{exp.period} | {exp.location}</span>
                         </div>
                         <ul className="space-y-1 text-xs text-[#334155] list-disc list-outside pl-4 pt-1">
-                          {exp.bullets.map((b, bIdx) => (
+                          {exp.bullets?.map((b, bIdx) => (
                             <li key={bIdx} className="leading-relaxed">
                               {b}
                             </li>
@@ -483,7 +524,7 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
                       Technical & Operational Competencies
                     </h3>
                     <div className="flex flex-wrap gap-1 text-xs">
-                      {resumeData.skills.map((s, i) => (
+                      {resumeData.skills?.map((s, i) => (
                         <span key={i} className="px-2 py-0.5 bg-[#F4F5F7] rounded text-[11px] font-medium">
                           {s}
                         </span>

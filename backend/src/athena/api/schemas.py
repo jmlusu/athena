@@ -1,8 +1,9 @@
-from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
+
+from athena.timeutils import UTCDateTime
 
 from ..models import (
     ApplicationStatus,
@@ -32,8 +33,8 @@ class JobCreate(BaseModel):
     responsibilities: list[str] = []
     keywords: list[str] = []
     salary_range: SalaryRange | None = None
-    posted_date: datetime | None = None
-    expiry_date: datetime | None = None
+    posted_date: UTCDateTime | None = None
+    expiry_date: UTCDateTime | None = None
     application_url: HttpUrl
     apply_email: EmailStr | None = None
     contact_person: str | None = None
@@ -56,8 +57,8 @@ class JobResponse(BaseModel):
     responsibilities: list[str]
     keywords: list[str]
     salary_range: SalaryRange | None
-    posted_date: datetime | None
-    expiry_date: datetime | None
+    posted_date: UTCDateTime | None
+    expiry_date: UTCDateTime | None
     application_url: HttpUrl
     apply_email: EmailStr | None
     contact_person: str | None
@@ -69,8 +70,8 @@ class JobResponse(BaseModel):
     match_score: float | None
     match_tier: MatchTier | None
     status: JobStatus
-    scraped_at: datetime
-    updated_at: datetime
+    scraped_at: UTCDateTime
+    updated_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -133,8 +134,8 @@ class UserProfileResponse(BaseModel):
     languages: list[str]
     preferences: JobPreferences
     documents: list[Document]
-    created_at: datetime
-    updated_at: datetime
+    created_at: UTCDateTime
+    updated_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -158,13 +159,13 @@ class ApplicationResponse(BaseModel):
     ats_score: float
     match_score: float
     status: ApplicationStatus
-    submitted_at: datetime | None
-    confirmed_at: datetime | None
+    submitted_at: UTCDateTime | None
+    confirmed_at: UTCDateTime | None
     receipt_data: dict[str, Any]
-    follow_up_dates: list[datetime]
+    follow_up_dates: list[UTCDateTime]
     notes: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: UTCDateTime
+    updated_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -196,9 +197,9 @@ class ScrapeJobResponse(BaseModel):
     jobs_new: int
     jobs_updated: int
     error: str | None
-    started_at: datetime | None
-    completed_at: datetime | None
-    created_at: datetime
+    started_at: UTCDateTime | None
+    completed_at: UTCDateTime | None
+    created_at: UTCDateTime
 
     class Config:
         from_attributes = True
@@ -250,4 +251,70 @@ class ScrapeStatsResponse(BaseModel):
     recent_scrapes: list[ScrapeJobResponse]
     total_jobs_scraped: int
     total_new_jobs: int
-    last_scrape_at: datetime | None
+    last_scrape_at: UTCDateTime | None
+
+
+class ApplyRequest(BaseModel):
+    user_profile_id: UUID
+    resume_id: UUID
+    cover_letter_id: UUID | None = None
+
+
+class TailorResumeRequest(BaseModel):
+    user_profile_id: UUID
+    output_format: Literal["docx", "pdf", "both"] = "docx"
+
+
+class CoverLetterRequest(BaseModel):
+    user_profile_id: UUID
+    output_format: Literal["docx", "pdf", "both"] = "docx"
+
+
+class FlagJobRequest(BaseModel):
+    reason: str | None = None
+
+
+class DocumentGenerateResponse(BaseModel):
+    filename: str
+    path: str | None
+    warnings: list[str]
+
+
+class DocumentResponse(BaseModel):
+    """Response for a single document in a user profile."""
+
+    id: UUID
+    name: str
+    type: Literal["resume", "cover_letter", "certification", "portfolio", "other"]
+    file_path: str
+    mime_type: str
+    size_bytes: int
+    uploaded_at: UTCDateTime
+    parsed_content: dict[str, Any] | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class ReceiptResponse(BaseModel):
+    """Receipt for a submitted application."""
+
+    receipt_id: str
+    confirmation_hash: str
+    submitted_at: UTCDateTime
+    job_title: str
+    company: str
+    applicant_name: str
+    authorized_by: str
+    authorized_at: UTCDateTime
+    portal_name: str
+    follow_up_date: str
+    status: str
+    notes: str | None = None
+
+
+class ReceiptListResponse(BaseModel):
+    """List of receipts."""
+
+    receipts: list[ReceiptResponse]
+    total: int

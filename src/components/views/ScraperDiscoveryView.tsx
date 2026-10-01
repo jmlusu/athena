@@ -300,7 +300,7 @@ export const ScraperDiscoveryView: React.FC<ScraperDiscoveryViewProps> = ({
 
                   {/* Requirements tags */}
                   <div className="flex flex-wrap gap-1 pt-1">
-                    {opp.requirements.slice(0, 4).map((req, i) => (
+                    {opp.requirements?.slice(0, 4).map((req, i) => (
                       <span
                         key={i}
                         className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#F1F5F9] text-[#475569]"
@@ -308,9 +308,9 @@ export const ScraperDiscoveryView: React.FC<ScraperDiscoveryViewProps> = ({
                         {req}
                       </span>
                     ))}
-                    {opp.requirements.length > 4 && (
+                    {(opp.requirements?.length || 0) > 4 && (
                       <span className="text-[10px] text-[#94A3B8] font-mono self-center">
-                        +{opp.requirements.length - 4} more
+                        +{(opp.requirements?.length || 0) - 4} more
                       </span>
                     )}
                   </div>

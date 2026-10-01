@@ -128,8 +128,10 @@ Services:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GEMINI_API_KEY` | **Primary: Gemini AI API key** | Required |
+| `GEMINI_MODEL` | **Primary: Gemini model to use** | (auto) |
 | `APP_URL` | **Primary: App URL for self-referential links** | http://localhost:3000 |
 | `PORT` | **Primary: Express server port** | 3000 |
+| `NODE_ENV` | **Primary: Node environment** | development |
 | `ATHENA_API_KEY` | Legacy: API key for Python backend auth | `dev-admin-key` |
 | `ATHENA_CORS_ORIGINS` | Legacy: Comma-separated allowed origins | `http://localhost:8530,http://127.0.0.1:8530` |
 | `ATHENA_AUTH_MODE` | Legacy: `api_key` or `open` | `api_key` |
@@ -140,10 +142,14 @@ Services:
 | `ATHENA_SCHEDULER_AUTOSTART` | Legacy: Start scheduler on boot | `true` |
 | `ATHENA_DEFAULT_SCRAPE_QUERY` | Legacy: Default scheduled scrape query | `software engineer` |
 | `ATHENA_DEFAULT_SCRAPE_MAX` | Legacy: Max results per scheduled scrape | `50` |
+| `ATHENA_HOST` | Legacy: Python backend host | `0.0.0.0` |
+| `ATHENA_PORT` | Legacy: Python backend port | `8000` |
+| `ATHENA_HSTS_MAX_AGE` | Legacy: HSTS max-age in seconds | `31536000` |
+| `ATHENA_AGENT_ID` | Legacy: Agent identifier for tracking | (empty) |
+| `ATHENA_BACKEND_URL` | Legacy: Backend URL for frontend proxy | `http://localhost:8000` |
 | `VITE_ATHENA_API_BASE` | Legacy: Frontend API base path | `/api/v1/athena` |
 | `VITE_ATHENA_API_KEY` | Legacy: API key baked into frontend build | `dev-admin-key` |
-
----
+| `HOST` | Host binding for dev server | (empty) |
 
 ## Primary Implementation Features (Spec-Compliant)
 

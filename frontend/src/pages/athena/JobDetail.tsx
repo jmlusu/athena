@@ -4,8 +4,8 @@ import { ATSGauge } from '@/components/athena/ATSGauge';
 import { AreaChart } from '@/components/athena/AreaChart';
 import { SkillTags, SkillComparison } from '@/components/athena/SkillTags';
 import { cn, formatSalary, formatDate, getJobTypeLabel, getJobSourceLabel, getMatchTierColor, getMatchTierLabel } from '@/lib/athena/utils';
-import { getJob, getATSScore, listProfiles } from '@/lib/athena/api';
-import type { Job, MatchTier, SkillTag } from '@/lib/athena/types';
+import { getJob, getATSScore, listProfiles, applyToJob, tailorResume, generateCoverLetter, flagJob } from '@/lib/athena/api';
+import type { Job, MatchTier, SkillTag, UserProfile } from '@/lib/athena/types';
 import { ChevronDown, ChevronLeft, Download, Upload, FileText, Flag, Share2, ExternalLink, Check, X, Sparkles, Brain, Loader2 } from 'lucide-react';
 
 const TIER_HEX: Record<string, string> = {
@@ -32,6 +32,8 @@ export const JobDetail: React.FC = () => {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -45,9 +47,10 @@ export const JobDetail: React.FC = () => {
       const jobData = await getJob(id);
       setJob(jobData);
       try {
-        const profiles = await listProfiles();
-        if ((profiles?.length ?? 0) > 0) {
-          const atsData = await getATSScore(id, profiles[0].id);
+        const profileList = await listProfiles();
+        setProfiles(profileList ?? []);
+        if ((profileList?.length ?? 0) > 0) {
+          const atsData = await getATSScore(id, profileList[0].id);
           setAtsScore(atsData);
         }
       } catch (atsErr) {
@@ -77,7 +80,7 @@ export const JobDetail: React.FC = () => {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <p className="font-body text-ls-grey-dark">Job not found</p>
-          <button onClick={() => navigate('/athena/jobs')} className="tactile mt-4 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold hover:brightness-110 transition-colors">
+          <button onClick={() => navigate('/jobs')} className="tactile mt-4 px-4 py-2 rounded-lg bg-ls-red text-[#14161A] font-bold hover:brightness-110 transition-colors">
             Back to Jobs
           </button>
         </div>
@@ -85,28 +88,77 @@ export const JobDetail: React.FC = () => {
     );
   }
 
-  // Mock skill data for demonstration
-  const jobSkills: SkillTag[] = [
-    { name: 'React', level: 'advanced', category: 'technical', matched: true, importance: 'required' },
-    { name: 'TypeScript', level: 'advanced', category: 'technical', matched: true, importance: 'required' },
-    { name: 'Node.js', level: 'intermediate', category: 'technical', matched: true, importance: 'preferred' },
-    { name: 'PostgreSQL', level: 'intermediate', category: 'technical', matched: false, importance: 'preferred' },
-    { name: 'AWS', level: 'beginner', category: 'technical', matched: false, importance: 'nice-to-have' },
-    { name: 'GraphQL', level: 'beginner', category: 'technical', matched: false, importance: 'nice-to-have' },
-    { name: 'Communication', level: 'advanced', category: 'soft', matched: true, importance: 'required' },
-    { name: 'Problem Solving', level: 'expert', category: 'soft', matched: true, importance: 'required' },
-  ];
-
-  const userSkills = ['React', 'TypeScript', 'Node.js', 'Communication', 'Problem Solving'];
+  // Skills derived from the job keywords and the applicant's profile.
+  const userSkills = (profiles[0]?.skills ?? []).map(s => s.name);
+  const jobSkills: SkillTag[] = (job.keywords ?? []).map(keyword => ({
+    name: keyword,
+  }));
   const matchingSkills = jobSkills.filter(s => userSkills.includes(s.name));
   const missingSkills = jobSkills.filter(s => !userSkills.includes(s.name));
 
   const handleAction = async (action: string) => {
+    if (!id) return;
     setActionLoading(action);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setActionLoading(null);
-    // Would trigger actual API calls here
+    setActionFeedback(null);
+    try {
+      if (action === 'share') {
+        const url = window.location.href;
+        if (typeof navigator.share === 'function') {
+          try {
+            await navigator.share({ title: job?.title ?? 'Athena job', url });
+            setActionFeedback({ type: 'success', message: 'Job shared.' });
+            return;
+          } catch (shareErr) {
+            if (shareErr instanceof DOMException && shareErr.name === 'AbortError') {
+              return;
+            }
+          }
+        }
+        await navigator.clipboard.writeText(url);
+        setActionFeedback({ type: 'success', message: 'Job link copied to clipboard.' });
+        return;
+      }
+
+      const profile = profiles[0];
+      if (action === 'apply') {
+        if (!profile) throw new Error('No user profile found. Create one first.');
+        const resume = profile.documents?.find(d => d.type === 'resume');
+        if (!resume) throw new Error('No resume found in your profile.');
+        await applyToJob(id, { user_profile_id: profile.id, resume_id: resume.id });
+        setJob(prev => (prev ? { ...prev, status: 'applied' } : prev));
+        setActionFeedback({ type: 'success', message: 'Application recorded — this job is now marked as applied.' });
+        return;
+      }
+
+      if (!profile) throw new Error('No user profile found. Create one first.');
+      if (action === 'tailor') {
+        const result = await tailorResume(id, { user_profile_id: profile.id });
+        const warnings = result.warnings?.length ? ` Warnings: ${result.warnings.join('; ')}` : '';
+        setActionFeedback({ type: 'success', message: `Resume tailored: ${result.filename}.${warnings}` });
+        return;
+      }
+      if (action === 'cover') {
+        const result = await generateCoverLetter(id, { user_profile_id: profile.id });
+        const warnings = result.warnings?.length ? ` Warnings: ${result.warnings.join('; ')}` : '';
+        setActionFeedback({ type: 'success', message: `Cover letter generated: ${result.filename}.${warnings}` });
+        return;
+      }
+      if (action === 'flag') {
+        await flagJob(id);
+        setJob(prev => (prev ? { ...prev, status: 'flagged' } : prev));
+        setActionFeedback({ type: 'success', message: 'Job flagged for review.' });
+      }
+    } catch (error) {
+      console.error(`Job action "${action}" failed:`, error);
+      setActionFeedback({
+        type: 'error',
+        message: error instanceof Error && error.message
+          ? error.message
+          : 'Something went wrong. Please try again.',
+      });
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   return (
@@ -115,7 +167,7 @@ export const JobDetail: React.FC = () => {
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-4 mb-4">
           <button
-            onClick={() => navigate('/athena/jobs')}
+            onClick={() => navigate('/jobs')}
             className="tactile p-2 rounded-lg text-ls-grey-dark hover:text-ls-red hover:bg-ls-red/10 transition-colors"
             aria-label="Back to job list"
           >
@@ -144,16 +196,16 @@ export const JobDetail: React.FC = () => {
           <span className={cn('px-3 py-1.5 rounded-full text-[10px] font-bold tracking-wider border', getMatchTierColor(job.match_tier))}>
             {getMatchTierLabel(job.match_tier)}
           </span>
-          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-white text-[10px] font-bold tracking-wider">
             {getJobSourceLabel(job.source)}
           </span>
-          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-white text-[10px] font-bold tracking-wider">
             {getJobTypeLabel(job.job_type)}
           </span>
-          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-white text-[10px] font-bold tracking-wider">
             {formatSalary(job.salary_range)}
           </span>
-          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-ls-grey-dark text-[10px] font-bold tracking-wider">
+          <span className="px-3 py-1.5 sunken rounded-full border border-white/8 text-white text-[10px] font-bold tracking-wider">
             Posted {formatDate(job.posted_date)}
           </span>
         </div>
@@ -183,7 +235,7 @@ export const JobDetail: React.FC = () => {
                   Requirements
                 </h2>
                 <ul className="space-y-3">
-                  {job.requirements.map((req, i) => (
+                  {(job.requirements ?? []).map((req, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-ls-grey-dark p-3 rounded-lg bg-ls-grey-light/50">
                       <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                       <span>{req}</span>
@@ -200,7 +252,7 @@ export const JobDetail: React.FC = () => {
                   Responsibilities
                 </h2>
                 <ul className="space-y-3">
-                  {job.responsibilities.map((resp, i) => (
+                  {(job.responsibilities ?? []).map((resp, i) => (
                     <li key={i} className="flex items-start gap-3 text-sm text-ls-grey-dark p-3 rounded-lg bg-ls-grey-light/50">
                       <Sparkles className="w-4 h-4 text-ls-cyan flex-shrink-0 mt-0.5" />
                       <span>{resp}</span>
@@ -219,8 +271,8 @@ export const JobDetail: React.FC = () => {
                 Benefits
               </h2>
               <div className="flex flex-wrap gap-2">
-                {job.benefits.map((benefit, i) => (
-                  <span key={i} className="px-3 py-1.5 sunken rounded-lg text-ls-grey-dark text-sm font-medium border border-white/10">
+                {(job.benefits ?? []).map((benefit, i) => (
+                  <span key={i} className="px-3 py-1.5 sunken rounded-lg text-white text-sm font-medium border border-white/10">
                     {benefit}
                   </span>
                 ))}
@@ -345,10 +397,16 @@ export const JobDetail: React.FC = () => {
 
           {/* Skills Analysis */}
           <section className="bg-ls-white raised border border-white/[0.07] rounded-xl p-6 sticky top-24" style={{ top: '320px' }}>
-            <SkillComparison
-              matchingSkills={matchingSkills}
-              missingSkills={missingSkills}
-            />
+            {jobSkills.length > 0 ? (
+              <SkillComparison
+                matchingSkills={matchingSkills}
+                missingSkills={missingSkills}
+              />
+            ) : (
+              <p className="font-body text-sm text-ls-grey-dark text-center py-4">
+                No skills extracted
+              </p>
+            )}
           </section>
 
           {/* Quick Actions */}
@@ -396,6 +454,19 @@ export const JobDetail: React.FC = () => {
                 {actionLoading === 'share' ? 'Sharing...' : 'Share Job'}
               </button>
             </div>
+            {actionFeedback && (
+              <p
+                role={actionFeedback.type === 'success' ? 'status' : 'alert'}
+                className={cn(
+                  'mt-3 px-3 py-2 rounded-lg border font-body text-sm',
+                  actionFeedback.type === 'success'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-red-500/10 border-red-500/30 text-red-300'
+                )}
+              >
+                {actionFeedback.message}
+              </p>
+            )}
           </section>
         </div>
       </div>

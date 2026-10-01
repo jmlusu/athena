@@ -6,6 +6,7 @@ export function cn(...inputs: unknown[]) {
 }
 
 export function getInitials(name: string): string {
+  if (!name) return '';
   return name
     .split(' ')
     .map((part) => part[0])
@@ -15,8 +16,21 @@ export function getInitials(name: string): string {
 }
 
 export function truncate(str: string, length: number): string {
+  if (!str) return '';
   if (str.length <= length) return str;
   return `${str.slice(0, length)}…`;
+}
+
+export function downloadMarkdown(content: string, filename: string): void {
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 export function debounce<T extends (...args: any[]) => any>(

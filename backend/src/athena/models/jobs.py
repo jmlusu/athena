@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
+from ..timeutils import UTCDateTime
 from .enums import ApplicationStatus, JobSource, JobStatus, JobType, MatchTier
 
 
@@ -27,8 +28,8 @@ class Experience(BaseModel):
     title: str
     company: str
     location: str | None = None
-    start_date: datetime
-    end_date: datetime | None = None
+    start_date: UTCDateTime
+    end_date: UTCDateTime | None = None
     current: bool = False
     description: str
     achievements: list[str] = []
@@ -41,8 +42,8 @@ class Education(BaseModel):
     degree: str
     field_of_study: str
     location: str | None = None
-    start_date: datetime | None = None
-    end_date: datetime | None = None
+    start_date: UTCDateTime | None = None
+    end_date: UTCDateTime | None = None
     gpa: float | None = None
     honors: list[str] = []
 
@@ -54,7 +55,7 @@ class Document(BaseModel):
     file_path: str
     mime_type: str
     size_bytes: int
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+    uploaded_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
     parsed_content: dict[str, Any] | None = None
 
 
@@ -82,8 +83,8 @@ class Job(BaseModel):
     responsibilities: list[str] = []
     keywords: list[str] = []
     salary_range: SalaryRange | None = None
-    posted_date: datetime | None = None
-    expiry_date: datetime | None = None
+    posted_date: UTCDateTime | None = None
+    expiry_date: UTCDateTime | None = None
     application_url: HttpUrl
     apply_email: EmailStr | None = None
     contact_person: str | None = None
@@ -95,8 +96,8 @@ class Job(BaseModel):
     match_score: float | None = None
     match_tier: MatchTier | None = None
     status: JobStatus = JobStatus.NEW
-    scraped_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    scraped_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = {}  # Source-specific extra data
 
 
@@ -111,13 +112,13 @@ class Application(BaseModel):
     ats_score: float
     match_score: float
     status: ApplicationStatus = ApplicationStatus.PENDING
-    submitted_at: datetime | None = None
-    confirmed_at: datetime | None = None
+    submitted_at: UTCDateTime | None = None
+    confirmed_at: UTCDateTime | None = None
     receipt_data: dict[str, Any] = {}  # Confirmation number, reference ID, etc.
-    follow_up_dates: list[datetime] = []
+    follow_up_dates: list[UTCDateTime] = []
     notes: str = ""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class UserProfile(BaseModel):
@@ -139,8 +140,8 @@ class UserProfile(BaseModel):
     preferences: JobPreferences = Field(default_factory=JobPreferences)
     documents: list[Document] = []
     resume_base: dict[str, Any] | None = None  # Parsed structured resume
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ScrapeJob(BaseModel):
@@ -155,6 +156,6 @@ class ScrapeJob(BaseModel):
     jobs_new: int = 0
     jobs_updated: int = 0
     error: str | None = None
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: UTCDateTime | None = None
+    completed_at: UTCDateTime | None = None
+    created_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))

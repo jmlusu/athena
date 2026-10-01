@@ -52,16 +52,16 @@ export const LinkedInExportModal: React.FC<LinkedInExportModalProps> = ({
     ? "Hybrid"
     : "On-site";
 
-  const headline = `${opportunity.title} | Expert in ${opportunity.requirements.slice(0, 3).join(", ")}`;
+  const skillsList = opportunity.requirements || [];
+  const skillsComma = skillsList.join(", ");
+  const skillsHashtags = skillsList.map((s) => `#${s.replace(/[^a-zA-Z0-9]/g, "")}`).join(" ");
+
+  const headline = `${opportunity.title} | Expert in ${skillsList.slice(0, 3).join(", ")}`;
   
   const pitch =
     opportunity.dehumanizedPitch ||
     opportunity.tailoredResume?.summary ||
-    `Seasoned professional with direct experience delivering high-impact initiatives in ${opportunity.location}. Proven track record in ${opportunity.requirements.slice(0, 3).join(", ")}.`;
-
-  const skillsList = opportunity.requirements || [];
-  const skillsComma = skillsList.join(", ");
-  const skillsHashtags = skillsList.map((s) => `#${s.replace(/[^a-zA-Z0-9]/g, "")}`).join(" ");
+    `Seasoned professional with direct experience delivering high-impact initiatives in ${opportunity.location}. Proven track record in ${skillsList.slice(0, 3).join(", ")}.`;
 
   // Easy Apply Cover Note
   const easyApplyCoverNote = `Dear Hiring Team at ${opportunity.company},
@@ -69,7 +69,7 @@ export const LinkedInExportModal: React.FC<LinkedInExportModalProps> = ({
 I am applying for the ${opportunity.title} position${receipt ? ` (Submission Reference: ${receipt.receiptId})` : ""}.
 
 Key Qualifications:
-• Direct expertise in: ${opportunity.requirements.slice(0, 4).join(", ")}
+• Direct expertise in: ${skillsList.slice(0, 4).join(", ")}
 • Operating context: ${opportunity.location} (${locationType})
 • Expected compensation: ${opportunity.salaryOrBudget}
 • Availability: Immediate / Standard 2-week transition
@@ -87,7 +87,7 @@ ${receipt ? `[Verified via Athena Application Pipeline - Hash: ${receipt.confirm
     ? opportunity.tailoredResume.experience[0].bullets
     : [
         `Spearheaded core deliverables for ${opportunity.title}, aligning technical objectives with organizational priorities.`,
-        `Executed milestone deliverables with 100% compliance across ${opportunity.requirements.slice(0, 3).join(", ")}.`,
+        `Executed milestone deliverables with 100% compliance across ${skillsList.slice(0, 3).join(", ")}.`,
         `Collaborated with cross-functional stakeholders in ${opportunity.location} and international partners.`,
       ];
 

@@ -15,7 +15,7 @@ import asyncio
 import io
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -637,7 +637,7 @@ class DocumentGenerator:
             para.paragraph_format.space_after = SPACING_4
 
         # Date
-        date_para = doc.add_paragraph(datetime.now().strftime("%B %d, %Y"), style="ResumeBody")
+        date_para = doc.add_paragraph(datetime.now(UTC).strftime("%B %d, %Y"), style="ResumeBody")
         date_para.paragraph_format.space_after = SPACING_24
 
     def _build_salutation(self, doc: "DocxDocumentType", job: Job) -> None:

@@ -19,6 +19,8 @@ frontend/.vite/
 .env
 .env.local
 .env.*.local
+.env.staging
+.env.production
 
 # IDE
 .vscode/
@@ -39,9 +41,18 @@ yarn-error.log*
 # Testing
 coverage/
 .nyc_output/
+test-results/
+frontend/test-results/
+frontend/e2e/test-results/
+playwright-report/
+.playwright-cli/
+
+# TypeScript cache
+*.tsbuildinfo
 
 # Data
 company/athena/
+backend/artifacts/
 *.db
 *.sqlite
 

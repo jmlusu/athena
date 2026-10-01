@@ -107,7 +107,7 @@ function buildPayload(form: ProfileForm) {
 }
 
 const fieldClass =
-  'w-full px-3 py-2.5 sunken rounded-lg border border-white/8 text-sm text-ls-navy placeholder:text-ls-grey-light-text focus:outline-none focus:ring-2 focus:ring-ls-red font-body';
+  'w-full px-3 py-2.5 sunken rounded-lg border border-white/8 text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-brand-orange font-body';
 
 const labelClass = 'block font-body text-xs font-medium text-ls-grey-light-text mb-1.5 uppercase tracking-wider';
 

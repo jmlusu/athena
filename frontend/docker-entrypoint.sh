@@ -8,4 +8,9 @@ if [ "${AISTUDIO_PREVIEW:-false}" = "true" ]; then
   sed -i '/add_header X-Frame-Options/d' /etc/nginx/conf.d/default.conf
 fi
 
+# Inject backend URL into nginx config (for split deployment)
+if [ -n "${ATHENA_BACKEND_URL}" ]; then
+  sed -i "s|\${ATHENA_BACKEND_URL}|${ATHENA_BACKEND_URL}|g" /etc/nginx/conf.d/default.conf
+fi
+
 exec "$@"

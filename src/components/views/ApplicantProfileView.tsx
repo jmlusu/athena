@@ -240,7 +240,7 @@ export const ApplicantProfileView: React.FC<ApplicantProfileViewProps> = ({
 
             {/* Badges List */}
             <div className="flex flex-wrap gap-1.5 pt-2">
-              {formData.skills.map((skill, idx) => (
+              {formData.skills?.map((skill, idx) => (
                 <span
                   key={idx}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs bg-[#F4F5F7] text-[#1E293B] border border-[#E2E8F0]"

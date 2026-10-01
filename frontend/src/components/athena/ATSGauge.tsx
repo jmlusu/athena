@@ -5,6 +5,27 @@ import {
   Cell,
 } from 'recharts';
 import { cn } from '@/lib/athena/utils';
+import type { MatchTier } from '@/lib/athena/types';
+
+type GaugeTier = 'critical' | 'flagged' | 'standard';
+
+/**
+ * Call sites pass either the gauge's own tiers (from ATS thresholds) or a
+ * `MatchTier` from `Job.match_tier` / `Opportunity.match_tier`. Normalise both
+ * here so consumers don't need per-call-site conversions.
+ */
+const toGaugeTier = (tier: GaugeTier | MatchTier): GaugeTier => {
+  switch (tier) {
+    case 'excellent':
+    case 'critical':
+      return 'critical';
+    case 'good':
+    case 'flagged':
+      return 'flagged';
+    default: // fair | poor | standard
+      return 'standard';
+  }
+};
 
 interface ATSGaugeProps {
   score: number;
@@ -13,27 +34,25 @@ interface ATSGaugeProps {
   showLabel?: boolean;
   label?: string;
   className?: string;
-  tier?: 'excellent' | 'good' | 'fair' | 'poor';
+  tier?: GaugeTier | MatchTier;
 }
 
 const TIER_COLORS = {
-  excellent: '#34D399', // emerald
-  good: '#60A5FA',      // blue
-  fair: '#FBBF24',      // amber
-  poor: '#F87171',      // red
+  critical: '#10B981',    // emerald - ≥90%
+  flagged: '#FFA928',     // amber LED - 80-89%
+  standard: '#64748B',    // slate - <80%
+} as const;
+
+const TIER_LABELS = {
+  critical: 'Critical Match',
+  flagged: 'Flagged Review',
+  standard: 'Standard',
 } as const;
 
 const tierGlow = (hex: string) => {
   const n = parseInt(hex.slice(1), 16);
   return `drop-shadow(0 0 4px rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0.35))`;
 };
-
-const TIER_LABELS = {
-  excellent: 'Excellent',
-  good: 'Good',
-  fair: 'Fair',
-  poor: 'Poor',
-} as const;
 
 export const ATSGauge: React.FC<ATSGaugeProps> = ({
   score,
@@ -45,8 +64,13 @@ export const ATSGauge: React.FC<ATSGaugeProps> = ({
   tier,
 }) => {
   const clampedScore = Math.max(0, Math.min(100, Math.round(score)));
-  const color = tier ? TIER_COLORS[tier] : TIER_COLORS.excellent;
-  const tierLabel = tier ? TIER_LABELS[tier] : '';
+  
+  // Determine tier from score if not provided
+  const effectiveTier = tier
+    ? toGaugeTier(tier)
+    : (clampedScore >= 90 ? 'critical' : clampedScore >= 80 ? 'flagged' : 'standard');
+  const color = TIER_COLORS[effectiveTier];
+  const tierLabel = TIER_LABELS[effectiveTier];
 
   const data = [
     { name: 'Score', value: clampedScore },
@@ -93,11 +117,11 @@ export const ATSGauge: React.FC<ATSGaugeProps> = ({
             marginTop: -size,
           }}
         >
-          <span className="font-display font-bold text-ls-navy" style={{ fontSize: size * 0.22 }}>
+          <span className="font-brand font-bold text-ink" style={{ fontSize: size * 0.22 }}>
             {clampedScore}
           </span>
           {showLabel && tierLabel && (
-            <span className="font-body font-medium text-ls-grey-dark" style={{ fontSize: size * 0.1 }}>
+            <span className="font-body font-medium text-text-secondary" style={{ fontSize: size * 0.1 }}>
               {tierLabel}
             </span>
           )}
@@ -105,7 +129,7 @@ export const ATSGauge: React.FC<ATSGaugeProps> = ({
       </div>
 
       {showLabel && !tierLabel && (
-        <span className="font-body text-xs font-medium text-ls-grey-dark text-center">
+        <span className="font-body text-xs font-medium text-text-secondary text-center">
           {label}
         </span>
       )}
@@ -118,10 +142,11 @@ export const MiniATSGauge: React.FC<{
   score: number;
   size?: number;
   className?: string;
-  tier?: 'excellent' | 'good' | 'fair' | 'poor';
+  tier?: 'critical' | 'flagged' | 'standard';
 }> = ({ score, size = 40, className, tier }) => {
   const clampedScore = Math.max(0, Math.min(100, Math.round(score)));
-  const color = tier ? TIER_COLORS[tier] : TIER_COLORS.excellent;
+  const effectiveTier = tier || (clampedScore >= 90 ? 'critical' : clampedScore >= 80 ? 'flagged' : 'standard');
+  const color = TIER_COLORS[effectiveTier];
 
   const circumference = 2 * Math.PI * (size / 2 - 3);
   const strokeDashoffset = circumference * (1 - clampedScore / 100);
@@ -152,7 +177,7 @@ export const MiniATSGauge: React.FC<{
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <span className="font-display font-bold text-ls-navy" style={{ fontSize: size * 0.25 }}>
+        <span className="font-brand font-bold text-ink" style={{ fontSize: size * 0.25 }}>
           {clampedScore}
         </span>
       </div>
@@ -167,10 +192,11 @@ export const HorizontalATSGauge: React.FC<{
   height?: number;
   showScore?: boolean;
   className?: string;
-  tier?: 'excellent' | 'good' | 'fair' | 'poor';
+  tier?: 'critical' | 'flagged' | 'standard';
 }> = ({ score, width = 200, height = 8, showScore = true, className, tier }) => {
   const clampedScore = Math.max(0, Math.min(100, Math.round(score)));
-  const color = tier ? TIER_COLORS[tier] : TIER_COLORS.excellent;
+  const effectiveTier = tier || (clampedScore >= 90 ? 'critical' : clampedScore >= 80 ? 'flagged' : 'standard');
+  const color = TIER_COLORS[effectiveTier];
 
   return (
     <div className={cn('flex items-center gap-3', className)}>
@@ -194,7 +220,7 @@ export const HorizontalATSGauge: React.FC<{
         </div>
       </div>
       {showScore && (
-        <span className="font-display font-bold text-ls-navy whitespace-nowrap" style={{ fontSize: '14px' }}>
+        <span className="font-brand font-bold text-ink whitespace-nowrap" style={{ fontSize: '14px' }}>
           {clampedScore}%
         </span>
       )}
