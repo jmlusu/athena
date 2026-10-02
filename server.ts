@@ -55,9 +55,26 @@ app.get("/api/health", (_req, res) => {
 
 // ── Lockfile API endpoints for agent coordination ──────────────────────
 
+// Clients identify the lock in the query string (?entity=job&id=42) while the
+// payload carries only the action-specific fields. Read from both so either
+// form works, and accept `id` as an alias for `entityId`.
+function lockParam(req: express.Request, name: "entity" | "entityId" | "agentId" | "ttl" | "lockToken"): string {
+  const aliases = name === "entityId" ? ["entityId", "id"] : [name];
+  for (const alias of aliases) {
+    const fromBody = (req.body ?? {})[alias];
+    if (fromBody !== undefined && fromBody !== null && fromBody !== "") return String(fromBody);
+    const fromQuery = req.query[alias];
+    if (fromQuery !== undefined) return String(fromQuery);
+  }
+  return "";
+}
+
 // Per-artifact lock: acquire lock on a specific entity (job, application, profile)
 app.post("/api/lock/artifact", (req, res) => {
-  const { entity, entityId, agentId, ttl } = req.body;
+  const entity = lockParam(req, "entity");
+  const entityId = lockParam(req, "entityId");
+  const agentId = lockParam(req, "agentId");
+  const ttl = lockParam(req, "ttl");
   if (!entity || !entityId || !agentId) {
     return res.status(400).json({ error: "Missing required: entity, entityId, agentId" });
   }
@@ -128,7 +145,9 @@ app.post("/api/lock/artifact", (req, res) => {
 
 // Release per-artifact lock
 app.post("/api/lock/artifact/release", (req, res) => {
-  const { lockToken, entity, entityId } = req.body;
+  const lockToken = lockParam(req, "lockToken");
+  const entity = lockParam(req, "entity");
+  const entityId = lockParam(req, "entityId");
 
   if (!lockToken || !entity || !entityId) {
     return res.status(400).json({ error: "Missing required: lockToken, entity, entityId" });
