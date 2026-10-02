@@ -188,6 +188,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({
             return (
               <button
                 key={item.id}
+                data-testid={`nav-${item.id}`}
                 onClick={() => onSelectView(item.id as NavView)}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                   isActive

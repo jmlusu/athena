@@ -26,6 +26,9 @@ interface PipelineViewProps {
   onUpdateStatus: (id: string, newStatus: PipelineStatus) => void;
   scopeFilter: OpportunityScope | "all";
   categoryFilter: OpportunityCategory | "all";
+  externalStageFilter?: string;
+  externalAtsFilter?: "all" | "critical" | "flagged";
+  onFilterConsumed?: () => void;
 }
 
 const pipelineStages: { id: PipelineStatus; title: string; subtitle: string; color: string }[] = [
@@ -46,14 +49,22 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
   onUpdateStatus,
   scopeFilter,
   categoryFilter,
+  externalStageFilter,
+  externalAtsFilter,
+  onFilterConsumed,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeStageFilter, setActiveStageFilter] = useState<string>("all");
 
+  const filterStage = externalStageFilter && externalStageFilter !== "all" ? externalStageFilter : activeStageFilter;
+  const filterAts = externalAtsFilter ?? "all";
+
   const filteredOpportunities = opportunities.filter((opp) => {
     if (scopeFilter !== "all" && opp.scope !== scopeFilter) return false;
     if (categoryFilter !== "all" && opp.category !== categoryFilter) return false;
-    if (activeStageFilter !== "all" && opp.status !== activeStageFilter) return false;
+    if (filterStage !== "all" && opp.status !== filterStage) return false;
+    if (filterAts === "critical" && opp.atsScore < 90) return false;
+    if (filterAts === "flagged" && (opp.atsScore < 80 || opp.atsScore >= 90)) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -64,6 +75,12 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     }
     return true;
   });
+
+  const handleStageClick = (stage: string) => {
+    setActiveStageFilter(stage);
+    if (externalStageFilter && externalStageFilter !== stage) onFilterConsumed?.();
+    if (externalAtsFilter && externalAtsFilter !== "all") onFilterConsumed?.();
+  };
 
   return (
     <div className="space-y-4">
@@ -85,37 +102,44 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
         <div className="flex items-center gap-2 text-xs overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           <span className="text-[#64748B] text-[11px] font-medium whitespace-nowrap">Stage Filter:</span>
           <button
-            onClick={() => setActiveStageFilter("all")}
+            onClick={() => handleStageClick("all")}
             className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
-              activeStageFilter === "all" ? "bg-[#18181B] text-white" : "bg-[#F4F5F7] text-[#64748B] hover:text-[#18181B]"
+              filterStage === "all" && filterAts === "all" ? "bg-[#18181B] text-white" : "bg-[#F4F5F7] text-[#64748B] hover:text-[#18181B]"
             }`}
           >
             All Stages ({opportunities.length})
           </button>
           <button
-            onClick={() => setActiveStageFilter("tailored")}
+            onClick={() => handleStageClick("tailored")}
             className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
-              activeStageFilter === "tailored" ? "bg-[#F97316] text-white" : "bg-[#F4F5F7] text-[#64748B] hover:text-[#18181B]"
+              filterStage === "tailored" ? "bg-[#F97316] text-white" : "bg-[#F4F5F7] text-[#64748B] hover:text-[#18181B]"
             }`}
           >
             Tailored
           </button>
           <button
-            onClick={() => setActiveStageFilter("awaiting_signoff")}
+            onClick={() => handleStageClick("awaiting_signoff")}
             className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
-              activeStageFilter === "awaiting_signoff" ? "bg-[#DC2626] text-white" : "bg-[#F4F5F7] text-[#64748B] hover:text-[#18181B]"
+              filterStage === "awaiting_signoff" ? "bg-[#DC2626] text-white" : "bg-[#F4F5F7] text-[#64748B] hover:text-[#18181B]"
             }`}
           >
             Sign-Off Needed
           </button>
           <button
-            onClick={() => setActiveStageFilter("submitted")}
+            onClick={() => handleStageClick("submitted")}
             className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
-              activeStageFilter === "submitted" ? "bg-emerald-600 text-white" : "bg-[#F4F5F7] text-[#64748B] hover:text-[#18181B]"
+              filterStage === "submitted" ? "bg-emerald-600 text-white" : "bg-[#F4F5F7] text-[#64748B] hover:text-[#18181B]"
             }`}
           >
             Submitted
           </button>
+          {filterAts !== "all" && (
+            <span className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap text-white ${
+              filterAts === "critical" ? "bg-[#F97316]" : "bg-amber-500"
+            }`}>
+              {filterAts === "critical" ? "ATS ≥ 90" : "ATS 80-89"}
+            </span>
+          )}
         </div>
       </div>
 

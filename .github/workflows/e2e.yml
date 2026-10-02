@@ -63,9 +63,17 @@ jobs:
         working-directory: backend
         run: uv sync --extra dev
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Build frontend
         working-directory: frontend
@@ -80,8 +88,9 @@ jobs:
           E2E_API_KEY: dev-admin-key
           CI: true
         # pnpm run forwards a literal "--" that turns --project into a file
-        # filter (all 5 projects then run and die on uninstalled browsers).
-        run: pnpm exec playwright test --config e2e/playwright.config.ts --project=chromium
+        # filter, so invoke playwright directly. Three desktop engines on
+        # every PR (120 tests); screenshots are Chrome-only by decision.
+        run: pnpm exec playwright test --config e2e/playwright.config.ts --project=chromium --project=firefox --project=webkit
 
       - name: Regenerate Linux visual baselines
         if: github.event_name == 'workflow_dispatch' && inputs.update_visual

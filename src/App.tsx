@@ -52,6 +52,8 @@ export default function App() {
   const [currentView, setCurrentView] = useState<NavView>("pipeline");
   const [selectedScope, setSelectedScope] = useState<OpportunityScope | "all">("all");
   const [selectedCategory, setSelectedCategory] = useState<OpportunityCategory | "all">("all");
+  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [atsFilter, setAtsFilter] = useState<"all" | "critical" | "flagged">("all");
 
   // Core Data
   const [opportunities, setOpportunities] = useState<Opportunity[]>(initialOpportunities);
@@ -67,6 +69,7 @@ export default function App() {
 
   // Modals & Selected Objects
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+  const [detailModalOpp, setDetailModalOpp] = useState<Opportunity | null>(null);
   const [signOffOpportunity, setSignOffOpportunity] = useState<Opportunity | null>(null);
   const [showNotificationToast, setShowNotificationToast] = useState<string | null>(null);
 
@@ -269,9 +272,26 @@ export default function App() {
                 <MetricsAndBarChart
                   opportunities={opportunities}
                   onCardClick={(filter) => {
-                    if (filter === "critical") setCurrentView("pipeline");
-                    if (filter === "flagged") setCurrentView("pipeline");
-                    if (filter === "awaiting_signoff") setCurrentView("pipeline");
+                    if (filter === "all") {
+                      setStageFilter("all");
+                      setAtsFilter("all");
+                      setCurrentView("pipeline");
+                    }
+                    if (filter === "critical") {
+                      setStageFilter("all");
+                      setAtsFilter("critical");
+                      setCurrentView("pipeline");
+                    }
+                    if (filter === "flagged") {
+                      setStageFilter("all");
+                      setAtsFilter("flagged");
+                      setCurrentView("pipeline");
+                    }
+                    if (filter === "awaiting_signoff") {
+                      setStageFilter("awaiting_signoff");
+                      setAtsFilter("all");
+                      setCurrentView("pipeline");
+                    }
                     if (filter === "submitted") setCurrentView("receipts");
                   }}
                 />
@@ -282,7 +302,7 @@ export default function App() {
             {currentView === "pipeline" && (
               <PipelineView
                 opportunities={opportunities}
-                onOpenDetails={(opp) => setSelectedOpportunity(opp)}
+                onOpenDetails={(opp) => setDetailModalOpp(opp)}
                 onOpenDocumentStudio={(opp) => {
                   setSelectedOpportunity(opp);
                   setCurrentView("documents");
@@ -295,6 +315,12 @@ export default function App() {
                 onUpdateStatus={handleUpdateStatus}
                 scopeFilter={selectedScope}
                 categoryFilter={selectedCategory}
+                externalStageFilter={stageFilter}
+                externalAtsFilter={atsFilter}
+                onFilterConsumed={() => {
+                  setStageFilter("all");
+                  setAtsFilter("all");
+                }}
               />
             )}
 
@@ -302,14 +328,14 @@ export default function App() {
               <ScraperDiscoveryView
                 opportunities={opportunities}
                 applicantProfile={applicantProfile}
-                onOpenDetails={(opp) => setSelectedOpportunity(opp)}
+                onOpenDetails={(opp) => setDetailModalOpp(opp)}
                 onOpenDocumentStudio={(opp) => {
                   setSelectedOpportunity(opp);
                   setCurrentView("documents");
                 }}
                 onAddListings={handleAddListings}
                 onScoreAts={(opp) => {
-                  setSelectedOpportunity(opp);
+                  setDetailModalOpp(opp);
                 }}
               />
             )}
@@ -369,20 +395,24 @@ export default function App() {
           onUpdateSettings={(newVals) => setSettings((prev) => ({ ...prev, ...newVals }))}
           opportunities={opportunities}
           onOpenSignOff={(opp) => setSignOffOpportunity(opp)}
-          onOpenDetails={(opp) => setSelectedOpportunity(opp)}
+          onOpenDetails={(opp) => setDetailModalOpp(opp)}
         />
       </div>
 
       {/* Opportunity Detail Modal */}
-      {selectedOpportunity && (
+      {detailModalOpp && (
         <OpportunityDetailModal
-          opportunity={selectedOpportunity}
-          onClose={() => setSelectedOpportunity(null)}
+          opportunity={detailModalOpp}
+          onClose={() => setDetailModalOpp(null)}
           onOpenDocumentStudio={(opp) => {
+            setDetailModalOpp(null);
             setSelectedOpportunity(opp);
             setCurrentView("documents");
           }}
-          onOpenSignOff={(opp) => setSignOffOpportunity(opp)}
+          onOpenSignOff={(opp) => {
+            setDetailModalOpp(null);
+            setSignOffOpportunity(opp);
+          }}
         />
       )}
 
