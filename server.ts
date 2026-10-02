@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "node:fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -8,6 +9,11 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Lock files live in the repo in both run modes: dist/ when bundled to
+// dist/server.mjs, the repo root when tsx runs server.ts directly.
+const REPO_ROOT = path.basename(__dirname) === "dist" ? path.dirname(__dirname) : __dirname;
+const LOCKS_DIR = path.join(REPO_ROOT, "artifacts", "locks");
 
 const app = express();
 const PORT = 3000;
@@ -57,23 +63,17 @@ app.post("/api/lock/artifact", (req, res) => {
   }
 
   const lockPath = path.join(
-    __dirname,
-    "..",
-    "backend",
-    "src",
-    "athena",
-    "artifacts",
-    "locks",
+    LOCKS_DIR,
     `${entity}_${entityId.replace("/", "_").replace("\\", "_")}.lock`
   );
 
   // Ensure lock directory exists
   const lockDir = path.dirname(lockPath);
-  require("fs").mkdirSync(lockDir, { recursive: true });
+  fs.mkdirSync(lockDir, { recursive: true });
 
   // Try to acquire exclusive file lock
   try {
-    const existing = require("fs").readFileSync(lockPath, "utf8").trim();
+    const existing = fs.readFileSync(lockPath, "utf8").trim();
     const existingParts = existing.split("\n");
     const existingAgentId = existingParts[0];
     const existingAcquiredAt = existingParts[1];
@@ -104,18 +104,16 @@ app.post("/api/lock/artifact", (req, res) => {
     }
 
     // Force-release stale lock
-    require("fs").unlinkSync(lockPath);
+    fs.unlinkSync(lockPath);
   } catch (e) {
     // No existing lock or error reading it - proceed to acquire
   }
 
-  // Acquire exclusive lock
-  const fd = require("fs").openSync(lockPath, "w+");
-  require("fcntl").flock(fd, require("fcntl").LOCK_EX);
-
+  // Write the lock file. Contention is handled by the stale check above, which
+  // is sufficient for this single-host demo.
   const acquiredAt = new Date().toISOString();
   const lockContent = `${agentId}\n${acquiredAt}\n${ttl || ""}\n`;
-  require("fs").writeFileSync(lockPath, lockContent);
+  fs.writeFileSync(lockPath, lockContent);
 
   // Return lock token for frontend to use on release
   const lockToken = Math.random().toString(36).substring(2, 18);
@@ -137,21 +135,12 @@ app.post("/api/lock/artifact/release", (req, res) => {
   }
 
   const lockPath = path.join(
-    __dirname,
-    "..",
-    "backend",
-    "src",
-    "athena",
-    "artifacts",
-    "locks",
+    LOCKS_DIR,
     `${entity}_${entityId.replace("/", "_").replace("\\", "_")}.lock`
   );
 
   try {
-    const fd = require("fs").openSync(lockPath, "r+");
-    require("fcntl").flock(fd, require("fcntl").LOCK_UN);
-    require("fs").closeSync(fd);
-    require("fs").unlinkSync(lockPath);
+    fs.unlinkSync(lockPath);
   } catch (e) {
     // Lock file may already be released
   }
@@ -167,25 +156,16 @@ app.post("/api/lock/global", (req, res) => {
     return res.status(400).json({ error: "Missing required: agentId" });
   }
 
-  const lockPath = path.join(
-    __dirname,
-    "..",
-    "backend",
-    "src",
-    "athena",
-    "artifacts",
-    "locks",
-    "global_agent.lock"
-  );
+  const lockPath = path.join(LOCKS_DIR, "global_agent.lock");
 
   // Ensure lock directory exists
   const lockDir = path.dirname(lockPath);
-  require("fs").mkdirSync(lockDir, { recursive: true });
+  fs.mkdirSync(lockDir, { recursive: true });
 
   // Try to acquire exclusive file lock (blocking with timeout concept)
   // In a real implementation, we'd use a non-blocking check with retry
   try {
-    const existing = require("fs").readFileSync(lockPath, "utf8").trim();
+    const existing = fs.readFileSync(lockPath, "utf8").trim();
     const existingParts = existing.split("\n");
     const existingAgentId = existingParts[0];
 
@@ -199,13 +179,10 @@ app.post("/api/lock/global", (req, res) => {
     // No existing lock - proceed
   }
 
-  // Acquire exclusive lock
-  const fd = require("fs").openSync(lockPath, "w+");
-  require("fcntl").flock(fd, require("fcntl").LOCK_EX);
-
+  // Write the global lock file (single-host demo; no OS-level flock).
   const acquiredAt = new Date().toISOString();
   const lockContent = `${agentId}\n${acquiredAt}\n`;
-  require("fs").writeFileSync(lockPath, lockContent);
+  fs.writeFileSync(lockPath, lockContent);
 
   const lockToken = Math.random().toString(36).substring(2, 18);
 
@@ -225,22 +202,10 @@ app.post("/api/lock/global/release", (req, res) => {
     return res.status(400).json({ error: "Missing required: lockToken" });
   }
 
-  const lockPath = path.join(
-    __dirname,
-    "..",
-    "backend",
-    "src",
-    "athena",
-    "artifacts",
-    "locks",
-    "global_agent.lock"
-  );
+  const lockPath = path.join(LOCKS_DIR, "global_agent.lock");
 
   try {
-    const fd = require("fs").openSync(lockPath, "r+");
-    require("fcntl").flock(fd, require("fcntl").LOCK_UN);
-    require("fs").closeSync(fd);
-    require("fs").unlinkSync(lockPath);
+    fs.unlinkSync(lockPath);
   } catch (e) {
     // Lock file may already be released
   }
@@ -256,26 +221,18 @@ app.post("/api/lock/stale", (req, res) => {
     return res.status(400).json({ error: "Missing required: agentId" });
   }
 
-  const lockDir = path.join(
-    __dirname,
-    "..",
-    "backend",
-    "src",
-    "athena",
-    "artifacts",
-    "locks"
-  );
+  const lockDir = LOCKS_DIR;
 
   let released = 0;
   try {
-    const files = require("fs").readdirSync(lockDir);
+    const files = fs.readdirSync(lockDir);
     const now = new Date().getTime();
 
     for (const file of files) {
       if (!file.endsWith(".lock")) continue;
       const filePath = path.join(lockDir, file);
       try {
-        const content = require("fs").readFileSync(filePath, "utf8").trim();
+        const content = fs.readFileSync(filePath, "utf8").trim();
         const parts = content.split("\n");
         if (parts.length >= 2) {
           const fileAgentId = parts[0];
@@ -289,7 +246,7 @@ app.post("/api/lock/stale", (req, res) => {
               const elapsed = (now - acquired) / 1000; // seconds
               if (elapsed > 1800) {
                 // Stale after 30 minutes - force release
-                require("fs").unlinkSync(filePath);
+                fs.unlinkSync(filePath);
                 released++;
               }
             }
@@ -300,7 +257,7 @@ app.post("/api/lock/stale", (req, res) => {
               const acquired = new Date(acquiredAt).getTime();
               const elapsed = (now - acquired) / 1000;
               if (elapsed > ttl) {
-                require("fs").unlinkSync(filePath);
+                fs.unlinkSync(filePath);
                 released++;
               }
             }
