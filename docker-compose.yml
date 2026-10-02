@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  # FastAPI backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: athena-backend
+    env_file: .env
+    environment:
+      - ATHENA_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - ATHENA_DATA_DIR=/app/data
+    volumes:
+      - ./company/athena:/app/data
+      - ./artifacts:/app/artifacts
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # Express BFF + SPA (dev)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: athena-frontend
+    env_file: .env
+    environment:
+      - VITE_ATHENA_API_BASE=http://backend:8000/api/v1/athena
+    volumes:
+      - ./artifacts:/app/artifacts
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  data:
+  artifacts:
