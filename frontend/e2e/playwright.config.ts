@@ -39,13 +39,8 @@ export default defineConfig({
     '**/lib/**',
     '**/node_modules/**',
     '**/dist/**',
-    // Visual baselines are committed for win32 only; CI runs on linux where
-    // they cannot exist (fonts/rasterization differ), so skip them there —
-    // unless we're regenerating the linux baselines themselves
-    // (E2E_UPDATE_VISUAL=1, workflow_dispatch mode on e2e.yml).
-    ...(process.env.CI && !process.env.E2E_UPDATE_VISUAL
-      ? ['**/visual-regression.spec.ts']
-      : []),
+    // Visual baselines are committed for win32 (local) and linux (CI),
+    // so the visual suite runs everywhere.
   ],
   reporter: [
     ['html', { outputFolder: path.join(CONFIG_DIR, 'test-results/html-report') }],
