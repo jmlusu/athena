@@ -4,11 +4,7 @@
 
 # Athena Autonomous Job & Consultancy Engine
 
-**Run and deploy your AI Studio app**
-
-This contains everything you need to run the Athena Autonomous Job & Consultancy Pipeline locally.
-
-View your app in AI Studio: https://ai.studio/apps/a1fd22b1-579b-428f-aade-5f940703b0be
+**Autonomous job scraping, semantic matching, document generation, and application dispatch with mandatory human sign-off.**
 
 ---
 
@@ -16,211 +12,126 @@ View your app in AI Studio: https://ai.studio/apps/a1fd22b1-579b-428f-aade-5f940
 
 ```
 athena/
-├── backend/              # Python FastAPI backend (legacy/reference)
-│   ├── src/athena/       # Main package (renamed from ai_company.athena)
-│   ├── tests/            # Unit tests
+├── backend/                 # FastAPI backend (AI, scraping, matching, documents)
+│   ├── src/athena/          # Domain modules (scrapers, ATS, matching, docs, AI)
+│   ├── tests/               # Unit tests (88 passing)
 │   ├── pyproject.toml
-│   └── Dockerfile
-├── frontend/             # React + Vite + Tailwind 4 frontend (legacy/reference)
-│   ├── src/              # Source code
-│   ├── public/           # Static assets
-│   ├── package.json
-│   ├── Dockerfile
-│   └── nginx.conf
-├── src/                  # **Primary: React 19 SPA + Vite + Tailwind 4 (spec-compliant)**
-│   ├── components/       # Charts, Layout, Modals, Views
-│   ├── data/             # Mock data & types
+│   └── uv.lock
+├── src/                     # Primary: React 19 SPA + Vite 8 + Tailwind 4
+│   ├── api.ts               # API client for backend endpoints
+│   ├── components/          # Charts, Layout, Modals, Views
+│   ├── data/                # Mock data (fallback)
+│   ├── types.ts             # Shared TypeScript types
 │   └── ...
-├── server.ts             # **Primary: Express.js BFF + Gemini AI SDK**
-├── docs/                 # FDS/TDS specifications
-├── docker-compose.yml
-└── .env.example
+├── server.ts                # Express BFF: proxies AI/data to FastAPI, serves SPA
+├── .github/workflows/       # CI (ruff, pytest, lint, build)
+├── .env.example             # Environment template
+└── ARCHITECTURE.md          # System architecture diagram
 ```
 
 ---
 
-## Quick Start (Primary Implementation)
+## Quick Start
 
-### Development
+### Prerequisites
 
-**Prerequisites:** Node.js 18+
+- Node.js 24+
+- Python 3.12+
+- uv (Python package manager: `pip install uv`)
+- Gemini API key
+
+### Development (Full Stack)
 
 ```bash
-# 1. Install dependencies
+# 1. Install Node deps
 npm install
 
-# 2. Set the GEMINI_API_KEY in .env (copy from .env.example)
-cp .env.example .env
-# Edit .env with your Gemini API key
+# 2. Install Python deps
+cd backend && uv sync --extra dev && cd ..
 
-# 3. Run the full-stack app (Express + Vite dev server)
+# 3. Configure environment
+cp .env.example .env
+# Edit .env: add GEMINI_API_KEY and ATHENA_API_KEY
+
+# 4. Start FastAPI backend (port 8000)
+cd backend && uv run uvicorn athena.api.app:app --host 127.0.0.1 --port 8000 &
+
+# 5. Start Express + Vite dev server (port 3000)
 npm run dev
 ```
 
-The app will be available at http://localhost:3000
+**App runs at http://localhost:3000**
 
-### Build & Production
-
-```bash
-# Type-check
-npm run lint
-
-# Build client + server
-npm run build
-
-# Start production server
-npm start
-```
-
----
-
-## Legacy Python Implementation (Reference)
-
-The `backend/` and `frontend/` directories contain the original Python/FastAPI + React implementation for reference.
+### Production Build
 
 ```bash
-# Backend
-cd backend
-cp ../.env.example .env  # Edit as needed
-uv sync --extra dev
-uv run uvicorn athena.api.app:app --reload --port 8000
-
-# Frontend (in another terminal)
-cd frontend
-pnpm install
-pnpm dev
+npm run lint      # TypeScript type-check
+npm run build     # Build client + server bundle
+npm start         # Runs dist/server.mjs (serves dist/ statically)
 ```
-
-#### AI Studio / Cloud Preview
-
-When running in AI Studio or a cloud sandbox:
-
-```bash
-# From repo root
-pnpm dev:preview
-# or
-bash scripts/dev-preview.sh
-```
-
-### Docker
-
-```bash
-# Build and start all services
-docker-compose up --build -d
-
-# View logs
-docker-compose logs -f
-
-# Stop
-docker-compose down
-```
-
-Services:
-- Frontend (Primary): http://localhost:3000
-- Frontend (Legacy): http://localhost:8530
-- Backend API (Legacy): http://localhost:8520
-- API Docs (Legacy): http://localhost:8520/docs
 
 ---
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GEMINI_API_KEY` | **Primary: Gemini AI API key** | Required |
-| `GEMINI_MODEL` | **Primary: Gemini model to use** | (auto) |
-| `APP_URL` | **Primary: App URL for self-referential links** | http://localhost:3000 |
-| `PORT` | **Primary: Express server port** | 3000 |
-| `NODE_ENV` | **Primary: Node environment** | development |
-| `ATHENA_API_KEY` | Legacy: API key for Python backend auth | `dev-admin-key` |
-| `ATHENA_CORS_ORIGINS` | Legacy: Comma-separated allowed origins | `http://localhost:8530,http://127.0.0.1:8530` |
-| `ATHENA_AUTH_MODE` | Legacy: `api_key` or `open` | `api_key` |
-| `ATHENA_RATE_LIMIT` | Legacy: Requests per minute per IP | `100` |
-| `ATHENA_DATA_DIR` | Legacy: Data directory for JSONL stores | `./company/athena` |
-| `ATHENA_HITL_EXTERNAL` | Legacy: Use external HITL gate | `false` |
-| `ATHENA_LLM_PROVIDER` | Legacy: External LLM provider for humanization | (empty) |
-| `ATHENA_SCHEDULER_AUTOSTART` | Legacy: Start scheduler on boot | `true` |
-| `ATHENA_DEFAULT_SCRAPE_QUERY` | Legacy: Default scheduled scrape query | `software engineer` |
-| `ATHENA_DEFAULT_SCRAPE_MAX` | Legacy: Max results per scheduled scrape | `50` |
-| `ATHENA_HOST` | Legacy: Python backend host | `0.0.0.0` |
-| `ATHENA_PORT` | Legacy: Python backend port | `8000` |
-| `ATHENA_HSTS_MAX_AGE` | Legacy: HSTS max-age in seconds | `31536000` |
-| `ATHENA_AGENT_ID` | Legacy: Agent identifier for tracking | (empty) |
-| `ATHENA_BACKEND_URL` | Legacy: Backend URL for frontend proxy | `http://localhost:8000` |
-| `VITE_ATHENA_API_BASE` | Legacy: Frontend API base path | `/api/v1/athena` |
-| `VITE_ATHENA_API_KEY` | Legacy: API key baked into frontend build | `dev-admin-key` |
-| `HOST` | Host binding for dev server | (empty) |
-
-## Primary Implementation Features (Spec-Compliant)
-
-- **Multi-Scope Job Aggregation**: Lilongwe Local, Lilongwe Remote, International Remote
-- **Semantic ATS Scoring**: Gemini-powered 0-100 scoring with tier thresholds (≥90 auto-ready, 80-89 flagged)
-- **Pristine Document Studio**: 1-Column/2-Column resume, cover letter, consultancy proposals with Dehumanizer engine
-- **Human-in-the-Loop Gate**: Mandatory digital power-of-attorney sign-off before submission
-- **Cryptographic Receipts**: SHA-256 audit hashes with 7-day follow-up calendar
-- **n8n Webhook Integration**: Visual 5-node topology with test trigger console
-- **Layered Mountain Chart**: Stylized SVG area chart for opportunity momentum
-- **Circular Gauge**: ATS score radial dial with color-coded tiers
-- **Offline-Capable**: Deterministic fallbacks when GEMINI_API_KEY not configured
+| Variable | Description | Required |
+|---|---|---|
+| `GEMINI_API_KEY` | Google Gemini API key (FastAI backend) | Yes |
+| `ATHENA_API_KEY` | Shared secret for FastAPI auth (Express injects) | Yes |
+| `ATHENA_CORS_ORIGINS` | Comma-separated allowed origins | No (defaults to localhost) |
+| `ATHENA_AUTH_MODE` | `api_key` or `open` | No (default: `api_key`) |
+| `ATHENA_DATA_DIR` | Data directory for JSONL stores | No (default: `./company/athena`) |
+| `NODE_ENV` | `development` or `production` | No |
+| `DISABLE_HMR` | Disable Vite HMR | No |
+| `VITE_ATHENA_API_BASE` | Base path for API calls | No (default: `/api/v1/athena`) |
 
 ---
 
-## Legacy Implementation Features
+## Key Features
 
-- **Job Scraping**: Multi-source job scraping (LinkedIn, RemoteOK, WeWorkRemotely, etc.)
-- **Semantic Matching**: Embedding-based job-profile matching
-- **ATS Scoring**: Resume-to-job ATS compatibility scoring
-- **Application Automation**: Browser-based application submission with HITL approval
-- **Document Generation**: Professional resume/cover letter generation with python-docx
-- **AI Humanization**: Optional LLM-powered content humanization (with template fallback)
-- **Scheduler**: Background scraping and processing jobs
-
----
-
-## Security
-
-- **Primary**: API key never exposed client-side; all Gemini calls server-side via Express BFF
-- **Legacy**: CORS restricted to configured origins (never `*`)
-- **Legacy**: API key authentication (fail-closed by default)
-- **Legacy**: Rate limiting (configurable, default 100 req/min)
-- **Legacy**: Security headers on all responses (CSP, HSTS, etc.)
-- **Legacy**: Loopback-only restriction for `open` auth mode
+- **14 job board scrapers** (LinkedIn, Upwork, ReliefWeb, Lilongwe, etc.)
+- **Semantic matching** with all-MiniLM-L6-v2 (384-dim embeddings)
+- **ATS scoring** (40/35/15/10 weights) with rule-based fallback
+- **Document generation** (resume, cover letter, consultancy proposal) with AI + dehumanizer
+- **Mandatory human sign-off** (digital power-of-attorney, SHA-256 receipts)
+- **n8n webhook ingress/egress** for workflow automation
+- **File-based JSONL storage** with file locks (no database required)
+- **4-hour cron scheduler** (scrape → process → match → dispatch)
 
 ---
 
 ## Testing
 
 ```bash
-# Primary: TypeScript type-check
+# Backend tests (88 passing)
+cd backend && uv run pytest -q
+
+# Backend lint
+cd backend && uv run ruff check .
+
+# Frontend type-check
 npm run lint
 
-# Legacy Backend tests
-cd backend
-uv run pytest
-
-# Legacy Frontend tests
-cd frontend
-pnpm test
+# E2E tests (Playwright)
+npm run test:e2e
 ```
 
 ---
 
-## Deployment
+## CI/CD
 
-### Primary (Express + React SPA)
-The primary implementation builds to `dist/` with a single Node.js server (`dist/server.cjs`).
-
-### Legacy (Docker - Oracle Cloud / VPS)
-```bash
-# On the instance, after cloning this repo:
-bash deploy/oci-deploy.sh
-```
-The script installs Docker if needed, generates a `.env` with a random `ATHENA_API_KEY`, builds images (backend includes Playwright Chromium), starts the stack, and waits for health.
+GitHub Actions workflow (`.github/workflows/ci.yml`):
+- **quality** — Node lint + build
+- **backend-quality** — Python ruff + pytest
 
 ---
 
-## History
+## Project Status
 
-This repository was created via `git filter-repo` from the LightSpeed Holdings monorepo, preserving full commit history for the Athena module.
-
-The primary implementation (Express + React SPA) was built to match the **ATHENA_FUNCTIONAL_AND_TECHNICAL_SPECIFICATION.md** (FDS/TDS v2.4.0) with brand compliance per **ATHENA_ARCHITECTURE_AND_BRANDING.md**.
+- ✅ FastAPI backend recovered (88/88 tests pass)
+- ✅ Express BFF proxies all AI/data routes to FastAPI
+- ✅ n8n webhook ingress added
+- ✅ API client + frontend data loading wired
+- ⏳ Backend data population (run scrapers to populate `company/athena/`)
+- ⏳ Full frontend wiring to real data (currently falls back to mock)
+- ⏳ Deployment target (Docker/systemd TBD)

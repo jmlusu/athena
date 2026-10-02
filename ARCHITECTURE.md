@@ -1,7 +1,7 @@
 # Athena Platform — Architecture Diagram
 
 > Athena v2.4.0 — Autonomous Job & Consultancy Engine (LightSpeed Holdings Ltd.)
-> Source of truth for this diagram: `backend/`, `frontend/`, root `server.ts`/`src/`, `docker-compose*.yml`, `.github/workflows/`.
+> Source of truth: `backend/`, root `server.ts`/`src/`, `.github/workflows/`.
 
 ---
 
@@ -14,31 +14,24 @@ graph TB
     %% ===================== CLIENTS =====================
     subgraph CLIENTS["Clients"]
         direction LR
-        BRA["<b>Browser A</b><br/>Primary SPA<br/>React 19 · Vite 8 · Tailwind 4<br/><i>src/ — view switcher, no router</i>"]
-        BRB["<b>Browser B</b><br/>Routed Product SPA<br/>React 19 · react-router v7 · Vite 6<br/><i>frontend/src — 13 routes</i>"]
+        BRA["<b>Browser</b><br/>React 19 SPA + Vite 8 + Tailwind 4<br/><i>src/ — view switcher, no router</i>"]
     end
 
-    %% ===================== LANE A : PRIMARY / AI-STUDIO =====================
-    subgraph LANEA["Lane A — Primary SPA + Express BFF  (port 3000)"]
+    %% ===================== LANE A : EXPRESS BFF =====================
+    subgraph LANEA["Express BFF — server.ts (port 3000)"]
         direction TB
-        EXPR["<b>Express BFF</b> — server.ts<br/>Vite middleware (dev) / dist static (prod)<br/>─────────────────────────<br/>POST /api/ai/score-ats · tailor-resume<br/>POST /api/ai/tailor-document · dehumanize<br/>POST /api/ai/scrape-live<br/>POST /api/submit-application<br/>POST /api/webhooks/n8n · /api/n8n/dispatch-webhook<br/>POST /api/lock/artifact · /global · /stale<br/>─────────────────────────<br/><i>No auth middleware — Gemini key stays server-side</i>"]
+        EXPR["<b>Express BFF</b> — server.ts<br/>Vite middleware (dev) / dist static (prod)<br/>─────────────────────────<br/>POST /api/ai/score-ats · tailor-resume<br/>POST /api/ai/tailor-document · dehumanize<br/>POST /api/ai/scrape-live<br/>POST /api/submit-application<br/>POST /api/webhooks/n8n · /api/n8n/dispatch-webhook<br/>POST /api/lock/artifact · /global · /stale<br/>GET /api/health · /api/backend-health<br/>─────────────────────────<br/><i>No auth middleware — API keys stay server-side</i>"]
     end
 
-    %% ===================== LANE B : PRODUCT =====================
-    subgraph LANEB["Lane B — Product SPA + FastAPI  (port 8000)"]
+    %% ===================== LANE B : FASTAPI BACKEND =====================
+    subgraph LANEB["FastAPI Backend — backend/src/athena/api/app.py (port 8000)"]
         direction TB
 
-        subgraph EDGE["Edge / Dev Proxy"]
-            direction LR
-            VITE["Vite dev proxy<br/><i>frontend/vite.config.ts :1111</i>"]
-            NGINX["nginx reverse proxy<br/><i>frontend/nginx.conf</i><br/>SPA fallback + gzip"]
-        end
-
-        subgraph FASTAPI["FastAPI Service — backend/src/athena/api/app.py"]
+        subgraph FASTAPI["FastAPI Service"]
             direction TB
             MW["<b>Middleware chain</b><br/>CORS allowlist → rate limit 100/min/IP<br/>→ X-API-Key (mutating verbs only)<br/>→ CSP · HSTS · X-Frame-Options · Referrer-Policy"]
-            RT["<b>api/routes.py</b> — 34 CRUD endpoints<br/>/jobs · /profiles · /applications · /receipts<br/>/stats · /scrape · /process · /match<br/>/score · /scheduler/start|stop|status"]
-            AIR["<b>api/ai_routes.py</b><br/>/ai/score-ats · tailor-resume · tailor-document<br/>/ai/dehumanize · scrape-live · n8n/dispatch<br/>/ai/submit-application <b>(rejects without<br/>authorization_signature)</b>"]
+            RT["<b>api/routes.py</b> — 31 CRUD endpoints<br/>/jobs · /profiles · /applications · /receipts<br/>/stats · /scrape · /process · /match<br/>/score · /scheduler/start|stop|status"]
+            AIR["<b>api/ai_routes.py</b><br/>/ai/score-ats · tailor-resume · tailor-document<br/>/ai/dehumanize · scrape-live · n8n/dispatch<br/>/ai/submit-application (rejects without<br/>authorization_signature)<br/>/ai/webhooks/n8n (ingress from n8n)"]
             MET["<b>metrics/prometheus.py</b><br/>GET /api/v1/athena/metrics<br/><i>auth-exempt</i>"]
             HP["GET /health · /docs · /redoc · /openapi.json"]
         end
@@ -67,33 +60,28 @@ graph TB
         EMB["<b>Embeddings cache</b><br/>company/athena/embeddings_cache/{hash}.npy"]
         LOCKS["<b>Agent locks</b> — filelock<br/>artifacts/locks/*.lock"]
         PROF["<b>Applicant dossier</b> — profile/<br/>resume · education · certs · ATS keywords"]
-        NOTE["<i>pgvector:16 + redis:7 declared in<br/>docker-compose.prod.yml but UNWIRED</i>"]
-        JSONL --- NOTE
     end
 
     %% ===================== EXTERNAL =====================
     subgraph EXT["External Services"]
         direction TB
         BOARDS["<b>Job boards (14 sources)</b><br/>LinkedIn · Indeed · Glassdoor · RemoteOK<br/>WeWorkRemotely · Remote.co<br/>Upwork · Toptal · Freelancer · Guru · PeoplePerHour<br/>malawijobs · malawiwork · jobs.malawi.net"]
-        GEM["<b>Google Gemini</b><br/>gemini-3.8-flash · @google/genai + google-genai<br/><i>ATHENA_AI_PROVIDER=gemini|fallback</i>"]
+        GEM["<b>Google Gemini</b><br/>gemini-3.8-flash · @google/genai + google-genai<br/><i>GEMINI_API_KEY (FastAPI only)</i>"]
         HF["<b>HuggingFace / sentence-transformers</b><br/>all-MiniLM-L6-v2"]
-        N8N["<b>n8n</b> — webhook ingress/egress<br/><i>stub by default · ATHENA_N8N_WEBHOOK_URL</i>"]
-        OCI["<b>Oracle Cloud (OCI)</b> Ubuntu VPS<br/>deploy/oci-deploy.sh"]
+        N8N["<b>n8n</b> — webhook ingress/egress<br/><i>ATHENA_N8N_WEBHOOK_URL</i>"]
     end
 
     %% ===================== INFRA =====================
     subgraph INFRA["Infrastructure & CI/CD"]
         direction TB
-        DC["<b>Docker Compose</b><br/>dev 8520/8530 · staging 8000/8421 · prod 8000/8080<br/>backend: python-3.12-slim + uv + chromium<br/>frontend: nginx:alpine"]
-        CICD["<b>GitHub Actions</b><br/>ci.yml (ruff · pytest · lint · test · build · buildx)<br/>e2e.yml (Playwright 5 browsers + visual baselines)<br/>deploy.yml (ssh-action → oci-deploy.sh)<br/>dependabot.yml"]
+        CICD["<b>GitHub Actions</b><br/>ci.yml (ruff · pytest · lint · build)<br/>e2e.yml (Playwright 5 browsers + visual baselines)<br/>dependabot.yml"]
     end
 
     %% ===================== EDGES =====================
     BRA -->|"REST /api/*"| EXPR
-    BRB -->|"REST /api/v1/athena/*<br/>X-API-Key"| VITE
-    BRB -->|"REST /api/v1/athena/*<br/>X-API-Key"| NGINX
-    VITE -->|"proxy"| MW
-    NGINX -->|"proxy_pass"| MW
+
+    EXPR -->|"POST /ai/* proxy + X-API-Key"| AIR
+    EXPR -.->|"GET /health probe"| MW
 
     MW --> RT
     MW --> AIR
@@ -117,8 +105,6 @@ graph TB
     AUTO --> AIPV
     AIPV --> GEM
     AIR --> N8N
-    EXPR --> N8N
-    EXPR --> GEM
 
     DOMAIN --> JSONL
     ADAPT --> JSONL
@@ -126,11 +112,9 @@ graph TB
     AUTO --> LOCKS
     RT --> PROF
 
-    EXPR -->|"serves"| BRA
-    RT -.->|"GET /stats · /stats/pipeline"| BRB
+    EXPR -->|"serves SPA + proxies AI/data"| BRA
 
     classDef client fill:#070A40,stroke:#E63946,stroke-width:2px,color:#FFFFFF
-    classDef edge fill:#0F172A,stroke:#334155,stroke-width:1px,color:#E2E8F0
     classDef api fill:#111827,stroke:#00BFFF,stroke-width:2px,color:#F9FAFB
     classDef domain fill:#1F2937,stroke:#F97316,stroke-width:1px,color:#F9FAFB
     classDef data fill:#1E3A5F,stroke:#2563EB,stroke-width:1px,color:#F9FAFB
@@ -138,13 +122,12 @@ graph TB
     classDef infra fill:#1C1917,stroke:#78716C,stroke-width:1px,color:#F5F5F4
     classDef gate fill:#450A0A,stroke:#E63946,stroke-width:3px,color:#FEE2E2
 
-    class BRA,BRB client
-    class VITE,NGINX edge
+    class BRA client
     class EXPR,MW,RT,AIR,MET,HP api
     class SCR,MATCH,ATS,DOCS,AUTO,AIPV,SCHED,ADAPT domain
-    class JSONL,DOCDIR,EMB,LOCKS,PROF,NOTE data
-    class BOARDS,GEM,HF,N8N,OCI external
-    class DC,CICD infra
+    class JSONL,DOCDIR,EMB,LOCKS,PROF data
+    class BOARDS,GEM,HF,N8N external
+    class CICD infra
     class HITL gate
 ```
 
@@ -178,6 +161,7 @@ graph LR
     classDef ok fill:#052E16,stroke:#10B981,color:#ECFDF5
     class A,B,C,D,E,F,G,H,C2,I,K,L,M step
     class J gate
+    class K,L,M ok
 ```
 
 ---
@@ -186,35 +170,31 @@ graph LR
 
 | Layer | Implementation | Entry point |
 |---|---|---|
-| **Presentation (product)** | React 19 + react-router v7 + Vite 6 + Tailwind 4 + recharts | `frontend/src/App.tsx` |
-| **Presentation (preview)** | React 19 + Vite 8 + Tailwind 4, view switcher | `src/App.tsx` |
-| **BFF (preview lane)** | Express 4 + `@google/genai`, single file | `server.ts` |
-| **API** | FastAPI + Uvicorn + Pydantic v2 | `backend/src/athena/api/app.py` |
+| **Presentation** | React 19 + Vite 8 + Tailwind 4, view switcher | `src/App.tsx` |
+| **BFF / Proxy** | Express 4, single file | `server.ts` |
+| **API / Backend** | FastAPI + Uvicorn + Pydantic v2 | `backend/src/athena/api/app.py` |
 | **Domain** | Scrapers · matching · ATS · documents · automation · AI · scheduler | `backend/src/athena/` |
 | **Data** | JSONL + `filelock` + in-memory cache | `backend/src/athena/store.py` |
-| **Edge** | nginx reverse proxy / Vite dev proxy | `frontend/nginx.conf` |
-| **Infra** | Docker Compose · GitHub Actions · OCI VPS | `deploy/oci-deploy.sh` |
+| **Edge** | Express static + Vite middleware | `server.ts` |
+| **Infra** | GitHub Actions (ruff · pytest · lint · build) | `.github/workflows/ci.yml` |
 
 ### Port map
 
 | Service | Port |
 |---|---|
-| Express BFF (root) | 3000 |
-| FastAPI — local | 8000 |
-| FastAPI — dev compose | 8520 |
-| FastAPI — E2E | 8001 |
-| Vite dev (frontend) | 1111 |
-| Frontend — dev compose / staging / prod | 8530 / 8421 / 8080 |
-| Postgres + Redis (prod compose only, unused) | 5432 / 6379 |
+| Express BFF + SPA (dev) | 3000 |
+| FastAPI (local) | 8000 |
+| FastAPI (E2E) | 8001 |
+| Express (prod, `npm start`) | 3000 |
 
 ### Communication
 
-REST/JSON only. **No GraphQL, gRPC, WebSocket, or message queue exists in the codebase.**
+REST/JSON only. **No GraphQL, gRPC, WebSocket, or message queue.**
 
-- Product path: browser → nginx/Vite proxy → `/api/v1/athena/*` → FastAPI
-- Preview path: browser → Express `/api/*` (Gemini key held server-side)
-- Auth: static `X-API-Key` secret, enforced on mutating verbs only; `ATHENA_AUTH_MODE=api_key|open`
-- Observability: Prometheus text at `/api/v1/athena/metrics`
+- SPA path: browser → Express `/api/*` → FastAPI `/api/v1/athena/*` (proxied with `X-API-Key`)
+- Auth: `X-API-Key` on FastAPI mutating verbs; Express injects key server-side
+- Observability: Prometheus text at `/api/v1/athena/metrics` (auth-exempt)
+- Locks: file-based in `artifacts/locks/`, served by Express
 
 ### Background jobs (APScheduler, in-process)
 
@@ -226,10 +206,10 @@ REST/JSON only. **No GraphQL, gRPC, WebSocket, or message queue exists in the co
 
 ---
 
-## 4. Known Discrepancies
+## 4. Known Discrepancies / Open Items
 
-1. **Two parallel implementations.** Root `src/` + `server.ts` is labelled "Primary" in `package.json`, but `backend/` + `frontend/` carry the CI/CD, Docker, E2E, and full feature set. Both are drawn above.
-2. **`docker-compose.prod.yml` Postgres/Redis are decorative** — no code references them.
-3. **`docs/integration/OPENCODE_INVENTORY.md` is stale** — it claims Gemini and n8n are absent; both now exist.
-4. **Migration is 0/124 signed off** per `FINAL_MIGRATION_REPORT.md`.
-5. **Documented defects:** API key baked into the frontend bundle, unauthenticated GETs, `automation/submitter.py` not wired to a live dispatch path.
+1. **Backend data empty** — `company/athena/` recreated empty; scrapers must run to populate.
+2. **No deployment target** — runs locally via `npm run dev` (Express+FastAPI) or `npm start` (prod build).
+3. **Frontend views still use mock data** — `src/App.tsx` loads from backend but falls back to mock; full wiring pending.
+4. **n8n webhook URL** — `ATHENA_N8N_WEBHOOK_URL` not configured; ingress endpoint exists but untested.
+5. **Docker/OCI removed** — `deploy/`, `docker-compose*.yml`, `.dockerignore` deleted; deployment TBD.
