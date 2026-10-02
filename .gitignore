@@ -56,9 +56,6 @@ backend/artifacts/
 *.db
 *.sqlite
 
-# Docker
-.docker/
-
 # Misc
 *.tmp
 *.temp
