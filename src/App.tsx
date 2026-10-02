@@ -34,6 +34,7 @@ import {
   initialCronState,
   defaultSettings,
 } from "./data/mockData";
+import { api } from "./api";
 import { LeftSidebar, NavView } from "./components/layout/LeftSidebar";
 import { RightSidebar } from "./components/layout/RightSidebar";
 import { LayeredMountainChart } from "./components/charts/LayeredMountainChart";
@@ -58,6 +59,7 @@ export default function App() {
   // Core Data
   const [opportunities, setOpportunities] = useState<Opportunity[]>(initialOpportunities);
   const [applicantProfile, setApplicantProfile] = useState<ApplicantProfile>(initialApplicantProfile);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Automation Settings (Right Sidebar)
   const [settings, setSettings] = useState<AutomationSettings>(defaultSettings);
@@ -72,6 +74,30 @@ export default function App() {
   const [detailModalOpp, setDetailModalOpp] = useState<Opportunity | null>(null);
   const [signOffOpportunity, setSignOffOpportunity] = useState<Opportunity | null>(null);
   const [showNotificationToast, setShowNotificationToast] = useState<string | null>(null);
+
+  // Load data from backend on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const [jobsRes, profilesRes] = await Promise.all([
+          api.listJobs({ limit: 200 }),
+          api.listProfiles(),
+        ]);
+        if (jobsRes.jobs && jobsRes.jobs.length > 0) {
+          setOpportunities(jobsRes.jobs);
+        }
+        if (profilesRes && profilesRes.length > 0) {
+          setApplicantProfile(profilesRes[0]);
+        }
+      } catch (err) {
+        console.warn("Failed to load backend data, using mock:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   // Backend-backed cron cycle: hits the same live-scrape endpoint the Scraper view uses
   const runCronCycle = async (type: "job" | "consultancy" | "all") => {
