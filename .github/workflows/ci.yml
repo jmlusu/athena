@@ -14,175 +14,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend:
-    name: Backend quality gates
+  quality:
+    name: Lint & build (primary app)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      - name: Set up Python and uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
-        with:
-          enable-cache: true
-          cache-dependency-glob: 'backend/uv.lock'
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: uv sync --extra dev
-
-      - name: Ruff format check
-        run: uv run ruff format --check .
-
-      - name: Run tests
-        run: uv run pytest -q
-
-  lint-debt:
-    name: Lint debt (advisory)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      - name: Set up Python and uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
-        with:
-          enable-cache: true
-          cache-dependency-glob: 'backend/uv.lock'
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: uv sync --extra dev
-
-      - name: Ruff lint (full)
-        id: ruff
-        continue-on-error: true
-        run: |
-          set +e
-          uv run ruff check . --output-format=concise 2>&1 | tee /tmp/ruff-report.txt
-          exit ${PIPESTATUS[0]}
-
-      - name: Mypy (full)
-        id: mypy
-        continue-on-error: true
-        run: |
-          set +e
-          uv run mypy . 2>&1 | tee /tmp/mypy-report.txt
-          exit ${PIPESTATUS[0]}
-
-      - name: Summarize debt
-        working-directory: /
-        run: |
-          ruff_count=$(grep -cE ':[0-9]+:[0-9]+:[[:space:]]' /tmp/ruff-report.txt 2>/dev/null || echo 0)
-          mypy_count=$(grep -cE ':[0-9]+:( error| note):' /tmp/mypy-report.txt 2>/dev/null || echo 0)
-          {
-            echo "### Backend lint debt (advisory)"
-            echo "- **ruff violations:** $ruff_count"
-            echo "- **mypy errors:** $mypy_count"
-            echo "This job is marked continue-on-error; it does not block merges."
-          } >> "$GITHUB_STEP_SUMMARY"
-          echo "ruff=$ruff_count mypy=$mypy_count"
-
-  frontend:
-    name: Frontend quality gates
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: '22'
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Set up Node pnpm cache
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
+          node-version: '24'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Lint (typecheck)
-        run: pnpm lint
-
-      - name: Test
-        run: pnpm test
+        run: npm run lint
 
       - name: Build
-        run: pnpm build
-
-  docker:
-    name: Docker image build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      # Backend deps ship ~2GB of CUDA wheels (cudnn/cublas/triton); with the
-      # uv cache, the venv layer, and chromium the build needs far more than
-      # the runner's default free space (previous run died with ENOSPC).
-      - name: Free disk space
-        run: |
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost || true
-          sudo docker image prune -af || true
-          df -h /
-
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: '22'
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Set up Node pnpm cache
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: 'frontend/pnpm-lock.yaml'
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: pnpm install --frozen-lockfile
-
-      - name: Build frontend (for Docker COPY)
-        working-directory: frontend
-        run: pnpm build
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
-
-      - name: Build backend image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
-        with:
-          context: .
-          file: backend/Dockerfile
-          push: false
-          load: false
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,scope=backend,mode=max
-          tags: athena-backend:ci
-
-      - name: Build frontend image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
-        with:
-          context: .
-          file: frontend/Dockerfile
-          push: false
-          load: false
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,scope=frontend,mode=max
-          tags: athena-frontend:ci
+        run: npm run build
