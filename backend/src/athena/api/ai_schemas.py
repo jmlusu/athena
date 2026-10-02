@@ -1,9 +1,8 @@
 """Pydantic schemas for AI endpoints."""
 
-from typing import Any, Literal, Optional
-from uuid import UUID
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 from athena.timeutils import UTCDateTime
 
@@ -96,12 +95,12 @@ class TailoredDocument(BaseModel):
     title: str
     recipient: str
     date: str
-    greeting: Optional[str] = None
-    executive_summary: Optional[str] = None
-    paragraphs: Optional[list[str]] = None
-    sections: Optional[list[TailoredDocumentSection]] = None
-    closing: Optional[str] = None
-    signature: Optional[str] = None
+    greeting: str | None = None
+    executive_summary: str | None = None
+    paragraphs: list[str] | None = None
+    sections: list[TailoredDocumentSection] | None = None
+    closing: str | None = None
+    signature: str | None = None
     layout: Literal["one-column", "two-column"] = "one-column"
     dehumanized: bool = True
 
@@ -114,7 +113,7 @@ class DehumanizeRequest(BaseModel):
     """Request for text dehumanization."""
 
     text: str
-    context: Optional[str] = "Job application / Cover letter"
+    context: str | None = "Job application / Cover letter"
 
 
 class DehumanizeResponse(BaseModel):
@@ -130,7 +129,7 @@ class ScrapeLiveRequest(BaseModel):
         "all"
     )
     search_type: Literal["jobs", "consultancies", "all"] = "all"
-    keywords: Optional[str] = None
+    keywords: str | None = None
     resume_skills: list[str] = []
 
 
@@ -158,9 +157,9 @@ class ScrapeLiveResponse(BaseModel):
 class N8nDispatchRequest(BaseModel):
     """Request to dispatch n8n webhook."""
 
-    event_type: Optional[str] = "JOB_MATCH_HIGH_ATS"
+    event_type: str | None = "JOB_MATCH_HIGH_ATS"
     payload: dict[str, Any] = {}
-    webhook_url: Optional[str] = None
+    webhook_url: str | None = None
 
 
 class N8nNodeProcessed(BaseModel):
@@ -184,6 +183,23 @@ class N8nDispatchResponse(BaseModel):
     receipt: N8nReceipt
 
 
+class N8nIngressRequest(BaseModel):
+    """Inbound webhook from n8n or external orchestration to trigger Athena actions."""
+
+    event: str
+    target_locations: list[str] = []
+    categories: list[str] = []
+    minimum_ats_auto_apply: int = 90
+    applicant_id: str | None = None
+
+
+class N8nIngressResponse(BaseModel):
+    status: Literal["ACCEPTED", "REJECTED"]
+    execution_id: str
+    message: str
+    triggered_actions: list[str] = []
+
+
 class SubmitApplicationRequest(BaseModel):
     """Request for application submission with human authorization."""
 
@@ -193,8 +209,8 @@ class SubmitApplicationRequest(BaseModel):
     applicant_name: str
     # Optional here so the route's explicit 400 (with a clear message) fires
     # instead of Pydantic's generic 422 validation error.
-    authorization_signature: Optional[str] = None
-    authorized_at: Optional[UTCDateTime] = None
+    authorization_signature: str | None = None
+    authorized_at: UTCDateTime | None = None
 
 
 class SubmitApplicationResponse(BaseModel):

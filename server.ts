@@ -397,7 +397,7 @@ app.post("/api/ai/scrape-live", proxyPost(`${AI_PREFIX}/scrape-live`, (body) => 
 app.post("/api/submit-application", proxyPost(`${AI_PREFIX}/submit-application`));
 app.post("/api/n8n/dispatch-webhook", proxyPost(`${AI_PREFIX}/n8n/dispatch`));
 // n8n webhook ingress does not exist in FastAPI yet; kept for Phase 4.
-app.post("/api/webhooks/n8n", proxyPost("/webhooks/n8n"));
+app.post("/api/webhooks/n8n", proxyPost(`${AI_PREFIX}/webhooks/n8n`));
 
 // Backend reachability, surfaced separately so /api/health stays a cheap
 // liveness probe for the e2e suite.
