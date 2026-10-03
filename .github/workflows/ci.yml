@@ -54,6 +54,9 @@ jobs:
       - name: Sync dependencies
         run: uv sync --extra dev
 
+      - name: Ruff fix (auto-fix)
+        run: uv run ruff check --fix .
+
       - name: Ruff check
         run: uv run ruff check .
 
