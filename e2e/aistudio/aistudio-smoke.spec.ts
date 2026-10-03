@@ -89,6 +89,34 @@ test('health: GET /api/health returns status ok', async ({ request, page }) => {
   await expect(page.getByRole('heading', { name: '1. Discovered' })).toBeVisible();
 });
 
+test('contract: POST /api/ai/score-ats proxies to backend (proxy path works)', async ({ request }) => {
+  const response = await request.post('/api/ai/score-ats', {
+    data: { job_id: 'test-job', applicant_id: 'test-applicant' },
+  });
+  // Proxy should not return 502/504 (proxy errors); 2xx/4xx = path works
+  expect([200, 201, 400, 404, 422]).toContain(response.status());
+  const body = await response.json();
+  expect(body).toBeTruthy();
+});
+
+test('contract: POST /api/ai/tailor-resume proxies to backend (proxy path works)', async ({ request }) => {
+  const response = await request.post('/api/ai/tailor-resume', {
+    data: { job_id: 'test-job', applicant_id: 'test-applicant' },
+  });
+  expect([200, 201, 400, 404, 422]).toContain(response.status());
+  const body = await response.json();
+  expect(body).toBeTruthy();
+});
+
+test('contract: POST /api/submit-application proxies to backend (proxy path works)', async ({ request }) => {
+  const response = await request.post('/api/submit-application', {
+    data: { job_id: 'test-job', applicant_id: 'test-applicant' },
+  });
+  expect([200, 201, 400, 404, 422]).toContain(response.status());
+  const body = await response.json();
+  expect(body).toBeTruthy();
+});
+
 for (const view of VIEWS) {
   test(`view ${view.id}: breadcrumb label and view marker render`, async ({ page }) => {
     await page.goto('/');

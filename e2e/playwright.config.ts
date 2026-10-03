@@ -38,10 +38,32 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+      // Screenshots are Chrome-only: skip visual regression suite on non-Chromium
+      testIgnore: ['**/visual-regression.spec.ts'],
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+      // Screenshots are Chrome-only: skip visual regression suite on non-Chromium
+      testIgnore: ['**/visual-regression.spec.ts'],
+    },
   ],
   // Root AI Studio SPA: `npm run dev` -> tsx server.ts (Express BFF + Vite
   // middleware, PORT=3000). Starts fine without an AI key.
   webServer: [
+    {
+      // FastAPI backend (port 8000) — required for contract tests that proxy via Express BFF
+      command: 'uv run uvicorn src.athena.api.app:app --host 0.0.0.0 --port 8000',
+      cwd: path.resolve(REPO_ROOT, 'backend'),
+      url: 'http://localhost:8000/health',
+      timeout: 120000,
+      reuseExistingServer: !process.env.CI,
+      stdout: 'ignore',
+      stderr: 'pipe',
+    },
     {
       command: 'npm run dev',
       cwd: REPO_ROOT,

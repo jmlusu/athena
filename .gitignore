@@ -12,8 +12,6 @@ __pycache__/
 
 # Build outputs
 dist/
-frontend/dist/
-frontend/.vite/
 
 # Environment
 .env
