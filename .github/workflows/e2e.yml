@@ -6,18 +6,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      update_visual:
-        description: 'Regenerate Linux visual baselines (uploads artifact, skips full suite)'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
-  actions: write
-  # PR test-summary comment (POST /issues/{n}/comments on a pull request)
-  issues: write
-  pull-requests: write
 
 concurrency:
   group: e2e-${{ github.ref }}
@@ -25,156 +16,49 @@ concurrency:
 
 jobs:
   e2e:
-    name: Playwright E2E Tests
+    name: Playwright smoke (primary app)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      - name: Setup Node
+      - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: '22'
+          node-version: '24'
+          cache: 'npm'
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.local/share/pnpm/store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: Setup Python and uv
+      - name: Setup uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           enable-cache: true
           cache-dependency-glob: 'backend/uv.lock'
           python-version: '3.12'
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: pnpm install --frozen-lockfile
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
-      - name: Install backend dependencies
-        working-directory: backend
-        run: uv sync --extra dev
+      - name: Install dependencies
+        run: npm ci
 
+      # Playwright boots the app itself: e2e/playwright.config.ts starts
+      # `npm run dev` and waits on /api/health, which answers without an API key.
       - name: Install Playwright browsers
-        working-directory: frontend
-        run: npx playwright install --with-deps chromium
-
-      - name: Build frontend
-        working-directory: frontend
-        run: pnpm build
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Run E2E tests
-        if: github.event_name != 'workflow_dispatch' || !inputs.update_visual
-        working-directory: frontend
-        env:
-          E2E_BASE_URL: http://localhost:8530
-          E2E_API_URL: http://127.0.0.1:8001
-          E2E_API_KEY: dev-admin-key
-          CI: true
-        # pnpm run forwards a literal "--" that turns --project into a file
-        # filter (all 5 projects then run and die on uninstalled browsers).
-        run: pnpm exec playwright test --config e2e/playwright.config.ts --project=chromium
-
-      - name: Regenerate Linux visual baselines
-        if: github.event_name == 'workflow_dispatch' && inputs.update_visual
-        working-directory: frontend
-        env:
-          E2E_BASE_URL: http://localhost:8530
-          E2E_API_URL: http://127.0.0.1:8001
-          E2E_API_KEY: dev-admin-key
-          CI: true
-          E2E_UPDATE_VISUAL: '1'
-        run: pnpm exec playwright test --config e2e/playwright.config.ts --project=chromium visual-regression --update-snapshots=all
-
-      - name: Upload Linux visual baselines
-        if: github.event_name == 'workflow_dispatch' && inputs.update_visual
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-visual-baselines
-          path: frontend/e2e/tests/visual-regression.spec.ts-snapshots/*-chromium-linux.png
-          retention-days: 7
+        run: npm run test:e2e
 
       - name: Upload Playwright HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: frontend/e2e/test-results/html-report/
+          path: e2e/test-results/aistudio-html-report/
           retention-days: 7
-
-      - name: Upload Playwright test results (JSON)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-results
-          path: frontend/e2e/test-results/results.json
-          retention-days: 7
-
-      - name: Upload Playwright test results (JUnit)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-junit
-          path: frontend/e2e/test-results/results.xml
-          retention-days: 7
-
-      - name: Clean up old test artifacts (keep last 5 runs)
-        if: always()
-        run: |
-          ARTIFACT_NAMES=$(gh artifact list --repo "${GITHUB_REPOSITORY}" --json name --jq '.[].name' 2>/dev/null | grep -E '^(playwright-report|playwright-results|playwright-junit)-' | sort -r)
-          COUNT=0
-          for name in $ARTIFACT_NAMES; do
-            COUNT=$((COUNT + 1))
-            if [ $COUNT -gt 5 ]; then
-              gh artifact delete --repo "${GITHUB_REPOSITORY}" "$name" --yes 2>/dev/null || true
-            fi
-          done
-
-      - name: Comment PR with test summary
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-            
-            const resultsPath = path.join(process.env.GITHUB_WORKSPACE, 'frontend/e2e/test-results/results.json');
-            if (fs.existsSync(resultsPath)) {
-              const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
-              // JSON reporter top-level suites hold their specs in child
-              // suites (test.describe blocks), so count recursively.
-              const countOk = (suites, ok) => suites.reduce(
-                (acc, suite) =>
-                  acc + (suite.specs || []).filter(s => s.ok === ok).length
-                     + (suite.suites ? countOk(suite.suites, ok) : 0),
-                0,
-              );
-              const passed = countOk(results.suites, true);
-              const failed = countOk(results.suites, false);
-              const total = passed + failed;
-              
-              const body = `## 🎭 Playwright E2E Test Results
-              
-              | Metric | Count |
-              |--------|-------|
-              | ✅ Passed | ${passed} |
-              | ❌ Failed | ${failed} |
-              | **Total** | **${total}** |
-              
-              ${failed > 0 ? '⚠️ Some tests failed. Check the workflow artifacts for details.' : '✅ All tests passed!'}`;
-              
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body
-              });
-            }

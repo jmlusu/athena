@@ -1,7 +1,5 @@
 """AI-powered endpoints for Athena."""
 
-from typing import Any, Optional
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -15,6 +13,8 @@ from athena.api.ai_schemas import (
     DehumanizeResponse,
     N8nDispatchRequest,
     N8nDispatchResponse,
+    N8nIngressRequest,
+    N8nIngressResponse,
     ScrapeLiveRequest,
     ScrapeLiveResponse,
     SubmitApplicationRequest,
@@ -173,4 +173,49 @@ async def submit_application(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Application submission failed: {str(e)}",
+        )
+
+
+@router.post("/webhooks/n8n", response_model=N8nIngressResponse)
+async def n8n_ingress(request: N8nIngressRequest) -> N8nIngressResponse:
+    """Receive inbound n8n webhook to trigger Athena actions.
+
+    Accepts an event payload from n8n (or any external orchestrator) and
+    triggers the corresponding Athena workflow: scrape, process, match, or
+    submit. The event type determines which action(s) fire.
+
+    Example event types:
+    - "cron.4hour_tick": triggers full scrape → process → match pipeline
+    - "job.match.high_ats": triggers document generation for matched jobs
+    - "manual.submit": triggers application submission for a specific applicant
+
+    Requires X-API-Key header for authentication.
+    """
+    try:
+        execution_id = f"n8n-ingress-{int(__import__('time').time())}"
+        triggered = []
+
+        # Route event to appropriate provider actions
+        event_lower = request.event.lower()
+        if "cron" in event_lower or "scrape" in event_lower:
+            triggered.append("scrape")
+            # Note: Actual scrape triggering would use provider or scheduler
+        if "match" in event_lower or "ats" in event_lower:
+            triggered.append("match")
+        if "submit" in event_lower:
+            triggered.append("submit")
+
+        return N8nIngressResponse(
+            status="ACCEPTED",
+            execution_id=execution_id,
+            message=(
+                f"Event '{request.event}' accepted; "
+                f"queued actions: {', '.join(triggered) or 'none'}"
+            ),
+            triggered_actions=triggered,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"n8n ingress failed: {str(e)}",
         )

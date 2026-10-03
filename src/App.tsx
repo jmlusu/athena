@@ -34,6 +34,7 @@ import {
   initialCronState,
   defaultSettings,
 } from "./data/mockData";
+import { api } from "./api";
 import { LeftSidebar, NavView } from "./components/layout/LeftSidebar";
 import { RightSidebar } from "./components/layout/RightSidebar";
 import { LayeredMountainChart } from "./components/charts/LayeredMountainChart";
@@ -52,10 +53,13 @@ export default function App() {
   const [currentView, setCurrentView] = useState<NavView>("pipeline");
   const [selectedScope, setSelectedScope] = useState<OpportunityScope | "all">("all");
   const [selectedCategory, setSelectedCategory] = useState<OpportunityCategory | "all">("all");
+  const [stageFilter, setStageFilter] = useState<string>("all");
+  const [atsFilter, setAtsFilter] = useState<"all" | "critical" | "flagged">("all");
 
   // Core Data
   const [opportunities, setOpportunities] = useState<Opportunity[]>(initialOpportunities);
   const [applicantProfile, setApplicantProfile] = useState<ApplicantProfile>(initialApplicantProfile);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Automation Settings (Right Sidebar)
   const [settings, setSettings] = useState<AutomationSettings>(defaultSettings);
@@ -67,8 +71,33 @@ export default function App() {
 
   // Modals & Selected Objects
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+  const [detailModalOpp, setDetailModalOpp] = useState<Opportunity | null>(null);
   const [signOffOpportunity, setSignOffOpportunity] = useState<Opportunity | null>(null);
   const [showNotificationToast, setShowNotificationToast] = useState<string | null>(null);
+
+  // Load data from backend on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const [jobsRes, profilesRes] = await Promise.all([
+          api.listJobs({ limit: 200 }),
+          api.listProfiles(),
+        ]);
+        if (jobsRes.jobs && jobsRes.jobs.length > 0) {
+          setOpportunities(jobsRes.jobs);
+        }
+        if (profilesRes && profilesRes.length > 0) {
+          setApplicantProfile(profilesRes[0]);
+        }
+      } catch (err) {
+        console.warn("Failed to load backend data, using mock:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   // Backend-backed cron cycle: hits the same live-scrape endpoint the Scraper view uses
   const runCronCycle = async (type: "job" | "consultancy" | "all") => {
@@ -269,9 +298,26 @@ export default function App() {
                 <MetricsAndBarChart
                   opportunities={opportunities}
                   onCardClick={(filter) => {
-                    if (filter === "critical") setCurrentView("pipeline");
-                    if (filter === "flagged") setCurrentView("pipeline");
-                    if (filter === "awaiting_signoff") setCurrentView("pipeline");
+                    if (filter === "all") {
+                      setStageFilter("all");
+                      setAtsFilter("all");
+                      setCurrentView("pipeline");
+                    }
+                    if (filter === "critical") {
+                      setStageFilter("all");
+                      setAtsFilter("critical");
+                      setCurrentView("pipeline");
+                    }
+                    if (filter === "flagged") {
+                      setStageFilter("all");
+                      setAtsFilter("flagged");
+                      setCurrentView("pipeline");
+                    }
+                    if (filter === "awaiting_signoff") {
+                      setStageFilter("awaiting_signoff");
+                      setAtsFilter("all");
+                      setCurrentView("pipeline");
+                    }
                     if (filter === "submitted") setCurrentView("receipts");
                   }}
                 />
@@ -282,7 +328,7 @@ export default function App() {
             {currentView === "pipeline" && (
               <PipelineView
                 opportunities={opportunities}
-                onOpenDetails={(opp) => setSelectedOpportunity(opp)}
+                onOpenDetails={(opp) => setDetailModalOpp(opp)}
                 onOpenDocumentStudio={(opp) => {
                   setSelectedOpportunity(opp);
                   setCurrentView("documents");
@@ -295,6 +341,12 @@ export default function App() {
                 onUpdateStatus={handleUpdateStatus}
                 scopeFilter={selectedScope}
                 categoryFilter={selectedCategory}
+                externalStageFilter={stageFilter}
+                externalAtsFilter={atsFilter}
+                onFilterConsumed={() => {
+                  setStageFilter("all");
+                  setAtsFilter("all");
+                }}
               />
             )}
 
@@ -302,14 +354,14 @@ export default function App() {
               <ScraperDiscoveryView
                 opportunities={opportunities}
                 applicantProfile={applicantProfile}
-                onOpenDetails={(opp) => setSelectedOpportunity(opp)}
+                onOpenDetails={(opp) => setDetailModalOpp(opp)}
                 onOpenDocumentStudio={(opp) => {
                   setSelectedOpportunity(opp);
                   setCurrentView("documents");
                 }}
                 onAddListings={handleAddListings}
                 onScoreAts={(opp) => {
-                  setSelectedOpportunity(opp);
+                  setDetailModalOpp(opp);
                 }}
               />
             )}
@@ -369,20 +421,24 @@ export default function App() {
           onUpdateSettings={(newVals) => setSettings((prev) => ({ ...prev, ...newVals }))}
           opportunities={opportunities}
           onOpenSignOff={(opp) => setSignOffOpportunity(opp)}
-          onOpenDetails={(opp) => setSelectedOpportunity(opp)}
+          onOpenDetails={(opp) => setDetailModalOpp(opp)}
         />
       </div>
 
       {/* Opportunity Detail Modal */}
-      {selectedOpportunity && (
+      {detailModalOpp && (
         <OpportunityDetailModal
-          opportunity={selectedOpportunity}
-          onClose={() => setSelectedOpportunity(null)}
+          opportunity={detailModalOpp}
+          onClose={() => setDetailModalOpp(null)}
           onOpenDocumentStudio={(opp) => {
+            setDetailModalOpp(null);
             setSelectedOpportunity(opp);
             setCurrentView("documents");
           }}
-          onOpenSignOff={(opp) => setSignOffOpportunity(opp)}
+          onOpenSignOff={(opp) => {
+            setDetailModalOpp(null);
+            setSignOffOpportunity(opp);
+          }}
         />
       )}
 

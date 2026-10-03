@@ -12,8 +12,6 @@ __pycache__/
 
 # Build outputs
 dist/
-frontend/dist/
-frontend/.vite/
 
 # Environment
 .env
@@ -55,9 +53,6 @@ company/athena/
 backend/artifacts/
 *.db
 *.sqlite
-
-# Docker
-.docker/
 
 # Misc
 *.tmp

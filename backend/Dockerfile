@@ -1,64 +1,29 @@
-# Backend Dockerfile
-FROM python:3.12-slim
+# backend/Dockerfile — FastAPI with uv + Playwright Chromium
+FROM python:3.12-slim AS base
+
+# System deps for Playwright + weasyprint
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+    libgbm1 libasound2 libpango-1.0-0 libcairo2 libatspi2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    curl \
-    # WeasyPrint dependencies
-    libpango-1.0-0 \
-    libcairo2 \
-    libgdk-pixbuf-2.0-0 \
-    libffi-dev \
-    shared-mime-info \
-    fonts-dejavu-core \
-    fonts-liberation \
-    # Playwright dependencies
-    libnss3 \
-    libnspr4 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libxkbcommon0 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libasound2 \
-    && rm -rf /var/lib/apt/lists/*
+# Install Python deps
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --extra dev
 
-# Install uv for fast Python package management
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Copy source
+COPY src/ ./src/
 
-# Copy dependency files
-COPY backend/pyproject.toml backend/uv.lock* ./
+# Install Playwright Chromium (cached in layer)
+RUN uv run playwright install --with-deps chromium
 
-# Install Python dependencies (without the project; sources are copied next so
-# edits under backend/src do not re-download dependencies)
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project
-
-# Install Playwright Chromium (+ system deps) for browser-based scrapers
-RUN --mount=type=cache,target=/root/.cache/uv \
-    /app/.venv/bin/playwright install --with-deps chromium
-
-# Copy application code (required for the editable `athena` install declared with src layout)
-COPY backend/src ./src
-
-# Install the application into the environment
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
-
-# Create data directory
-RUN mkdir -p /app/company/athena
-
-# Expose port
 EXPOSE 8000
 
-# Run the application with environment-aware configuration
 CMD ["uv", "run", "uvicorn", "athena.api.app:app", "--host", "0.0.0.0", "--port", "8000"]

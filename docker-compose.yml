@@ -1,62 +1,47 @@
-version: '3.8'
+version: "3.9"
 
 services:
+  # FastAPI backend
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: athena-backend
+    env_file: .env
     environment:
-      - ATHENA_API_KEY=${ATHENA_API_KEY:-dev-admin-key}
-      - ATHENA_CORS_ORIGINS=${ATHENA_CORS_ORIGINS:-http://localhost:8530,http://127.0.0.1:8530}
-      - ATHENA_AUTH_MODE=api_key
-      - ATHENA_RATE_LIMIT=${ATHENA_RATE_LIMIT:-100}
-      - ATHENA_DATA_DIR=/app/company/athena
-      - ATHENA_HITL_EXTERNAL=false
-      - ATHENA_LLM_PROVIDER=
-      - ATHENA_AI_PROVIDER=${ATHENA_AI_PROVIDER:-fallback}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - ATHENA_N8N_WEBHOOK_URL=${ATHENA_N8N_WEBHOOK_URL:-https://n8n.athena-ops.internal/webhook/athena-pipeline-trigger}
-      - ATHENA_SCHEDULER_AUTOSTART=${ATHENA_SCHEDULER_AUTOSTART:-true}
-      - ATHENA_DEFAULT_SCRAPE_QUERY=${ATHENA_DEFAULT_SCRAPE_QUERY:-software engineer}
-      - ATHENA_DEFAULT_SCRAPE_LOCATION=${ATHENA_DEFAULT_SCRAPE_LOCATION:-}
-      - ATHENA_DEFAULT_SCRAPE_MAX=${ATHENA_DEFAULT_SCRAPE_MAX:-50}
-      - AISTUDIO_PREVIEW=${AISTUDIO_PREVIEW:-false}
-      - HOST=${HOST:-0.0.0.0}
-      - PORT=${PORT:-8000}
+      - ATHENA_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - ATHENA_DATA_DIR=/app/data
     volumes:
-      - athena_data:/app/company/athena
+      - ./company/athena:/app/data
+      - ./artifacts:/app/artifacts
     ports:
-      - "8520:8000"
+      - "8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
-    networks:
-      - athena-network
 
+  # Express BFF + SPA (dev)
   frontend:
     build:
       context: .
-      dockerfile: frontend/Dockerfile
-      args:
-        - VITE_ATHENA_API_KEY=${ATHENA_API_KEY:-dev-admin-key}
+      dockerfile: Dockerfile.frontend
     container_name: athena-frontend
+    env_file: .env
     environment:
-      - AISTUDIO_PREVIEW=${AISTUDIO_PREVIEW:-false}
+      - VITE_ATHENA_API_BASE=http://backend:8000/api/v1/athena
+    volumes:
+      - ./artifacts:/app/artifacts
     ports:
-      - "8530:80"
+      - "3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
-    networks:
-      - athena-network
 
 volumes:
-  athena_data:
-
-networks:
-  athena-network:
-    driver: bridge
+  data:
+  artifacts:
