@@ -54,7 +54,9 @@ class BaseScraper(ABC):
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
-                headers=self.headers, timeout=30.0, follow_redirects=True,
+                headers=self.headers,
+                timeout=30.0,
+                follow_redirects=True,
             )
         return self._client
 

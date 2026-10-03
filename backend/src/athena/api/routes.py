@@ -309,7 +309,8 @@ async def list_receipts(
             receipt = ReceiptResponse(
                 receipt_id=app.receipt_data.get("receipt_id", f"ATH-RCPT-{str(app.id)[:8]}"),
                 confirmation_hash=app.receipt_data.get(
-                    "confirmation_hash", f"SHA256-{str(app.id)}",
+                    "confirmation_hash",
+                    f"SHA256-{str(app.id)}",
                 ),
                 submitted_at=app.submitted_at or app.created_at,
                 job_title=job.title if job else "Unknown Position",
@@ -319,7 +320,8 @@ async def list_receipts(
                 authorized_at=app.receipt_data.get("authorized_at", app.created_at),
                 portal_name=app.receipt_data.get("portal_name", "Athena Direct"),
                 follow_up_date=app.receipt_data.get(
-                    "follow_up_date", (app.created_at).strftime("%Y-%m-%d"),
+                    "follow_up_date",
+                    (app.created_at).strftime("%Y-%m-%d"),
                 ),
                 status=app.receipt_data.get("status", "SUBMITTED"),
                 notes=app.receipt_data.get("notes"),
@@ -347,7 +349,8 @@ async def get_receipt(receipt_id: str):
             return ReceiptResponse(
                 receipt_id=app.receipt_data.get("receipt_id", f"ATH-RCPT-{str(app.id)[:8]}"),
                 confirmation_hash=app.receipt_data.get(
-                    "confirmation_hash", f"SHA256-{str(app.id)}",
+                    "confirmation_hash",
+                    f"SHA256-{str(app.id)}",
                 ),
                 submitted_at=app.submitted_at or app.created_at,
                 job_title=job.title if job else "Unknown Position",
@@ -357,7 +360,8 @@ async def get_receipt(receipt_id: str):
                 authorized_at=app.receipt_data.get("authorized_at", app.created_at),
                 portal_name=app.receipt_data.get("portal_name", "Athena Direct"),
                 follow_up_date=app.receipt_data.get(
-                    "follow_up_date", (app.created_at).strftime("%Y-%m-%d"),
+                    "follow_up_date",
+                    (app.created_at).strftime("%Y-%m-%d"),
                 ),
                 status=app.receipt_data.get("status", "SUBMITTED"),
                 notes=app.receipt_data.get("notes"),

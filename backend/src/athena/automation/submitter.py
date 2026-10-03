@@ -225,7 +225,10 @@ class ApplicationSubmitter:
         return self
 
     async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any,
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
     ) -> None:
         if self.browser:
             await self.browser.stop()
@@ -377,7 +380,10 @@ class ApplicationSubmitter:
                 continue
 
     async def _fill_application_form(
-        self, profile: UserProfile, resume: Document, cover_letter: Document | None,
+        self,
+        profile: UserProfile,
+        resume: Document,
+        cover_letter: Document | None,
     ) -> dict[str, bool]:
         """Fill the application form with profile data."""
         resume_path = Path(resume.file_path)
@@ -388,7 +394,10 @@ class ApplicationSubmitter:
 
         # Try multi-step form handling
         results = await self.form_filler.handle_multi_step_form(
-            profile, resume_path, cover_letter_path, max_steps=10,
+            profile,
+            resume_path,
+            cover_letter_path,
+            max_steps=10,
         )
 
         # Flatten results
@@ -457,7 +466,10 @@ class ApplicationSubmitter:
 
         # Use non-blocking request_and_park
         request_id = self.hitl_gate.request_and_park(
-            task_id=task_id, agent_id=self.config.approval_agent_id, tool=tool, args=args,
+            task_id=task_id,
+            agent_id=self.config.approval_agent_id,
+            tool=tool,
+            args=args,
         )
 
         self._result.approval_request_id = request_id
@@ -477,7 +489,8 @@ class ApplicationSubmitter:
             await asyncio.sleep(2)
 
         logger.warning(
-            "HITL approval timed out after %d minutes", self.config.approval_timeout_minutes,
+            "HITL approval timed out after %d minutes",
+            self.config.approval_timeout_minutes,
         )
         return False
 
@@ -615,7 +628,9 @@ class ApplicationSubmitter:
                 import json
 
                 audit_file.write_text(
-                    json.dumps({"result": self._result.to_dict(), "audit_log": audit_log}, indent=2),
+                    json.dumps(
+                        {"result": self._result.to_dict(), "audit_log": audit_log}, indent=2
+                    ),
                 )
                 logger.info("Audit trail saved: %s", audit_file)
 

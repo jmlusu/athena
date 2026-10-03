@@ -473,7 +473,8 @@ class FallbackProvider(AthenaAIProvider):
         )
 
     async def submit_application(
-        self, request: SubmitApplicationRequest,
+        self,
+        request: SubmitApplicationRequest,
     ) -> SubmitApplicationResponse:
         """Generate receipt (no actual submission)."""
         import base64

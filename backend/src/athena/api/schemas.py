@@ -117,6 +117,7 @@ class UserProfileCreate(BaseModel):
 
 class UserProfileRequest(BaseModel):
     """Full profile data for upsert operations (includes all fields)."""
+
     email: EmailStr
     full_name: str
     phone: str | None = None

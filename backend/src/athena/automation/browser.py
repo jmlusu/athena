@@ -129,7 +129,10 @@ class AthenaBrowser:
         return self
 
     async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any,
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
     ) -> None:
         await self.stop()
 
@@ -445,7 +448,10 @@ class AthenaBrowser:
         return cast(str, await self._page.content())
 
     async def wait_for_selector(
-        self, selector: str, timeout: int | None = None, state: str = "visible",
+        self,
+        selector: str,
+        timeout: int | None = None,
+        state: str = "visible",
     ) -> bool:
         """Wait for selector to appear."""
         if not self._page:
@@ -494,7 +500,9 @@ class AthenaBrowser:
             raise RuntimeError("No active page")
         try:
             await self._page.select_option(
-                selector, value=value, timeout=self.config.action_timeout,
+                selector,
+                value=value,
+                timeout=self.config.action_timeout,
             )
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(

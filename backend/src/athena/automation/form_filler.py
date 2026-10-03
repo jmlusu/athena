@@ -566,7 +566,12 @@ class FormFiller:
         return input_type
 
     def _calculate_confidence(
-        self, label: str, name: str, id_attr: str, placeholder: str, aria_label: str,
+        self,
+        label: str,
+        name: str,
+        id_attr: str,
+        placeholder: str,
+        aria_label: str,
     ) -> float:
         """Calculate confidence score for field identification."""
         score = 0.0
@@ -629,7 +634,10 @@ class FormFiller:
         return min(score, 1.0)
 
     async def fill_form(
-        self, profile: UserProfile, resume_path: Path, cover_letter_path: Path | None = None,
+        self,
+        profile: UserProfile,
+        resume_path: Path,
+        cover_letter_path: Path | None = None,
     ) -> dict[str, bool]:
         """Fill form with user profile data."""
         if not self.detected_fields:
@@ -657,7 +665,10 @@ class FormFiller:
         return results
 
     def _build_field_values(
-        self, profile: UserProfile, resume_path: Path, cover_letter_path: Path | None,
+        self,
+        profile: UserProfile,
+        resume_path: Path,
+        cover_letter_path: Path | None,
     ) -> dict[str, Any]:
         """Build field values from user profile."""
         return {

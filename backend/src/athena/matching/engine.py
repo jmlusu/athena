@@ -121,7 +121,10 @@ class MatchingEngine:
         return (len(matches) / len(job_keywords)) * 100
 
     def rank_jobs(
-        self, profile: UserProfile, jobs: list[Job], top_k: int | None = None,
+        self,
+        profile: UserProfile,
+        jobs: list[Job],
+        top_k: int | None = None,
     ) -> list[tuple[Job, float]]:
         """Rank jobs by match score for a profile."""
         scored_jobs = []

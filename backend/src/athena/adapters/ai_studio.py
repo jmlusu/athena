@@ -92,7 +92,6 @@ def opportunity_to_job(opp: dict[str, Any], profile_id: UUID | None = None) -> J
     )
 
 
-
 def job_to_opportunity(job: Job, profile_data: dict | None = None) -> dict[str, Any]:
     """Convert OpenCode Job model to AI Studio Opportunity dict."""
     # Determine scope from location and job_type

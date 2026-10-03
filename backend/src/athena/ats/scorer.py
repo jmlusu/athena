@@ -132,7 +132,9 @@ class ATSScorer:
         )
 
     def _compute_keyword_match(
-        self, profile: UserProfile, job: Job,
+        self,
+        profile: UserProfile,
+        job: Job,
     ) -> tuple[float, dict[str, Any]]:
         """Compute keyword-based match score."""
         # Extract keywords from job
@@ -284,7 +286,9 @@ class ATSScorer:
         return skills
 
     def _compute_experience_relevance(
-        self, profile: UserProfile, job: Job,
+        self,
+        profile: UserProfile,
+        job: Job,
     ) -> tuple[float, dict[str, Any]]:
         """Compute experience relevance score."""
         if not profile.experience:
@@ -332,7 +336,9 @@ class ATSScorer:
         }
 
     def _compute_education_match(
-        self, profile: UserProfile, job: Job,
+        self,
+        profile: UserProfile,
+        job: Job,
     ) -> tuple[float, dict[str, Any]]:
         """Compute education match score."""
         if not profile.education:

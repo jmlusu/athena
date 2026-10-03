@@ -341,7 +341,8 @@ Return strict JSON:
         return await self._fallback.dispatch_n8n(request)
 
     async def submit_application(
-        self, request: SubmitApplicationRequest,
+        self,
+        request: SubmitApplicationRequest,
     ) -> SubmitApplicationResponse:
         return await self._fallback.submit_application(request)
 
