@@ -16,9 +16,10 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from ..models.enums import ApplicationStatus
-from ..models.jobs import Application, Document, Job, UserProfile
-from ..store import athena_db
+from athena.models.enums import ApplicationStatus
+from athena.models.jobs import Application, Document, Job, UserProfile
+from athena.store import athena_db
+
 from .browser import AthenaBrowser, BrowserConfig
 from .form_filler import FormFiller
 
@@ -37,7 +38,7 @@ class LocalApprovalGate:
     """
 
     def __init__(self) -> None:
-        from ..paths import get_data_root
+        from athena.paths import get_data_root
 
         self.data_dir = get_data_root() / "approvals"
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -91,7 +92,7 @@ def get_hitl_gate():
             return HITLGate()
         except ImportError:
             logger.warning(
-                "ATHENA_HITL_EXTERNAL set but external HITLGate not available; using local gate"
+                "ATHENA_HITL_EXTERNAL set but external HITLGate not available; using local gate",
             )
             return LocalApprovalGate()
     return LocalApprovalGate()
@@ -114,17 +115,7 @@ def get_message_bus():
     # ─── Workflow Types ────────────────────────────────────────────────
     """Stages of the submission workflow."""
 
-    INITIALIZED = "initialized"
-    NAVIGATING = "navigating"
-    DETECTING_FIELDS = "detecting_fields"
-    FILLING_FORM = "filling_form"
-    VALIDATING = "validating"
-    AWAITING_APPROVAL = "awaiting_approval"
-    SUBMITTING = "submitting"
-    CONFIRMING = "confirming"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
+    return None
 
 
 @dataclass
@@ -154,7 +145,7 @@ class SubmitConfig:
             ".receipt-number",
             "#confirmationNumber",
             "text=/confirmation|receipt|reference/i",
-        ]
+        ],
     )
 
     # Audit
@@ -234,7 +225,7 @@ class ApplicationSubmitter:
         return self
 
     async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any,
     ) -> None:
         if self.browser:
             await self.browser.stop()
@@ -386,7 +377,7 @@ class ApplicationSubmitter:
                 continue
 
     async def _fill_application_form(
-        self, profile: UserProfile, resume: Document, cover_letter: Document | None
+        self, profile: UserProfile, resume: Document, cover_letter: Document | None,
     ) -> dict[str, bool]:
         """Fill the application form with profile data."""
         resume_path = Path(resume.file_path)
@@ -397,12 +388,12 @@ class ApplicationSubmitter:
 
         # Try multi-step form handling
         results = await self.form_filler.handle_multi_step_form(
-            profile, resume_path, cover_letter_path, max_steps=10
+            profile, resume_path, cover_letter_path, max_steps=10,
         )
 
         # Flatten results
         flat_results = {}
-        for _step, step_data in results.get("fields_filled", {}).items():
+        for step_data in results.get("fields_filled", {}).values():
             flat_results.update(step_data)
 
         return flat_results
@@ -466,7 +457,7 @@ class ApplicationSubmitter:
 
         # Use non-blocking request_and_park
         request_id = self.hitl_gate.request_and_park(
-            task_id=task_id, agent_id=self.config.approval_agent_id, tool=tool, args=args
+            task_id=task_id, agent_id=self.config.approval_agent_id, tool=tool, args=args,
         )
 
         self._result.approval_request_id = request_id
@@ -486,7 +477,7 @@ class ApplicationSubmitter:
             await asyncio.sleep(2)
 
         logger.warning(
-            "HITL approval timed out after %d minutes", self.config.approval_timeout_minutes
+            "HITL approval timed out after %d minutes", self.config.approval_timeout_minutes,
         )
         return False
 
@@ -546,7 +537,7 @@ class ApplicationSubmitter:
                     # Text-based selector
                     element = await self.browser.page.query_selector(
                         "xpath=//*[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'confirmation') "
-                        "or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'receipt')]"
+                        "or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'receipt')]",
                     )
                 else:
                     element = await self.browser.page.query_selector(selector)
@@ -624,7 +615,7 @@ class ApplicationSubmitter:
                 import json
 
                 audit_file.write_text(
-                    json.dumps({"result": self._result.to_dict(), "audit_log": audit_log}, indent=2)
+                    json.dumps({"result": self._result.to_dict(), "audit_log": audit_log}, indent=2),
                 )
                 logger.info("Audit trail saved: %s", audit_file)
 

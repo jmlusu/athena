@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from abc import ABC, abstractmethod
 from typing import Any, cast
 
@@ -18,9 +19,13 @@ except ImportError:  # pragma: no cover - playwright is an optional e2e dependen
     PlaywrightBrowser = Any  # noqa: F811
     async_playwright = Any  # noqa: F811
 
-from ..models import Job, JobSource, JobType
+from athena.models import Job, JobSource, JobType
 
 logger = logging.getLogger(__name__)
+
+# Configurable concurrency for concurrent scraping
+MAX_CONCURRENT_SCRAPERS = int(os.getenv("ATHENA_MAX_CONCURRENT_SCRAPERS", "3"))
+scraper_semaphore = asyncio.Semaphore(MAX_CONCURRENT_SCRAPERS)
 
 
 class BaseScraper(ABC):
@@ -37,7 +42,7 @@ class BaseScraper(ABC):
         self.source = source
         self.base_url = base_url
         self.headers = headers or {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         }
         self.rate_limit = rate_limit
         self.use_browser = use_browser
@@ -49,7 +54,7 @@ class BaseScraper(ABC):
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
-                headers=self.headers, timeout=30.0, follow_redirects=True
+                headers=self.headers, timeout=30.0, follow_redirects=True,
             )
         return self._client
 
@@ -171,19 +176,30 @@ class ScraperRegistry:
         max_results: int = 100,
         sources: list[JobSource] | None = None,
     ) -> list[Job]:
-        """Search across all registered scrapers."""
+        """Search across all registered scrapers with controlled concurrency."""
         scrapers: list[BaseScraper] = list(self._scrapers.values())
         if sources:
             scrapers = [s for s in scrapers if s.source in sources]
 
+        async def scrape_with_semaphore(scraper: BaseScraper) -> list[Job]:
+            async with scraper_semaphore:
+                try:
+                    jobs = await scraper.search_jobs(query, location, job_type, max_results)
+                    logger.info(f"Scraper {scraper.source} found {len(jobs)} jobs")
+                    return jobs
+                except Exception as e:  # noqa: BLE001
+                    logger.error(f"Scraper {scraper.source} failed: {e}")
+                    return []
+
+        tasks = [scrape_with_semaphore(s) for s in scrapers]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
         all_jobs: list[Job] = []
-        for scraper in scrapers:
-            try:
-                jobs = await scraper.search_jobs(query, location, job_type, max_results)
-                all_jobs.extend(jobs)
-                logger.info(f"Scraper {scraper.source} found {len(jobs)} jobs")
-            except Exception as e:  # noqa: BLE001
-                logger.error(f"Scraper {scraper.source} failed: {e}")
+        for result in results:
+            if isinstance(result, list):
+                all_jobs.extend(result)
+            elif isinstance(result, Exception):
+                logger.error(f"Scraper task raised exception: {result}")
 
         return all_jobs
 

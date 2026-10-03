@@ -3,9 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
-from athena.timeutils import UTCDateTime
-
-from ..models import (
+from athena.models import (
     ApplicationStatus,
     Document,
     Education,
@@ -18,6 +16,7 @@ from ..models import (
     SalaryRange,
     Skill,
 )
+from athena.timeutils import UTCDateTime
 
 
 # Request/Response schemas
@@ -114,6 +113,28 @@ class UserProfileCreate(BaseModel):
     certifications: list[str] = []
     languages: list[str] = []
     preferences: JobPreferences = Field(default_factory=JobPreferences)
+
+
+class UserProfileRequest(BaseModel):
+    """Full profile data for upsert operations (includes all fields)."""
+    email: EmailStr
+    full_name: str
+    phone: str | None = None
+    location: str | None = None
+    linkedin_url: HttpUrl | None = None
+    portfolio_url: HttpUrl | None = None
+    github_url: HttpUrl | None = None
+    headline: str = ""
+    summary: str = ""
+    skills: list[Skill] = []
+    experience: list[Experience] = []
+    education: list[Education] = []
+    certifications: list[str] = []
+    languages: list[str] = []
+    preferences: JobPreferences = Field(default_factory=JobPreferences)
+    hourly_rate_usd: float | None = None
+    expected_monthly_mwk: float | None = None
+    legal_authorized_signer: str | None = None
 
 
 class UserProfileResponse(BaseModel):

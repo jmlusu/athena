@@ -1,16 +1,16 @@
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from ..ats import ats_scorer
-from ..matching import matching_engine
-from ..models import JobSource, JobStatus, JobType, ScrapeJob
-from ..scrapers import scraper_registry
-from ..store import athena_db
+from athena.ats import ats_scorer
+from athena.matching import matching_engine
+from athena.models import JobSource, JobStatus, JobType, ScrapeJob
+from athena.scrapers import scraper_registry
+from athena.store import athena_db
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ class AthenaScheduler:
             scrape_job.completed_at = datetime.now(UTC)
 
             logger.info(
-                f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)"
+                f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)",
             )
 
         except Exception as e:  # noqa: BLE001
@@ -226,7 +226,7 @@ class AthenaScheduler:
 
                     athena_db.update_job(job)
                     logger.info(
-                        f"Job {job.title} scored: ATS={ats_breakdown.overall}, Match={best_score}"
+                        f"Job {job.title} scored: ATS={ats_breakdown.overall}, Match={best_score}",
                     )
 
             except Exception as e:  # noqa: BLE001

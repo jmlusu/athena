@@ -2,7 +2,6 @@
 
 from athena.models.enums import JobStatus
 
-
 # AI Studio PipelineStatus -> OpenCode JobStatus
 PIPELINE_TO_JOB_STATUS = {
     "discovered": JobStatus.NEW,

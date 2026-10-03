@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from ..matching import matching_engine
-from ..models import Job, UserProfile
+from athena.matching import matching_engine
+from athena.models import Job, UserProfile
 
 
 @dataclass
@@ -132,7 +132,7 @@ class ATSScorer:
         )
 
     def _compute_keyword_match(
-        self, profile: UserProfile, job: Job
+        self, profile: UserProfile, job: Job,
     ) -> tuple[float, dict[str, Any]]:
         """Compute keyword-based match score."""
         # Extract keywords from job
@@ -150,8 +150,8 @@ class ATSScorer:
         score = (len(matched) / len(job_keywords)) * 100 if job_keywords else 0
 
         return score, {
-            "matched": sorted(list(matched)),
-            "missing": sorted(list(missing)),
+            "matched": sorted(matched),
+            "missing": sorted(missing),
             "total_job_keywords": len(job_keywords),
             "matched_count": len(matched),
         }
@@ -284,7 +284,7 @@ class ATSScorer:
         return skills
 
     def _compute_experience_relevance(
-        self, profile: UserProfile, job: Job
+        self, profile: UserProfile, job: Job,
     ) -> tuple[float, dict[str, Any]]:
         """Compute experience relevance score."""
         if not profile.experience:
@@ -332,7 +332,7 @@ class ATSScorer:
         }
 
     def _compute_education_match(
-        self, profile: UserProfile, job: Job
+        self, profile: UserProfile, job: Job,
     ) -> tuple[float, dict[str, Any]]:
         """Compute education match score."""
         if not profile.education:

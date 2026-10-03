@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from ..models import Document, Education, Experience, Skill, UserProfile
+from athena.models import Document, Education, Experience, Skill, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class ParseResult:
                     mime_type=self._get_mime_type(file_path),
                     size_bytes=Path(file_path).stat().st_size if Path(file_path).exists() else 0,
                     parsed_content=self.profile_data,
-                )
+                ),
             ],
         )
 
@@ -128,7 +128,7 @@ class DocumentParser(ABC):
         }
 
         linkedin_match = re.search(
-            r"(?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9_-]+", text, re.IGNORECASE
+            r"(?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9_-]+", text, re.IGNORECASE,
         )
         if linkedin_match:
             url = linkedin_match.group(0)
@@ -137,7 +137,7 @@ class DocumentParser(ABC):
             urls["linkedin_url"] = url
 
         github_match = re.search(
-            r"(?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9_-]+", text, re.IGNORECASE
+            r"(?:https?://)?(?:www\.)?github\.com/[A-Za-z0-9_-]+", text, re.IGNORECASE,
         )
         if github_match:
             url = github_match.group(0)
@@ -147,7 +147,7 @@ class DocumentParser(ABC):
 
         # Generic portfolio/personal site
         portfolio_match = re.search(
-            r"(?:https?://)?(?:www\.)?[A-Za-z0-9_-]+\.(?:com|io|dev|me|app)", text, re.IGNORECASE
+            r"(?:https?://)?(?:www\.)?[A-Za-z0-9_-]+\.(?:com|io|dev|me|app)", text, re.IGNORECASE,
         )
         if portfolio_match and not any(portfolio_match.group(0) in v for v in urls.values() if v):
             url = portfolio_match.group(0)
@@ -175,7 +175,7 @@ class DocumentParser(ABC):
                 if item and len(item) > 1:
                     # Try to extract level
                     level_match = re.search(
-                        r"(beginner|intermediate|advanced|expert)", item, re.IGNORECASE
+                        r"(beginner|intermediate|advanced|expert)", item, re.IGNORECASE,
                     )
                     level = level_match.group(1).lower() if level_match else None
                     name = re.sub(
@@ -346,12 +346,12 @@ class DocumentParser(ABC):
                         "field_of_study": field_of_study,
                         "start_date": start_date,
                         "end_date": end_date,
-                    }
+                    },
                 )
         return education
 
     def _extract_profile_data(
-        self, full_text: str, sections: list[ParsedSection]
+        self, full_text: str, sections: list[ParsedSection],
     ) -> dict[str, Any]:
         """Extract structured profile data from parsed text and sections."""
         profile: dict[str, Any] = {}
@@ -574,7 +574,7 @@ class PDFParser(DocumentParser):
                                         content=line_text,
                                         raw_text=line_text,
                                         bbox=bbox,
-                                    )
+                                    ),
                                 )
 
                     # Extract tables
@@ -587,7 +587,7 @@ class PDFParser(DocumentParser):
                                     name=f"page_{page_num + 1}_table_{table_idx}",
                                     content=table_text,
                                     raw_text=table_text,
-                                )
+                                ),
                             )
 
             result.raw_text = full_text
@@ -602,7 +602,7 @@ class PDFParser(DocumentParser):
         return result
 
     def _group_words_into_lines(
-        self, words: list[dict[str, Any]], y_tolerance: float = 3.0
+        self, words: list[dict[str, Any]], y_tolerance: float = 3.0,
     ) -> list[list[dict[str, Any]]]:
         """Group words into lines based on y-position."""
         if not words:
@@ -667,7 +667,7 @@ class DOCXParser(DocumentParser):
                 if text:
                     full_text += f"\n{text}"
                     sections.append(
-                        ParsedSection(name=f"paragraph_{para_idx}", content=text, raw_text=text)
+                        ParsedSection(name=f"paragraph_{para_idx}", content=text, raw_text=text),
                     )
 
             # Extract tables
@@ -677,8 +677,8 @@ class DOCXParser(DocumentParser):
                     full_text += f"\n--- Table {table_idx + 1} ---\n{table_text}"
                     sections.append(
                         ParsedSection(
-                            name=f"table_{table_idx}", content=table_text, raw_text=table_text
-                        )
+                            name=f"table_{table_idx}", content=table_text, raw_text=table_text,
+                        ),
                     )
 
             result.raw_text = full_text
@@ -751,7 +751,7 @@ class ResumeParser:
         return result
 
     async def parse_to_profile(
-        self, file_path: str | Path, email: str
+        self, file_path: str | Path, email: str,
     ) -> tuple[UserProfile | None, ParseResult]:
         """
         Parse a resume and convert directly to UserProfile.

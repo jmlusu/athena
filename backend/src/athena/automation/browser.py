@@ -129,7 +129,7 @@ class AthenaBrowser:
         return self
 
     async def __aexit__(
-        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any,
     ) -> None:
         await self.stop()
 
@@ -140,7 +140,7 @@ class AthenaBrowser:
         if not PLAYWRIGHT_AVAILABLE:
             raise RuntimeError(
                 "Athena browser automation requires the optional 'playwright' package. "
-                "Install the e2e extras with: uv sync --extra e2e"
+                "Install the e2e extras with: uv sync --extra e2e",
             )
 
         self._playwright = await async_playwright().start()
@@ -376,7 +376,7 @@ class AthenaBrowser:
                 "method": request.method,
                 "headers": dict(request.headers),
                 "resource_type": request.resource_type,
-            }
+            },
         )
 
     def _log_response(self, response: Any) -> None:
@@ -390,7 +390,7 @@ class AthenaBrowser:
                 "url": response.url,
                 "status": response.status,
                 "headers": dict(response.headers),
-            }
+            },
         )
 
     async def _save_audit_log(self) -> None:
@@ -445,7 +445,7 @@ class AthenaBrowser:
         return cast(str, await self._page.content())
 
     async def wait_for_selector(
-        self, selector: str, timeout: int | None = None, state: str = "visible"
+        self, selector: str, timeout: int | None = None, state: str = "visible",
     ) -> bool:
         """Wait for selector to appear."""
         if not self._page:
@@ -466,7 +466,7 @@ class AthenaBrowser:
                 await asyncio.sleep(delay / 1000)
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(
-                    f"fill_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}"
+                    f"fill_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
             return True
         except (TimeoutError, ValueError) as e:
@@ -481,7 +481,7 @@ class AthenaBrowser:
             await self._page.click(selector, force=force, timeout=self.config.action_timeout)
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(
-                    f"click_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}"
+                    f"click_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
             return True
         except (TimeoutError, ValueError) as e:
@@ -494,11 +494,11 @@ class AthenaBrowser:
             raise RuntimeError("No active page")
         try:
             await self._page.select_option(
-                selector, value=value, timeout=self.config.action_timeout
+                selector, value=value, timeout=self.config.action_timeout,
             )
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(
-                    f"select_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}"
+                    f"select_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
             return True
         except (TimeoutError, ValueError) as e:

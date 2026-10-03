@@ -1,14 +1,13 @@
 """Factory for creating AI provider instances."""
 
 import os
-from typing import Optional
 
 from athena.ai.providers.base import AthenaAIProvider
 from athena.ai.providers.fallback import FallbackProvider
 from athena.ai.providers.gemini import GeminiProvider
 
 
-def get_ai_provider(provider_name: Optional[str] = None) -> AthenaAIProvider:
+def get_ai_provider(provider_name: str | None = None) -> AthenaAIProvider:
     """Get AI provider instance based on configuration.
 
     Args:
@@ -37,14 +36,13 @@ def get_ai_provider(provider_name: Optional[str] = None) -> AthenaAIProvider:
 # Convenience function for getting provider with explicit config
 def create_provider(
     provider_type: str,
-    api_key: Optional[str] = None,
-    model: Optional[str] = None,
+    api_key: str | None = None,
+    model: str | None = None,
     **kwargs,
 ) -> AthenaAIProvider:
     """Create a specific provider with explicit configuration."""
     if provider_type == "gemini":
         return GeminiProvider(api_key=api_key, model=model or "gemini-3.8-flash")
-    elif provider_type == "fallback":
+    if provider_type == "fallback":
         return FallbackProvider()
-    else:
-        raise ValueError(f"Unknown provider type: {provider_type}")
+    raise ValueError(f"Unknown provider type: {provider_type}")

@@ -3,11 +3,13 @@
 import json
 import os
 from datetime import UTC, datetime
-from typing import Any, Optional
+from typing import Any
 
 from google import genai
 from google.genai import types
 
+from athena.ai.providers.base import AthenaAIProvider
+from athena.ai.providers.fallback import FallbackProvider
 from athena.api.ai_schemas import (
     ATSScoreRequest,
     ATSScoreResponse,
@@ -24,17 +26,15 @@ from athena.api.ai_schemas import (
     TailorResumeRequest,
     TailorResumeResponse,
 )
-from athena.ai.providers.base import AthenaAIProvider
-from athena.ai.providers.fallback import FallbackProvider
 
 
 class GeminiProvider(AthenaAIProvider):
     """Google Gemini AI provider."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3.8-flash"):
+    def __init__(self, api_key: str | None = None, model: str = "gemini-3.8-flash"):
         self._api_key = api_key or os.environ.get("GEMINI_API_KEY")
         self._model = model
-        self._client: Optional[genai.Client] = None
+        self._client: genai.Client | None = None
         self._fallback = FallbackProvider()
 
     @property
@@ -45,7 +45,7 @@ class GeminiProvider(AthenaAIProvider):
     def is_available(self) -> bool:
         return bool(self._api_key)
 
-    def _get_client(self) -> Optional[genai.Client]:
+    def _get_client(self) -> genai.Client | None:
         if not self._api_key:
             return None
         if self._client is None:
@@ -341,7 +341,7 @@ Return strict JSON:
         return await self._fallback.dispatch_n8n(request)
 
     async def submit_application(
-        self, request: SubmitApplicationRequest
+        self, request: SubmitApplicationRequest,
     ) -> SubmitApplicationResponse:
         return await self._fallback.submit_application(request)
 

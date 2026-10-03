@@ -1,5 +1,7 @@
 # E2E Playwright Tests Implementation Plan
 
+> **Status: SUPERSEDED / ARCHIVED (2026-10-03)** — This plan described the legacy `frontend/` Playwright suite (56 tests × 5 browsers) which was deleted with the `frontend/` directory on 2026-10-02. The current E2E gate is the root `e2e/aistudio/` smoke suite (8 tests × 3 engines = 24 tests + 4 contract tests = 33 total) running on chromium/firefox/webkit. See `WAYFINDER_MAP_4_E2E_Tests.md` for current state.
+
 ## Objective
 Add Playwright E2E tests for critical Athena user flows to ensure end-to-end correctness after AI Studio integration.
 

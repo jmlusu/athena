@@ -5,7 +5,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
-from ..timeutils import UTCDateTime
+from athena.timeutils import UTCDateTime
+
 from .enums import ApplicationStatus, JobSource, JobStatus, JobType, MatchTier
 
 

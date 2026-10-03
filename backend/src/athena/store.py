@@ -354,6 +354,16 @@ class AthenaDB:
         profile.updated_at = datetime.now(UTC)
         return self.user_profiles.update(profile)
 
+    def put_user_profile(self, profile: UserProfile) -> UserProfile:
+        """Create or replace a user profile (upsert by ID)."""
+        existing = self.user_profiles.get(profile.id)
+        if existing:
+            self.user_profiles.delete(profile.id)
+        return self.user_profiles.add(profile)
+
+    def delete_user_profile(self, profile_id: UUID) -> bool:
+        return self.user_profiles.delete(profile_id)
+
     # Scrape job operations
     def add_scrape_job(self, scrape_job: ScrapeJob) -> ScrapeJob:
         return self.scrape_jobs.add(scrape_job)

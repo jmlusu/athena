@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -5,12 +6,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 
+from athena.ats import ats_scorer
 from athena.documents import DocumentGenerator, DocumentOutput
-from athena.timeutils import sort_key_utc
-
-from ..ats import ats_scorer
-from ..matching import matching_engine
-from ..models import (
+from athena.matching import matching_engine
+from athena.models import (
     Application,
     ApplicationStatus,
     Job,
@@ -19,8 +18,10 @@ from ..models import (
     JobType,
     UserProfile,
 )
-from ..scheduler import ScrapeConfig, athena_scheduler
-from ..store import athena_db
+from athena.scheduler import ScrapeConfig, athena_scheduler
+from athena.store import athena_db
+from athena.timeutils import sort_key_utc
+
 from .schemas import (
     ApplicationCreate,
     ApplicationListResponse,
@@ -44,8 +45,11 @@ from .schemas import (
     ScrapeStatsResponse,
     TailorResumeRequest,
     UserProfileCreate,
+    UserProfileRequest,
     UserProfileResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["athena"])
 
@@ -177,6 +181,46 @@ async def get_profile_by_email(email: str):
     return UserProfileResponse.model_validate(profile)
 
 
+@router.put("/profiles/{profile_id}", response_model=UserProfileResponse)
+async def upsert_profile(
+    profile_id: UUID,
+    request: UserProfileRequest,
+) -> UserProfileResponse:
+    """Create or replace a profile by ID (upsert). Dedupe by email."""
+    logger.info(f"Upsert profile called with profile_id={profile_id}, email={request.email}")
+    existing = athena_db.get_user_profile(profile_id)
+    if not existing:
+        by_email = athena_db.get_user_profile_by_email(request.email)
+        if by_email:
+            profile_id = by_email.id
+            existing = by_email
+    if existing:
+        athena_db.delete_user_profile(profile_id)
+    # Convert request to UserProfile model
+    profile_data = request.model_dump()
+    profile_data["id"] = str(profile_id)
+    logger.info(f"Putting profile with id={profile_id}")
+    profile_obj = UserProfile(**profile_data)
+    athena_db.put_user_profile(profile_obj)
+    logger.info(f"Fetching profile for response with id={profile_id}")
+    # Fetch the full profile from DB to ensure all fields are populated
+    saved = athena_db.get_user_profile(profile_id)
+    if not saved:
+        raise HTTPException(status_code=500, detail="Failed to save profile")
+    return UserProfileResponse.model_validate(saved)
+
+
+@router.delete("/profiles/{profile_id}")
+async def delete_profile(profile_id: UUID):
+    """Delete a user profile by ID."""
+    logger.info(f"Delete profile called with profile_id={profile_id}")
+    existing = athena_db.get_user_profile(profile_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    athena_db.delete_user_profile(profile_id)
+    return {"message": "Profile deleted successfully"}
+
+
 @router.patch("/profiles/{profile_id}", response_model=UserProfileResponse)
 async def update_profile(profile_id: UUID, updates: dict[str, Any]):
     """Update a user profile."""
@@ -265,7 +309,7 @@ async def list_receipts(
             receipt = ReceiptResponse(
                 receipt_id=app.receipt_data.get("receipt_id", f"ATH-RCPT-{str(app.id)[:8]}"),
                 confirmation_hash=app.receipt_data.get(
-                    "confirmation_hash", f"SHA256-{str(app.id)}"
+                    "confirmation_hash", f"SHA256-{str(app.id)}",
                 ),
                 submitted_at=app.submitted_at or app.created_at,
                 job_title=job.title if job else "Unknown Position",
@@ -275,7 +319,7 @@ async def list_receipts(
                 authorized_at=app.receipt_data.get("authorized_at", app.created_at),
                 portal_name=app.receipt_data.get("portal_name", "Athena Direct"),
                 follow_up_date=app.receipt_data.get(
-                    "follow_up_date", (app.created_at).strftime("%Y-%m-%d")
+                    "follow_up_date", (app.created_at).strftime("%Y-%m-%d"),
                 ),
                 status=app.receipt_data.get("status", "SUBMITTED"),
                 notes=app.receipt_data.get("notes"),
@@ -303,7 +347,7 @@ async def get_receipt(receipt_id: str):
             return ReceiptResponse(
                 receipt_id=app.receipt_data.get("receipt_id", f"ATH-RCPT-{str(app.id)[:8]}"),
                 confirmation_hash=app.receipt_data.get(
-                    "confirmation_hash", f"SHA256-{str(app.id)}"
+                    "confirmation_hash", f"SHA256-{str(app.id)}",
                 ),
                 submitted_at=app.submitted_at or app.created_at,
                 job_title=job.title if job else "Unknown Position",
@@ -313,7 +357,7 @@ async def get_receipt(receipt_id: str):
                 authorized_at=app.receipt_data.get("authorized_at", app.created_at),
                 portal_name=app.receipt_data.get("portal_name", "Athena Direct"),
                 follow_up_date=app.receipt_data.get(
-                    "follow_up_date", (app.created_at).strftime("%Y-%m-%d")
+                    "follow_up_date", (app.created_at).strftime("%Y-%m-%d"),
                 ),
                 status=app.receipt_data.get("status", "SUBMITTED"),
                 notes=app.receipt_data.get("notes"),
@@ -497,11 +541,11 @@ async def trigger_scrape(request: ScrapeJobRequest, background_tasks: Background
     """Trigger a scrape job."""
     # Test mode: return mock response instantly without hitting external APIs
     if os.getenv("ATHENA_TEST_MODE") == "true":
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
         from uuid import uuid4
 
         # Return the seeded test jobs (5 jobs from global-setup)
-        mock_scrape_job = ScrapeJobResponse(
+        return ScrapeJobResponse(
             id=uuid4(),
             source=JobSource.LINKEDIN,
             query=request.query or "software engineer",
@@ -517,7 +561,6 @@ async def trigger_scrape(request: ScrapeJobRequest, background_tasks: Background
             completed_at=datetime.now(UTC),
             created_at=datetime.now(UTC),
         )
-        return mock_scrape_job
 
     config = ScrapeConfig(
         query=request.query,

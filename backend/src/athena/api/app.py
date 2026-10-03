@@ -123,7 +123,6 @@ def _get_api_keys() -> set[str]:
 def _check_api_key(request: Request) -> bool:
     """Return True if the request is authorised."""
     api_key = request.headers.get("X-API-Key", "")
-    client_ip = request.client.host if request.client else "unknown"
     valid_keys = _get_api_keys()
     return api_key in valid_keys
 
@@ -309,8 +308,8 @@ def create_app() -> FastAPI:
         return response
 
     # ── Routers ─────────────────────────────────────────────────────────
-    from athena.api.routes import router as athena_router
     from athena.api.ai_routes import router as ai_router
+    from athena.api.routes import router as athena_router
     from athena.metrics.prometheus import router as metrics_router
 
     app.include_router(athena_router, prefix="/api/v1/athena")
