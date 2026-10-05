@@ -32,6 +32,7 @@ flat `keywords` list. No ruff baseline cleanup beyond what this work naturally r
 | D3 | `keywords_category` declared but never read | **Keep as metadata only**; document, no scorer logic |
 | D4 | Builder doesn't emit new fields; throwaway scripts at repo root | **Extend `build_profile_payload.py`**, delete throwaway scripts |
 | D5 | Zero tests for items 3 & 6 | **backend pytest only** (scorer is Python; Node tests can't import it) |
+| D6 | Flat `keywords` order differs between builder and store | **Builder order is canonical** (exec → functional → core → recovered); store aligned once; comparisons are **set-based** — order carries no semantics (scorer unions into sets) |
 
 ## Tech Stack
 
@@ -119,8 +120,9 @@ keywords_category: str = "core"  # "executive", "functional", "core"
   non-preference profile fields byte-identical when updating the JSONL.
 - **Ask first:** any change to the JSONL beyond `preferences`; any change to the scorer's
   scoring weights/formula; adding dependencies; touching CI config; if the builder's flat
-  keyword list differs from the JSONL's current 231 terms (stop and ask — do not silently
-  reword the keyword bank).
+  keyword **set** differs from the store's (compare case-insensitively; order is defined by
+  the builder — exec → functional → core → recovered — and carries no semantics. Never
+  silently reword: adding, removing, or altering terms always requires approval).
 - **Never:** commit secrets; delete tests; remove the flat keywords list; modify
   `profile/ats-keywords.md`; let the new tests regress the 88/41 baselines.
 
@@ -144,7 +146,7 @@ keywords_category: str = "core"  # "executive", "functional", "core"
 
 ## Open Questions
 
-None — all ambiguities resolved in the Decisions table (D1–D5) and validated by the human.
+None — all ambiguities resolved in the Decisions table (D1–D6) and validated by the human.
 
 ## Verification (manual, end of work)
 
