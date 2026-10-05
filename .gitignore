@@ -40,8 +40,6 @@ yarn-error.log*
 coverage/
 .nyc_output/
 test-results/
-frontend/test-results/
-frontend/e2e/test-results/
 playwright-report/
 .playwright-cli/
 
@@ -50,9 +48,16 @@ playwright-report/
 
 # Data
 company/athena/
-backend/artifacts/
 *.db
 *.sqlite
+
+# Generated artifacts
+artifacts/
+
+# Tool caches
+.opencode/
+.superpowers/
+AppData/
 
 # Misc
 *.tmp
