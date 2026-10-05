@@ -1,6 +1,7 @@
 import json
 import os
-from collections.abc import Callable
+import threading
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -45,6 +46,13 @@ class AthenaStore[T: BaseModel]:
         self._cache: dict[str, T] = {}
         self._loaded = False
         self._agent_id = os.getenv("ATHENA_AGENT_ID", "unknown")
+        # Guards cache mutation + persist so two tasks/threads in this process
+        # cannot interleave a read-modify-write of the same artifact.
+        self._write_guard = threading.RLock()
+
+    @property
+    def count(self) -> int:
+        return len(self._load_all())
 
     def _ensure_dir(self) -> None:
         self.base_dir.mkdir(parents=True, exist_ok=True)
@@ -52,39 +60,48 @@ class AthenaStore[T: BaseModel]:
             self.filepath.write_text("")
 
     def _load_all(self) -> dict[str, T]:
-        if self._loaded:
-            return self._cache
+        with self._write_guard:
+            if self._loaded:
+                return self._cache
 
-        self._ensure_dir()
-        with self._lock:
-            items = {}
-            if self.filepath.exists():
-                for line in self.filepath.read_text().splitlines():
-                    if line.strip():
-                        try:
-                            data = json.loads(line)
-                            # Explicitly revive persisted JSON timestamps/UUIDs
-                            # before model validation (naive timestamps are
-                            # normalized to aware UTC by _deserialize and again
-                            # by the models' UTCDateTime fields).
-                            obj = self.model_class(**self._deserialize(data))
-                            items[str(getattr(obj, self.id_field))] = obj
-                        except Exception as e:  # noqa: BLE001
-                            print(f"Error loading {self.model_class.__name__}: {e}")
-            self._cache = items
-            self._loaded = True
-            return items
+            self._ensure_dir()
+            with self._lock:
+                items = {}
+                if self.filepath.exists():
+                    for line in self.filepath.read_text().splitlines():
+                        if line.strip():
+                            try:
+                                data = json.loads(line)
+                                # Explicitly revive persisted JSON timestamps/UUIDs
+                                # before model validation (naive timestamps are
+                                # normalized to aware UTC by _deserialize and again
+                                # by the models' UTCDateTime fields).
+                                obj = self.model_class(**self._deserialize(data))
+                                items[str(getattr(obj, self.id_field))] = obj
+                            except Exception as e:  # noqa: BLE001
+                                print(f"Error loading {self.model_class.__name__}: {e}")
+                self._cache = items
+                self._loaded = True
+                return items
 
     def _save_all(self) -> None:
         self._ensure_dir()
+        lines = []
+        for obj in self._cache.values():
+            data = obj.model_dump()
+            # Convert UUID and datetime to strings
+            data = self._serialize(data)
+            lines.append(json.dumps(data))
+        payload = "\n".join(lines)
         with self._lock:
-            lines = []
-            for obj in self._cache.values():
-                data = obj.model_dump()
-                # Convert UUID and datetime to strings
-                data = self._serialize(data)
-                lines.append(json.dumps(data))
-            self.filepath.write_text("\n".join(lines))
+            # Write to a sibling temp file then atomically replace, so a crash or
+            # concurrent writer can never leave a truncated/zero-filled artifact.
+            tmp = self.filepath.with_name(self.filepath.name + ".tmp")
+            with tmp.open("w", encoding="utf-8") as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp, self.filepath)
 
     def _serialize(self, data: Any) -> Any:
         # UUID/Decimal/HttpUrl all serialize via str(); grouped here to keep
@@ -193,6 +210,38 @@ class AthenaStore[T: BaseModel]:
         finally:
             lock.release()
         return obj
+
+    def add_many(self, objs: Iterable[T]) -> list[T]:
+        """Insert many objects, persisting the artifact exactly once."""
+        batch = list(objs)
+        if not batch:
+            return []
+        with self._write_guard:
+            items = self._load_all()
+            for obj in batch:
+                items[str(getattr(obj, self.id_field))] = obj
+            self._save_all()
+        return batch
+
+    def update_many(self, objs: Iterable[T]) -> int:
+        """Update many objects, persisting the artifact exactly once.
+
+        Returns the number of objects that were present and updated.
+        """
+        batch = list(objs)
+        if not batch:
+            return 0
+        with self._write_guard:
+            items = self._load_all()
+            updated = 0
+            for obj in batch:
+                id_str = str(getattr(obj, self.id_field))
+                if id_str in items:
+                    items[id_str] = obj
+                    updated += 1
+            if updated:
+                self._save_all()
+        return updated
 
     def delete(self, id: UUID) -> bool:
         entity_type = self.__class__.__name__.replace("AthenaStore", "").lower()
@@ -355,10 +404,11 @@ class AthenaDB:
         return self.user_profiles.update(profile)
 
     def put_user_profile(self, profile: UserProfile) -> UserProfile:
-        """Create or replace a user profile (upsert by ID)."""
-        existing = self.user_profiles.get(profile.id)
-        if existing:
-            self.user_profiles.delete(profile.id)
+        """Create or replace a user profile (upsert by ID) in a single atomic write.
+
+        Avoids the previous delete-then-add window, where a crash between the two
+        calls left the profile missing entirely.
+        """
         return self.user_profiles.add(profile)
 
     def delete_user_profile(self, profile_id: UUID) -> bool:
@@ -367,6 +417,26 @@ class AthenaDB:
     # Scrape job operations
     def add_scrape_job(self, scrape_job: ScrapeJob) -> ScrapeJob:
         return self.scrape_jobs.add(scrape_job)
+
+    def index_jobs_by_source_id(self) -> dict[str, Job]:
+        """Map ``source_job_id`` -> Job for O(1) dedupe during scrape ingest.
+
+        Jobs without a ``source_job_id`` are skipped; they cannot be matched
+        against an incoming scrape reliably.
+        """
+        index: dict[str, Job] = {}
+        for job in self.jobs.get_all():
+            if job.source_job_id:
+                index[job.source_job_id] = job
+        return index
+
+    def add_jobs(self, jobs: Iterable[Job]) -> list[Job]:
+        """Insert many jobs with a single artifact write."""
+        return self.jobs.add_many(jobs)
+
+    def update_jobs(self, jobs: Iterable[Job]) -> int:
+        """Update many jobs with a single artifact write."""
+        return self.jobs.update_many(jobs)
 
     def get_scrape_job(self, job_id: UUID) -> ScrapeJob | None:
         return self.scrape_jobs.get(job_id)

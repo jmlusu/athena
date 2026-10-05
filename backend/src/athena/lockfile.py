@@ -17,8 +17,12 @@ from typing import Any
 from filelock import FileLock
 from filelock import Timeout as FileLockTimeout
 
-# Paths
-LOCK_DIR = Path("artifacts/locks")
+from .paths import get_data_root
+
+# Anchored to the data root so every process sharing a data directory also shares
+# one lock namespace. A CWD-relative path gave each launch directory its own
+# isolated lock set, which silently disabled mutual exclusion.
+LOCK_DIR = get_data_root() / "locks"
 LOCK_DIR.mkdir(parents=True, exist_ok=True)
 
 LOCK_ACQUIRE_TIMEOUT = 300  # 5 minutes
@@ -29,6 +33,16 @@ LOCK_HEADER_LINES = 2  # lock file header: agent id + acquired-at timestamp
 def lock_id_for(entity: str, entity_id: str) -> str:
     safe_id = entity_id.replace("/", "_").replace("\\", "_")
     return str(LOCK_DIR / f"{entity}_{safe_id}.lock")
+
+
+def owner_path_for(lock_path: Path) -> Path:
+    """Advisory metadata sidecar for a lock.
+
+    The filelock guard file itself is held open exclusively for the duration of
+    the lock, so on Windows nothing else may open it for writing. Human-readable
+    ownership metadata therefore lives in a sibling file.
+    """
+    return lock_path.with_name(lock_path.name + ".owner")
 
 
 def global_lock_id() -> str:
@@ -58,8 +72,13 @@ class ArtifactLock:
 
     def release(self) -> None:
         if self._file_handle:
-            # filelock handles the unlock internally on context manager exit,
-            # but we explicitly drop the marker file here (non-context usage).
+            # The handle is a real FileLock: release the OS-level advisory lock
+            # first, then drop the metadata sidecar and the guard file.
+            with contextlib.suppress(Exception):
+                self._file_handle.release()
+            self._file_handle = None
+            with contextlib.suppress(Exception):
+                owner_path_for(self.lock_path).unlink(missing_ok=True)
             with contextlib.suppress(Exception):
                 self.lock_path.unlink(missing_ok=True)
 
@@ -81,26 +100,25 @@ def try_acquire_artifact_lock(
     start = time.monotonic()
     while True:
         try:
-            # filelock provides cross-platform exclusive locking.
-            # NOTE (WIP): acquire()/release() wiring is not hooked up yet;
-            # the handle is intentionally not consumed until the feature lands.
-            file_lock = FileLock(str(lock_path), timeout=LOCK_ACQUIRE_TIMEOUT)  # noqa: F841
+            # Real cross-process mutual exclusion via an OS advisory lock.
+            # filelock serialises writers across processes and threads.
+            file_lock = FileLock(str(lock_path), timeout=LOCK_ACQUIRE_TIMEOUT)
+            file_lock.acquire()
             acquired_at = datetime.now(UTC)
             lock_content = f"{agent_id}\n{acquired_at.isoformat()}\n"
             if ttl:
                 lock_content += f"{ttl}\n"
-            lock_path.write_text(lock_content)
-            # FileLock context manager will handle the lock;
-            # we keep reference so it persists
+            owner_path_for(lock_path).write_text(lock_content, encoding="utf-8")
             lock = ArtifactLock(lock_path, agent_id, acquired_at, ttl)
-            lock._file_handle = None  # filelock manages it
+            lock._file_handle = file_lock
         except FileLockTimeout:
             elapsed = time.monotonic() - start
             if elapsed >= LOCK_ACQUIRE_TIMEOUT:
                 return None
             # Check if existing lock is stale
-            if lock_path.exists():
-                existing_content = lock_path.read_text().strip()
+            existing_owner = owner_path_for(lock_path)
+            if existing_owner.exists():
+                existing_content = existing_owner.read_text(encoding="utf-8").strip()
                 existing_parts = existing_content.split("\n")
                 if len(existing_parts) >= LOCK_HEADER_LINES:
                     existing_agent_id = existing_parts[0]
@@ -127,10 +145,11 @@ def try_acquire_artifact_lock(
 
 
 def try_read_lock_content(lock_path: Path) -> dict[str, Any] | None:
-    if not lock_path.exists():
+    owner = owner_path_for(lock_path)
+    if not owner.exists():
         return None
     try:
-        text = lock_path.read_text().strip()
+        text = owner.read_text(encoding="utf-8").strip()
         parts = text.split("\n")
         if len(parts) >= LOCK_HEADER_LINES:
             return {
@@ -197,14 +216,14 @@ def acquire_global_lock_context(agent_id: str) -> ArtifactLock | None:
     start = time.monotonic()
     while True:
         try:
-            # NOTE (WIP): acquire()/release() wiring is not hooked up yet;
-            # the handle is intentionally not consumed until the feature lands.
-            file_lock = FileLock(str(lock_path), timeout=LOCK_ACQUIRE_TIMEOUT)  # noqa: F841
+            # Real cross-process mutual exclusion via an OS advisory lock.
+            file_lock = FileLock(str(lock_path), timeout=LOCK_ACQUIRE_TIMEOUT)
+            file_lock.acquire()
             acquired_at = datetime.now(UTC)
             content = f"{agent_id}\n{acquired_at.isoformat()}\n"
-            lock_path.write_text(content)
+            owner_path_for(lock_path).write_text(content, encoding="utf-8")
             lock = ArtifactLock(lock_path, agent_id, acquired_at)
-            lock._file_handle = None
+            lock._file_handle = file_lock
         except FileLockTimeout:
             elapsed = time.monotonic() - start
             if elapsed >= LOCK_ACQUIRE_TIMEOUT:
