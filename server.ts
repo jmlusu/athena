@@ -3,7 +3,9 @@ import path from "path";
 import fs from "node:fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import { toApplicantProfile, toApplicantProfileList, toOpportunity, toOpportunityList } from "./athena-mapper.ts";
+import chokidar from "chokidar";
+import { toApplicantProfile, toApplicantProfileList, toBackendProfile, toOpportunity, toOpportunityList, mergeProfilePatch } from "./athena-mapper.ts";
+import type { ApplicantProfile } from "./src/types.ts";
 
 dotenv.config();
 
@@ -14,6 +16,77 @@ const __dirname = path.dirname(__filename);
 // dist/server.mjs, the repo root when tsx runs server.ts directly.
 const REPO_ROOT = path.basename(__dirname) === "dist" ? path.dirname(__dirname) : __dirname;
 const LOCKS_DIR = path.join(REPO_ROOT, "artifacts", "locks");
+
+// Profile documents directory
+const PROFILE_DOCS_DIR = path.join(REPO_ROOT, "profile");
+
+// In-memory cache of profile documents, updated by chokidar watcher
+let profileDocsCache: Array<{
+  name: string;
+  path: string;
+  relativePath: string;
+  type: string;
+  size: number;
+  modified: string;
+  category: string;
+}> = [];
+
+// Scan profile directory and update cache
+function scanProfileDocuments(): void {
+  const categories = ["resumes", "certifications", "credentials", "supporting"];
+  const docs: typeof profileDocsCache = [];
+
+  for (const category of categories) {
+    const catDir = path.join(PROFILE_DOCS_DIR, category);
+    if (!fs.existsSync(catDir)) continue;
+
+    const files = fs.readdirSync(catDir);
+    for (const file of files) {
+      const filePath = path.join(catDir, file);
+      const stat = fs.statSync(filePath);
+      if (!stat.isFile()) continue;
+
+      const ext = path.extname(file).toLowerCase();
+      const allowedExts = [".pdf", ".docx", ".txt", ".md", ".pptx", ".json"];
+      if (!allowedExts.includes(ext)) continue;
+
+      docs.push({
+        name: file,
+        path: filePath,
+        relativePath: path.relative(REPO_ROOT, filePath),
+        type: ext.slice(1).toUpperCase(),
+        size: stat.size,
+        modified: stat.mtime.toISOString(),
+        category,
+      });
+    }
+  }
+
+  profileDocsCache = docs;
+}
+
+// Initialize cache and start watcher
+scanProfileDocuments();
+try {
+  fs.mkdirSync(PROFILE_DOCS_DIR, { recursive: true });
+  for (const cat of ["resumes", "certifications", "credentials", "supporting"]) {
+    fs.mkdirSync(path.join(PROFILE_DOCS_DIR, cat), { recursive: true });
+  }
+
+  const watcher = chokidar.watch(PROFILE_DOCS_DIR, {
+    ignored: /(^|[/\\])\../, // ignore dotfiles
+    persistent: true,
+    ignoreInitial: true,
+  });
+
+  watcher.on("all", (event, filePath) => {
+    if (event === "add" || event === "change" || event === "unlink") {
+      scanProfileDocuments();
+    }
+  });
+} catch (err) {
+  console.warn("Failed to start profile documents watcher:", err);
+}
 
 const app = express();
 const PORT = 3000;
@@ -329,7 +402,7 @@ const SEARCH_TYPE_ALIASES: Record<string, string> = {
 
 function forwardToBackend(
   res: express.Response,
-  method: "POST" | "GET",
+  method: "POST" | "GET" | "PATCH" | "PUT" | "DELETE",
   backendPath: string,
   body?: unknown,
   opts: { search?: string; transform?: (payload: unknown) => unknown } = {}
@@ -342,10 +415,11 @@ function forwardToBackend(
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (process.env.ATHENA_API_KEY) headers["X-API-Key"] = process.env.ATHENA_API_KEY;
 
+  const hasBody = ["POST", "PATCH", "PUT"].includes(method);
   fetch(target, {
     method,
     headers,
-    body: method === "POST" ? JSON.stringify(body ?? {}) : undefined,
+    body: hasBody ? JSON.stringify(body ?? {}) : undefined,
     signal: controller.signal,
   })
     .then(async (upstream) => {
@@ -409,6 +483,11 @@ app.post("/api/n8n/dispatch-webhook", proxyPost(`${AI_PREFIX}/n8n/dispatch`));
 // n8n webhook ingress does not exist in FastAPI yet; kept for Phase 4.
 app.post("/api/webhooks/n8n", proxyPost(`${AI_PREFIX}/webhooks/n8n`));
 
+// Profile documents repository
+app.get("/api/profile-documents", (_req, res) => {
+  res.json(profileDocsCache);
+});
+
 // ── Core data proxy: /api/v1/athena/* ──────────────────────────────────
 // FastAPI owns routing and validation for jobs, profiles, scraping, scoring and
 // stats, so this forwards the sub-path verbatim rather than mirroring that route
@@ -451,19 +530,79 @@ function transformAthenaResponse(backendPath: string, payload: unknown): unknown
   return camelCaseKeys(payload);
 }
 
-app.use(BACKEND_PREFIX, (req: express.Request, res: express.Response) => {
+/**
+ * Raw GET of a backend document, bypassing the response transformers. Profile
+ * merging needs the stored snake_case record, not the SPA-shaped view the
+ * proxy hands back to the client.
+ */
+async function fetchBackendRaw(backendPath: string): Promise<Record<string, unknown> | null> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (process.env.ATHENA_API_KEY) headers["X-API-Key"] = process.env.ATHENA_API_KEY;
+  try {
+    const upstream = await fetch(`${BACKEND_URL}${BACKEND_PREFIX}${backendPath}`, { headers });
+    if (!upstream.ok) return null;
+    const text = await upstream.text();
+    if (!text) return null;
+    const payload: unknown = JSON.parse(text);
+    return payload && typeof payload === "object" ? (payload as Record<string, unknown>) : null;
+  } catch {
+    // No stored profile to preserve (create, or the backend is down): fall
+    // through to the unmerged patch and let the PUT report what it reports.
+    return null;
+  }
+}
+
+async function handleBackendProxy(req: express.Request, res: express.Response): Promise<void> {
   // Express strips the mount path, so req.url is the remainder: "/jobs?limit=100".
   const [rawPath, rawSearch = ""] = req.url.split("?");
   const backendPath = rawPath === "/" ? "" : rawPath.replace(/\/+$/, "");
-  const method = req.method === "POST" ? "POST" : "GET";
+  const allowedMethods = ["POST", "GET", "PATCH", "PUT", "DELETE"] as const;
+  type AllowedMethod = typeof allowedMethods[number];
+  const method = (allowedMethods.includes(req.method as AllowedMethod) ? req.method : "GET") as AllowedMethod;
+
+  const hasBody = ["POST", "PATCH", "PUT"].includes(method);
+  // Profile writes need a real body mapper, not just key casing: nested
+  // skills/experience/education arrive in SPA shape and FastAPI answers 422 to
+  // all of it (string[] is not list[Skill]). PATCH is excluded because it takes
+  // a free-form dict of partial updates rather than UserProfileRequest.
+  const isProfileWrite =
+    hasBody &&
+    method !== "PATCH" &&
+    (backendPath === "/profiles" || PROFILE_DETAIL_PATH.test(backendPath));
+
+  let body: unknown;
+  if (!hasBody) {
+    body = undefined;
+  } else if (!isProfileWrite) {
+    body = snakeCaseKeys(req.body);
+  } else {
+    const patch = toBackendProfile(req.body as ApplicantProfile);
+    // PUT replaces the whole document, so the stored profile has to be read
+    // back and folded into first. See mergeProfilePatch for what a bare PUT
+    // costs: it rewrote a live profile from 30KB to 16KB in one save.
+    body =
+      method === "PUT" && PROFILE_DETAIL_PATH.test(backendPath)
+        ? mergeProfilePatch(await fetchBackendRaw(backendPath), patch)
+        : patch;
+  }
 
   forwardToBackend(
     res,
     method,
     backendPath,
-    method === "POST" ? snakeCaseKeys(req.body) : undefined,
+    body,
     { search: rawSearch, transform: (payload) => transformAthenaResponse(backendPath, payload) }
   );
+}
+
+app.use(BACKEND_PREFIX, (req: express.Request, res: express.Response) => {
+  handleBackendProxy(req, res).catch((err: unknown) => {
+    if (res.headersSent) return;
+    res.status(500).json({
+      error: "Backend proxy failed",
+      detail: err instanceof Error ? err.message : String(err),
+    });
+  });
 });
 
 // Backend reachability, surfaced separately so /api/health stays a cheap
@@ -497,6 +636,9 @@ app.get("/api/backend-health", (_req, res) => {
 // Vite Middleware for development / Static files for production
 async function start() {
   console.log("Starting server...");
+  // Serve profile documents statically (for download/preview)
+  app.use("/profile-documents", express.static(PROFILE_DOCS_DIR));
+
   if (process.env.NODE_ENV !== "production") {
     console.log("Creating Vite server...");
     const { createServer: createViteServer } = await import("vite");

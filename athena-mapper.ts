@@ -227,6 +227,7 @@ export function toApplicantProfile(payload: Record<string, unknown>): ApplicantP
   const certifications = strArray(payload.certifications);
 
   return {
+    id: str(payload.id) || "unknown",
     fullName: fullName || "Name not specified",
     email: str(payload.email),
     phone: str(payload.phone),
@@ -237,11 +238,14 @@ export function toApplicantProfile(payload: Record<string, unknown>): ApplicantP
     experience: toExperienceList(payload.experience),
     education: toEducationList(payload.education),
     certifications,
-    // No backend equivalent; these three drive quote building in the Documents
-    // view. 0 and "" would render "USD 0/hr", so fall back to the SPA defaults.
-    hourlyRateUsd: num(payload.hourlyRateUsd) || 85,
-    expectedMonthlyMwk: num(payload.expectedMonthlyMwk) || 4500000,
-    legalAuthorizedSigner: str(payload.legalAuthorizedSigner) || fullName,
+    // Quote inputs for the Documents view. The BFF hands this mapper the raw
+    // snake_case body, so both spellings are read and the SPA defaults survive
+    // a profile that predates the fields or stores them as empty.
+    hourlyRateUsd: num(payload.hourlyRateUsd) || num(payload.hourly_rate_usd) || 85,
+    expectedMonthlyMwk:
+      num(payload.expectedMonthlyMwk) || num(payload.expected_monthly_mwk) || 4500000,
+    legalAuthorizedSigner:
+      str(payload.legalAuthorizedSigner) || str(payload.legal_authorized_signer) || fullName,
   };
 }
 
@@ -256,4 +260,200 @@ export function toApplicantProfileList(payload: unknown): ApplicantProfile[] {
       (item): item is Record<string, unknown> => typeof item === "object" && item !== null
     )
     .map(toApplicantProfile);
+}
+
+// ── Profile: SPA -> backend ─────────────────────────────────────────────
+//
+// toApplicantProfile's inverse, and it has to exist because the BFF snake_cases
+// request bodies at the top level only (snakeCaseKeys in server.ts). Nested
+// structures therefore reach FastAPI still in SPA shape, and FastAPI rejects
+// them: `skills: ["Strategy"]` is not a list[Skill], `experience[].role` is not
+// Experience.title, `education[].year` carries no field_of_study. Every PUT was
+// answering 422. The response mapper solved this gap in the other direction;
+// this honours the same contract on the way back in.
+//
+// Round-trip notes, all deliberate:
+//   - Skill.level/years_experience/category are unrecoverable: toSkillList
+//     already collapses each skill to its name on read, so there is nothing
+//     left to send back.
+//   - education.field_of_study is written as "" because the SPA has no field
+//     for it, and an empty string keeps toEducationList's `mentionsField` false
+//     so the degree string it returns is byte-identical to what we sent.
+//   - A bare year reads back as "Jan YYYY": the backend models a degree's end
+//     as a datetime and the SPA renders it through formatMonthYear. The SPA
+//     form does not edit this field, so nothing a user typed is rewritten.
+
+const MONTH_INDEX: Record<string, number> = Object.fromEntries(
+  MONTHS.map((name, index) => [name.toLowerCase(), index])
+);
+
+/** Sentinel for a period the parser cannot read. Only reachable from hand-edited JSONL; the Profile form never exposes `period`. */
+const UNPARSEABLE_PERIOD_DATE = "1970-01-01T00:00:00Z";
+
+/** "Nov 2023" -> "2023-11-01T00:00:00Z"; "2023" -> "2023-01-01T00:00:00Z"; ISO passes through; anything else -> null. */
+export function toIsoDate(value: unknown): string | null {
+  const text = str(value).trim();
+  if (!text) return null;
+  // Already ISO. Checked before the year-only branch, which would otherwise
+  // swallow the leading four digits of a full timestamp.
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text;
+  const monthYear = /^([A-Za-z]{3})\s+(\d{4})$/.exec(text);
+  if (monthYear) {
+    const month = MONTH_INDEX[monthYear[1].toLowerCase()];
+    if (month === undefined) return null;
+    return `${monthYear[2]}-${String(month + 1).padStart(2, "0")}-01T00:00:00Z`;
+  }
+  const yearOnly = /^(\d{4})$/.exec(text);
+  if (yearOnly) return `${yearOnly[1]}-01-01T00:00:00Z`;
+  return null;
+}
+
+/** Splits the `formatPeriod` string back into the three fields Experience stores. */
+export function parsePeriod(period: unknown): {
+  startDate: string;
+  endDate: string | null;
+  current: boolean;
+} {
+  const text = str(period).trim();
+  if (!text) {
+    return { startDate: UNPARSEABLE_PERIOD_DATE, endDate: null, current: false };
+  }
+  const [rawStart = "", rawEnd = ""] = text.split(/\s+-\s+/).map((part) => part.trim());
+  const current = rawEnd === "" || /^present$/i.test(rawEnd);
+
+  const start = toIsoDate(rawStart);
+  const end = current ? null : toIsoDate(rawEnd);
+  // start_date is required with no default, so a date is always supplied: the
+  // parsed start if we have it, else the parsed end, else the sentinel.
+  return {
+    startDate: start ?? end ?? UNPARSEABLE_PERIOD_DATE,
+    endDate: end,
+    current,
+  };
+}
+
+/**
+ * SPA `ApplicantProfile` -> the body FastAPI's `UserProfileRequest` accepts.
+ * Returns snake_case directly: snakeCaseKeys is a no-op on it, and routing it
+ * through a second transform would only risk double-conversion.
+ */
+export function toBackendProfile(profile: ApplicantProfile): Record<string, unknown> {
+  const source = (profile ?? {}) as Partial<ApplicantProfile>;
+
+  return {
+    email: str(source.email),
+    full_name: str(source.fullName),
+    phone: str(source.phone),
+    location: str(source.location),
+    headline: str(source.headline),
+    summary: str(source.summary),
+    skills: strArray(source.skills).map((name) => ({ name })),
+    experience: (source.experience ?? []).map((item) => {
+      const bullets = strArray(item.bullets);
+      const { startDate, endDate, current } = parsePeriod(item.period);
+      return {
+        title: str(item.role),
+        company: str(item.company),
+        location: str(item.location),
+        start_date: startDate,
+        end_date: endDate,
+        current,
+        // Experience.description is a required str with no default. Joining the
+        // bullets keeps it non-empty without inventing prose, and toExperienceList
+        // prefers `achievements` on the way back so the join is never rendered.
+        description: bullets.join(". "),
+        achievements: bullets,
+      };
+    }),
+    education: (source.education ?? []).map((item) => ({
+      institution: str(item.institution),
+      degree: str(item.degree),
+      field_of_study: "",
+      end_date: toIsoDate(item.year),
+      start_date: null,
+    })),
+    certifications: strArray(source.certifications),
+    hourly_rate_usd: num(source.hourlyRateUsd) || null,
+    expected_monthly_mwk: num(source.expectedMonthlyMwk) || null,
+    legal_authorized_signer: str(source.legalAuthorizedSigner) || null,
+  };
+}
+
+/**
+ * The only UserProfile fields the Applicant Profile form can actually change.
+ * Everything else FastAPI's model carries -- search `preferences`, uploaded
+ * `documents`, `languages`, the url fields, `resume_base`, `summary`,
+ * `certifications`, every nested id/date/category, and `created_at` -- has no
+ * editor anywhere in the SPA.
+ *
+ * PUT is a full replace, so forwarding `toBackendProfile()` straight through
+ * silently rewrites a real profile at ~55% of its original size: a measured
+ * round-trip on a live profile dropped 18 documents, 2 languages, 231 search
+ * keywords, 5 experience `skills_used` lists, both `field_of_study` values and
+ * all 43 skill categories.
+ */
+const PROFILE_FORM_FIELDS = new Set([
+  "full_name",
+  "email",
+  "phone",
+  "location",
+  "headline",
+  "legal_authorized_signer",
+  "hourly_rate_usd",
+  "expected_monthly_mwk",
+]);
+
+/** Backend entries keyed by skill name, so metadata survives a name edit. */
+function indexSkillsByName(raw: unknown): Map<string, Record<string, unknown>> {
+  const byName = new Map<string, Record<string, unknown>>();
+  if (!Array.isArray(raw)) return byName;
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const name = str((entry as Record<string, unknown>).name).trim();
+    if (name) byName.set(name, entry as Record<string, unknown>);
+  }
+  return byName;
+}
+
+/**
+ * The form owns the *set* of skill names and nothing else about them.
+ * A name that survives keeps the backend's `category`/`level`/
+ * `years_experience`; a removed name is dropped; a newly added name starts
+ * bare. A patch without a `skills` array leaves the backend's list alone.
+ */
+function mergeSkills(current: unknown, patch: unknown): unknown[] {
+  const byName = indexSkillsByName(current);
+  if (!Array.isArray(patch)) return [...byName.values()];
+  const seen = new Set<string>();
+  const merged: Record<string, unknown>[] = [];
+  for (const entry of patch) {
+    const raw = typeof entry === "string" ? entry : str((entry as Record<string, unknown> | null)?.name);
+    const name = raw.trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    merged.push(byName.get(name) ?? { name });
+  }
+  return merged;
+}
+
+/**
+ * Folds an SPA profile write into the profile already stored, instead of
+ * letting PUT replace it wholesale.
+ *
+ * `current` is the raw snake_case body a GET returned from FastAPI; `patch`
+ * is what `toBackendProfile()` produced for this save. The form's own fields
+ * come from the patch, every other key survives untouched. With no `current`
+ * (create, or the profile does not exist yet) the patch stands alone.
+ */
+export function mergeProfilePatch(
+  current: Record<string, unknown> | null | undefined,
+  patch: Record<string, unknown>
+): Record<string, unknown> {
+  if (!current || typeof current !== "object") return patch;
+  const merged: Record<string, unknown> = { ...current };
+  for (const key of PROFILE_FORM_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) merged[key] = patch[key];
+  }
+  merged.skills = mergeSkills(current.skills, patch.skills);
+  return merged;
 }

@@ -132,7 +132,23 @@ export default function App() {
       try {
         const profilesRes = await api.listProfiles();
         if (profilesRes && profilesRes.length > 0) {
-          setApplicantProfile(profilesRes[0]);
+          const p = profilesRes[0];
+          setApplicantProfile({
+            id: p.id,
+            fullName: p.fullName,
+            email: p.email,
+            phone: p.phone,
+            location: p.location,
+            headline: p.headline,
+            summary: p.summary,
+            skills: p.skills,
+            experience: p.experience,
+            education: p.education,
+            certifications: p.certifications,
+            hourlyRateUsd: p.hourlyRateUsd,
+            expectedMonthlyMwk: p.expectedMonthlyMwk,
+            legalAuthorizedSigner: p.legalAuthorizedSigner,
+          });
         }
       } catch (err) {
         console.warn("Failed to load applicant profile:", err);

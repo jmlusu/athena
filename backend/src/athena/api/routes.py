@@ -213,6 +213,15 @@ async def upsert_profile(
     profile_data["id"] = str(profile_id)
     logger.info(f"Putting profile with id={profile_id}")
     profile_obj = UserProfile(**profile_data)
+    if existing is not None:
+        # UserProfileRequest is the SPA's write surface. It deliberately has no
+        # documents, resume_base or created_at because nothing in the UI edits
+        # them -- but PUT replaces the whole record, so those sections have to
+        # be carried over or a single save deletes every document the profile
+        # owns and restamps its creation date.
+        profile_obj.created_at = existing.created_at
+        profile_obj.documents = existing.documents
+        profile_obj.resume_base = existing.resume_base
     athena_db.put_user_profile(profile_obj)
     logger.info(f"Fetching profile for response with id={profile_id}")
     # Fetch the full profile from DB to ensure all fields are populated

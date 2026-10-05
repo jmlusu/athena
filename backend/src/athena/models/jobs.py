@@ -154,6 +154,13 @@ class UserProfile(BaseModel):
     preferences: JobPreferences = Field(default_factory=JobPreferences)
     documents: list[Document] = []
     resume_base: dict[str, Any] | None = None  # Parsed structured resume
+    # Quote inputs for the Documents view. These live here because
+    # UserProfileRequest already accepted them: without model fields the PUT
+    # route validated them and then dropped them on write, and the response
+    # schema could never return them, so edits never round-tripped.
+    hourly_rate_usd: float | None = None
+    expected_monthly_mwk: float | None = None
+    legal_authorized_signer: str | None = None
     created_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
 

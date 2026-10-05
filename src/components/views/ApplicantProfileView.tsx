@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   User,
   Upload,
@@ -12,8 +12,10 @@ import {
   DollarSign,
   ShieldCheck,
   Save,
+  AlertCircle,
 } from "lucide-react";
 import { ApplicantProfile } from "../../types";
+import { api } from "../../api";
 
 interface ApplicantProfileViewProps {
   profile: ApplicantProfile;
@@ -27,6 +29,9 @@ export const ApplicantProfileView: React.FC<ApplicantProfileViewProps> = ({
   const [formData, setFormData] = useState<ApplicantProfile>(profile);
   const [newSkill, setNewSkill] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: string; type: string }[]>([
     { name: "Chifuniro_Phiri_Executive_Resume_Master.pdf", size: "284 KB", type: "PDF Document" },
     { name: "Malawi_Public_Health_MIS_Deployment_Portfolio.pdf", size: "1.4 MB", type: "Portfolio & Case Studies" },
@@ -66,11 +71,52 @@ export const ApplicantProfileView: React.FC<ApplicantProfileViewProps> = ({
     }
   };
 
-  const handleSave = () => {
-    onUpdateProfile(formData);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+  const handleSave = async () => {
+    // A second click during a slow PUT would fire a concurrent request and let
+    // its error banner overwrite the first save's success.
+    if (isSaving) return;
+    setSaveError(null);
+    setSaveSuccess(false);
+    setIsSaving(true);
+    try {
+      // Persist to backend
+      await api.updateProfile(profile.id, formData);
+      // Update local state for immediate UI feedback
+      onUpdateProfile(formData);
+      setSaveSuccess(true);
+      // Replacing the timer keeps a stale one from blanking a later save's
+      // banner -- the old code scheduled one per attempt and never cleared it.
+      if (successTimer.current) clearTimeout(successTimer.current);
+      successTimer.current = setTimeout(() => setSaveSuccess(false), 4000);
+    } catch (err) {
+      // Errors stay put until the next save attempt; a message the user has to
+      // act on should not vanish on its own.
+      const message = err instanceof Error ? err.message : "Failed to save profile";
+      setSaveError(message);
+      console.error("Failed to persist profile:", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // Never leave a timer pointing at an unmounted component.
+  useEffect(
+    () => () => {
+      if (successTimer.current) clearTimeout(successTimer.current);
+    },
+    []
+  );
+
+  // The real profile arrives after this view can already be mounted, so formData
+  // would otherwise stay seeded from the mock. Re-seed on identity change only:
+  // keyed on the id so an in-progress edit is never clobbered by a parent
+  // re-render carrying the same profile.
+  const loadedProfileId = useRef(profile.id);
+  useEffect(() => {
+    if (loadedProfileId.current === profile.id) return;
+    loadedProfileId.current = profile.id;
+    setFormData(profile);
+  }, [profile]);
 
   return (
     <div className="space-y-4">
@@ -92,17 +138,42 @@ export const ApplicantProfileView: React.FC<ApplicantProfileViewProps> = ({
 
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-2 transition-colors"
+          disabled={isSaving}
+          aria-busy={isSaving}
+          className="px-4 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
         >
           <Save className="w-3.5 h-3.5" />
-          <span>Save Dossier Updates</span>
+          <span>{isSaving ? "Saving…" : "Save Dossier Updates"}</span>
         </button>
       </div>
 
+      {/* Live regions have to be in the DOM before their text changes or
+          assistive tech announces nothing, so both sit here permanently and the
+          visible banners below are aria-hidden mirrors of the same message. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {saveSuccess ? "Applicant profile and tailoring knowledge base updated successfully." : ""}
+      </div>
+      <div role="alert" className="sr-only">
+        {saveError ? `Failed to save profile: ${saveError}` : ""}
+      </div>
+
       {saveSuccess && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2">
+        <div
+          aria-hidden="true"
+          className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-center gap-2"
+        >
           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           <span>Applicant profile & tailoring knowledge base updated successfully.</span>
+        </div>
+      )}
+
+      {saveError && (
+        <div
+          aria-hidden="true"
+          className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-lg flex items-center gap-2"
+        >
+          <AlertCircle className="w-4 h-4 text-red-600" />
+          <span>Failed to save: {saveError}</span>
         </div>
       )}
 

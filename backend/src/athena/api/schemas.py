@@ -156,6 +156,11 @@ class UserProfileResponse(BaseModel):
     languages: list[str]
     preferences: JobPreferences
     documents: list[Document]
+    # Optional with a default so a payload that predates these fields still
+    # validates; see the UserProfile model for why they exist at all.
+    hourly_rate_usd: float | None = None
+    expected_monthly_mwk: float | None = None
+    legal_authorized_signer: str | None = None
     created_at: UTCDateTime
     updated_at: UTCDateTime
 

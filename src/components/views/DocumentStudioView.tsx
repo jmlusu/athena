@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
   FileText,
   Printer,
@@ -14,8 +14,11 @@ import {
   UserCheck,
   ShieldCheck,
   Layers,
+  FolderOpen,
+  X,
 } from "lucide-react";
-import { Opportunity, TailoredResume, TailoredDocument, ApplicantProfile } from "../../types";
+import { Opportunity, TailoredResume, TailoredDocument, ApplicantProfile, ProfileDocument } from "../../types";
+import { api } from "../../api";
 
 interface DocumentStudioViewProps {
   selectedOpportunity: Opportunity | null;
@@ -42,6 +45,41 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
   const [isDehumanized, setIsDehumanized] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Profile documents state
+  const [docPickerOpen, setDocPickerOpen] = useState(false);
+  const [profileDocuments, setProfileDocuments] = useState<ProfileDocument[]>([]);
+  const [selectedDoc, setSelectedDoc] = useState<ProfileDocument | null>(null);
+
+  // Load profile documents on mount
+  useEffect(() => {
+    api.listProfileDocuments()
+      .then((docs) => setProfileDocuments(docs))
+      .catch((err) => console.warn("Failed to load profile documents:", err));
+  }, []);
+
+  // Native <dialog>.showModal() supplies the focus trap, Esc-to-close, backdrop
+  // and inert background, so this only decides when the dialog mounts and where
+  // focus lands on open. Focus return is handled by onClose below, which is the
+  // single path out of the dialog (trigger, backdrop and Esc all converge there).
+  const docPickerRef = useRef<HTMLDialogElement>(null);
+  const docTriggerRef = useRef<HTMLButtonElement>(null);
+
+  useLayoutEffect(() => {
+    if (!docPickerOpen) return;
+    const dialog = docPickerRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    // First document when there is one, otherwise the panel itself, so focus is
+    // never left behind on the now-inert trigger.
+    const initial = dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog;
+    initial.focus();
+  }, [docPickerOpen]);
+
+  const attachDocument = (doc: ProfileDocument) => {
+    setSelectedDoc(doc);
+    docPickerRef.current?.close();
+  };
 
   // Resume state
   const [resumeData, setResumeData] = useState<TailoredResume>(
@@ -170,12 +208,19 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
   };
 
   const buildMarkdown = () => {
-    if (activeTab === "resume") {
-      return `# ${resumeData.fullName}\n**${resumeData.title}**\n${resumeData.contact?.location || ""} | ${resumeData.contact?.email || ""} | ${resumeData.contact?.phone || ""}\n\n## Executive Summary\n${resumeData.summary}\n\n## Core Competencies\n${resumeData.skills?.join(", ") || ""}\n\n## Professional Experience\n${resumeData.experience?.map((e) => `### ${e.role} - ${e.company} (${e.period})\n${e.bullets?.map((b) => `- ${b}`).join("\n") || ""}`).join("\n\n") || ""}`;
-    } else if (activeTab === "cover_letter") {
-      return `${coverLetterData.date}\n\n${coverLetterData.recipient}\n\n${coverLetterData.greeting}\n\n${coverLetterData.paragraphs?.join("\n\n")}\n\n${coverLetterData.closing}\n${coverLetterData.signature}`;
-    }
-    return `# ${proposalData.title}\n**Client:** ${proposalData.recipient}\n**Date:** ${proposalData.date}\n\n## Executive Summary\n${proposalData.executiveSummary}\n\n${proposalData.sections?.map((s) => `### ${s.heading}\n${s.body}`).join("\n\n")}\n\n${proposalData.closing}\n${proposalData.signature}`;
+    const body =
+      activeTab === "resume"
+        ? `# ${resumeData.fullName}\n**${resumeData.title}**\n${resumeData.contact?.location || ""} | ${resumeData.contact?.email || ""} | ${resumeData.contact?.phone || ""}\n\n## Executive Summary\n${resumeData.summary}\n\n## Core Competencies\n${resumeData.skills?.join(", ") || ""}\n\n## Professional Experience\n${resumeData.experience?.map((e) => `### ${e.role} - ${e.company} (${e.period})\n${e.bullets?.map((b) => `- ${b}`).join("\n") || ""}`).join("\n\n") || ""}`
+        : activeTab === "cover_letter"
+        ? `${coverLetterData.date}\n\n${coverLetterData.recipient}\n\n${coverLetterData.greeting}\n\n${coverLetterData.paragraphs?.join("\n\n")}\n\n${coverLetterData.closing}\n${coverLetterData.signature}`
+        : `# ${proposalData.title}\n**Client:** ${proposalData.recipient}\n**Date:** ${proposalData.date}\n\n## Executive Summary\n${proposalData.executiveSummary}\n\n${proposalData.sections?.map((s) => `### ${s.heading}\n${s.body}`).join("\n\n")}\n\n${proposalData.closing}\n${proposalData.signature}`;
+
+    // An attached profile document is referenced in the exported output, so a
+    // copied or downloaded .md carries the citation. The file itself is served
+    // from profile/ at /profile-documents/<category>/<name>.
+    if (!selectedDoc) return body;
+    const servedPath = `${selectedDoc.category}/${selectedDoc.name}`;
+    return `${body}\n\n## Attached Profile Reference\n- **${selectedDoc.name}** (${selectedDoc.type}, ${(selectedDoc.size / 1024).toFixed(1)} KB)\n- Path: \`profile/${servedPath}\`\n- Served at: \`/profile-documents/${servedPath}\``;
   };
 
   const buildMarkdownFilename = () => {
@@ -326,6 +371,35 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
             <Printer className="w-3.5 h-3.5 text-[#F97316]" />
             <span>Print / PDF</span>
           </button>
+
+          {/* Profile Documents Picker */}
+          <button
+            ref={docTriggerRef}
+            onClick={() => setDocPickerOpen(true)}
+            aria-haspopup="dialog"
+            className="px-3 py-1.5 bg-[#F4F5F7] hover:bg-[#E2E8F0] text-[#18181B] text-xs font-medium rounded-lg border border-[#CBD5E1] flex items-center gap-1.5 transition-colors"
+          >
+            <FolderOpen className="w-3.5 h-3.5 text-[#64748B]" aria-hidden="true" />
+            <span>Attach Profile Doc ({profileDocuments.length})</span>
+          </button>
+
+          {/* Attached document, with a way to take it back off */}
+          {selectedDoc && (
+            <div className="flex items-center gap-1.5 pl-3 border-l border-[#E2E8F0] text-xs">
+              <FileText className="w-3.5 h-3.5 text-[#F97316] shrink-0" aria-hidden="true" />
+              <span className="max-w-[14ch] truncate font-medium text-[#18181B]" title={selectedDoc.name}>
+                {selectedDoc.name}
+              </span>
+              <span className="text-[10px] font-mono text-[#64748B]">{selectedDoc.type}</span>
+              <button
+                onClick={() => setSelectedDoc(null)}
+                aria-label={`Detach ${selectedDoc.name}`}
+                className="p-1 rounded text-[#64748B] hover:bg-[#F4F5F7] hover:text-[#18181B] transition-colors"
+              >
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -666,6 +740,119 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Profile document picker. Native <dialog> + showModal() gives the focus
+          trap, Esc-to-close, backdrop and inert background for free; onClose is
+          the one exit path, so focus always lands back on the trigger. */}
+      {docPickerOpen && (
+        <dialog
+          ref={docPickerRef}
+          tabIndex={-1}
+          aria-labelledby="doc-picker-title"
+          onClose={() => {
+            setDocPickerOpen(false);
+            docTriggerRef.current?.focus();
+          }}
+          onClick={(event) => {
+            // A click on the ::backdrop is dispatched on the dialog itself.
+            if (event.target === docPickerRef.current) docPickerRef.current?.close();
+          }}
+          className="fixed inset-0 m-auto h-fit max-h-[85vh] w-full max-w-2xl rounded-2xl border-0 bg-white p-0 shadow-xl focus:outline-none [&::backdrop]:bg-black/60"
+        >
+          <div className="flex max-h-[85vh] flex-col">
+            <div className="flex items-start justify-between gap-3 border-b border-[#E2E8F0] p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#18181B] font-bold text-[#F97316]">
+                  <FolderOpen className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2
+                    id="doc-picker-title"
+                    className="font-serif-heading text-base font-bold text-[#18181B]"
+                  >
+                    Attach Profile Document
+                  </h2>
+                  <p className="text-xs text-[#64748B]">
+                    Pick a file from the profile knowledge base to cite in the generated output.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => docPickerRef.current?.close()}
+                aria-label="Close document picker"
+                className="rounded-lg p-1.5 text-[#64748B] transition-colors hover:bg-[#F4F5F7] hover:text-[#18181B]"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              {profileDocuments.length === 0 ? (
+                <div className="py-10 text-center text-xs text-[#64748B]">
+                  <FolderOpen className="mx-auto mb-3 h-12 w-12 text-[#CBD5E1]" aria-hidden="true" />
+                  <p className="mb-1 font-medium text-[#18181B]">No profile documents found</p>
+                  <p>Drop a PDF, DOCX, TXT, MD, PPTX or JSON file into profile/ to see it here.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {profileDocuments.map((doc, index) => {
+                    const attached =
+                      selectedDoc?.name === doc.name && selectedDoc?.category === doc.category;
+                    return (
+                      <li key={`${doc.category}/${doc.name}`}>
+                        <button
+                          type="button"
+                          data-autofocus={index === 0 ? "" : undefined}
+                          onClick={() => attachDocument(doc)}
+                          className="flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors hover:border-[#F97316] hover:bg-[#FFFBF7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F97316]"
+                        >
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F4F5F7] text-[#F97316]">
+                            <FileText className="h-5 w-5" aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs font-medium text-[#18181B]">
+                              {doc.name}
+                            </span>
+                            <span className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-[#64748B]">
+                              <span className="rounded bg-[#F4F5F7] px-1.5 py-0.5 font-mono">
+                                {doc.type}
+                              </span>
+                              <span className="rounded bg-[#F4F5F7] px-1.5 py-0.5 font-mono">
+                                {doc.category}
+                              </span>
+                              <span>{(doc.size / 1024).toFixed(1)} KB</span>
+                              <span>{new Date(doc.modified).toLocaleDateString()}</span>
+                            </span>
+                          </span>
+                          <span
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                              attached ? "bg-[#F97316] text-white" : "text-transparent"
+                            }`}
+                            aria-hidden="true"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            <div className="flex justify-end border-t border-[#E2E8F0] p-4">
+              <button
+                type="button"
+                onClick={() => docPickerRef.current?.close()}
+                className="rounded-lg px-4 py-1.5 text-xs font-medium text-[#64748B] transition-colors hover:text-[#18181B]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 };

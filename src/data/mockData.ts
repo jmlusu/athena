@@ -1,6 +1,7 @@
 import { ApplicantProfile, Opportunity, AutomationSettings, CronScheduleState } from "../types";
 
 export const initialApplicantProfile: ApplicantProfile = {
+  id: "mock-profile-1",
   fullName: "Chifuniro Phiri",
   headline: "Principal Systems Consultant & Technical Program Director",
   email: "chifuniro.phiri@consult-mw.com",

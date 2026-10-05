@@ -60,4 +60,5 @@ tests/test_athena_job_actions.py
 tests/test_athena_matching.py
 tests/test_athena_scorer.py
 tests/test_athena_store.py
+tests/test_profile_roundtrip.py
 tests/test_prometheus_metrics.py

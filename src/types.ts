@@ -79,6 +79,7 @@ export interface Opportunity {
 }
 
 export interface ApplicantProfile {
+  id: string;
   fullName: string;
   email: string;
   phone: string;
@@ -394,4 +395,14 @@ export interface SchedulerStatus {
   running: boolean;
   nextRun?: string;
   lastRun?: string;
+}
+
+export interface ProfileDocument {
+  name: string;
+  path: string;
+  relativePath: string;
+  type: string;
+  size: number;
+  modified: string;
+  category: string;
 }

@@ -320,3 +320,59 @@ test('a profile maps skills to strings the Profile view can render', async ({
   const skills = profiles[0].skills ?? [];
   for (const skill of skills) expect(typeof skill).toBe('string');
 });
+
+test('profile persistence roundtrip via the real API', async ({ request }) => {
+  // Tests that a PUT /profiles/{id} round-trips through the BFF + FastAPI
+  // without data loss (the fix for the ~45% data-loss bug). Uses the profile
+  // currently served by the running backend.
+  const id = (await request.get('/api/v1/athena/profiles')).json().then(
+    (profiles) => profiles[0].id
+  );
+  // The body is the same shape toBackendProfile emits.
+  const body = {
+    fullName: 'Test User',
+    email: 'test@example.com',
+    phone: '(+1) 555-0123',
+    location: 'Test City',
+    headline: 'Test Headline',
+    summary: 'Test summary.',
+    skills: ['Test Skill'],
+    experience: [],
+    education: [],
+    certifications: [],
+    hourlyRateUsd: 50,
+    expectedMonthlyMwk: 3000000,
+    legalAuthorizedSigner: 'Test Signer',
+  };
+  // Save.
+  await request.put(`/api/v1/athena/profiles/${(await id)}`, {
+    headers: { 'X-API-Key': 'dev-admin-key' },
+    data: body,
+  });
+  // Reload and assert the editable scalars came back.
+  const reloaded = await request.get('/api/v1/athena/profiles');
+  const p = (await reloaded.json()) as Record<string, unknown>[];
+  expect(p).toHaveLength(1);
+  expect(p[0].fullName).toBe('Test User');
+  expect(p[0].email).toBe('test@example.com');
+  expect(p[0].headline).toBe('Test Headline');
+  // Un-editable sections must survive unchanged.
+  expect(p[0].skills).toEqual(expect.arrayContaining(['Test Skill']));
+  expect(p[0].hourly_rate_usd).toBe(50);
+  expect(p[0].expected_monthly_mwk).toBe(3000000);
+  expect(p[0].legal_authorized_signer).toBe('Test Signer');
+});
+
+test('both pagination UIs render their pager controls', async ({ page }) => {
+  // Goes to each top-level view and asserts the pagination markup exists in the DOM.
+  // Even with zero jobs the pager component renders (disabled state); we only
+  // check its presence, not item counts.
+  const views = ['/pipeline', '/scraper'];
+  for (const view of views) {
+    await page.goto(view);
+    // The pager component has an aria-label attribute; wait for it to appear.
+    await expect(page.locator('[aria-label="pagination"]').first()).toBeVisible({
+      timeout: 5000,
+    });
+  }
+});

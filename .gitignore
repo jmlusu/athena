@@ -54,6 +54,9 @@ company/athena/
 # Generated artifacts
 artifacts/
 
+# Profile documents (user uploads)
+profile/
+
 # Tool caches
 .opencode/
 .superpowers/
