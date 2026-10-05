@@ -1,7 +1,7 @@
 """Adapter for converting between AI Studio Opportunity and OpenCode Job models."""
 
 from datetime import UTC, datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
 from athena.models.enums import JobSource, JobStatus, JobType
@@ -10,11 +10,11 @@ from athena.models.status_mapping import pipeline_to_job_status
 from athena.timeutils import ensure_utc
 
 
-def opportunity_to_job(opp: dict[str, Any], profile_id: Optional[UUID] = None) -> Job:
+def opportunity_to_job(opp: dict[str, Any], profile_id: UUID | None = None) -> Job:
     """Convert AI Studio Opportunity dict to OpenCode Job model."""
     # Map scope to location and job_type
     scope = opp.get("scope", "international-remote")
-    category = opp.get("category", "job")
+    opp.get("category", "job")
 
     if scope == "lilongwe-local":
         location = opp.get("location", "Lilongwe, Malawi")
@@ -55,7 +55,7 @@ def opportunity_to_job(opp: dict[str, Any], profile_id: Optional[UUID] = None) -
     if posted_str:
         posted_at = _parse_posted_date(posted_str)
 
-    job = Job(
+    return Job(
         id=uuid4(),
         source=source,
         source_job_id=opp.get("id", str(uuid4())),
@@ -91,10 +91,8 @@ def opportunity_to_job(opp: dict[str, Any], profile_id: Optional[UUID] = None) -
         },
     )
 
-    return job
 
-
-def job_to_opportunity(job: Job, profile_data: Optional[dict] = None) -> dict[str, Any]:
+def job_to_opportunity(job: Job, profile_data: dict | None = None) -> dict[str, Any]:
     """Convert OpenCode Job model to AI Studio Opportunity dict."""
     # Determine scope from location and job_type
     scope = "international-remote"
@@ -167,7 +165,7 @@ def job_to_opportunity(job: Job, profile_data: Optional[dict] = None) -> dict[st
     return opp
 
 
-def _parse_salary_range(salary_str: str) -> Optional[SalaryRange]:
+def _parse_salary_range(salary_str: str) -> SalaryRange | None:
     """Parse salary string into SalaryRange."""
     # Simple parser for common formats
     import re
@@ -191,7 +189,7 @@ def _parse_salary_range(salary_str: str) -> Optional[SalaryRange]:
     return None
 
 
-def _format_salary_range(salary: Optional[SalaryRange]) -> str:
+def _format_salary_range(salary: SalaryRange | None) -> str:
     """Format SalaryRange back to string."""
     if not salary:
         return ""
@@ -206,7 +204,7 @@ def _parse_posted_date(posted_str: str) -> datetime:
     now = datetime.now(UTC)
     posted_lower = posted_str.lower()
 
-    if "just now" in posted_lower or "now" == posted_lower.strip():
+    if "just now" in posted_lower or posted_lower.strip() == "now":
         return now
 
     # Match "X hours ago", "X days ago"
@@ -227,7 +225,7 @@ def _parse_posted_date(posted_str: str) -> datetime:
     return now
 
 
-def _parse_deadline(deadline_str: str) -> Optional[datetime]:
+def _parse_deadline(deadline_str: str) -> datetime | None:
     """Parse deadline string like '2026-10-15'."""
     if not deadline_str:
         return None

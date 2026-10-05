@@ -5,7 +5,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
-from ..timeutils import UTCDateTime
+from athena.timeutils import UTCDateTime
+
 from .enums import ApplicationStatus, JobSource, JobStatus, JobType, MatchTier
 
 
@@ -66,8 +67,19 @@ class JobPreferences(BaseModel):
     job_types: list[JobType] = []
     min_salary: Decimal | None = None
     preferred_sources: list[JobSource] = []
+    job_titles: list[str] = []
     remote_only: bool = False
     visa_sponsorship_required: bool = False
+
+    # Categorical keyword structure. keywords_category is metadata only: a
+    # label describing which category dominates this profile's keywords
+    # ("executive", "functional", "core"). The scorer reads the three lists
+    # below but never gates on the label — matching is a set union, so
+    # filtering by category would only drop keywords.
+    keywords_category: str = "core"  # "executive", "functional", "core"
+    executive_keywords: list[str] = []  # Curated executive role keywords
+    functional_keywords: list[str] = []  # Functional skill keywords
+    core_skill_tags: list[str] = []  # Core skill tags
 
 
 class Job(BaseModel):
@@ -96,6 +108,8 @@ class Job(BaseModel):
     match_score: float | None = None
     match_tier: MatchTier | None = None
     status: JobStatus = JobStatus.NEW
+    auto_applied: bool = False
+    auto_apply_documents: list[str] = []
     scraped_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: UTCDateTime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = {}  # Source-specific extra data

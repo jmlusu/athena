@@ -1,6 +1,5 @@
 """AI-powered endpoints for Athena."""
 
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from athena.ai import get_ai_provider

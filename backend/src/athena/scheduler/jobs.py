@@ -1,16 +1,17 @@
+import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
-from ..ats import ats_scorer
-from ..matching import matching_engine
-from ..models import JobSource, JobStatus, JobType, ScrapeJob
-from ..scrapers import scraper_registry
-from ..store import athena_db
+from athena.ats import ats_scorer
+from athena.matching import matching_engine
+from athena.models import JobSource, JobStatus, JobType, ScrapeJob
+from athena.scrapers import scraper_registry
+from athena.store import athena_db
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,12 @@ class AthenaScheduler:
         self.scheduler = AsyncIOScheduler()
         self._running = False
         self.default_configs: list[ScrapeConfig] = []
+        # Single-flight guards. The scheduled cron entry and an explicit
+        # POST /scrape both reach these coroutines, and APScheduler only prevents
+        # overlap per job id, so concurrent runs would otherwise write the jobs
+        # artifact at the same time.
+        self._scrape_lock = asyncio.Lock()
+        self._process_lock = asyncio.Lock()
 
     def add_default_config(self, config: ScrapeConfig) -> None:
         """Add a default scrape configuration."""
@@ -51,6 +58,8 @@ class AthenaScheduler:
             id="athena_scrape_jobs",
             name="Athena: Scrape all job sources",
             replace_existing=True,
+            max_instances=1,
+            coalesce=True,
         )
 
         # Schedule matching/scoring every 30 minutes
@@ -60,6 +69,8 @@ class AthenaScheduler:
             id="athena_process_jobs",
             name="Athena: Process and score new jobs",
             replace_existing=True,
+            max_instances=1,
+            coalesce=True,
         )
 
         # Schedule cleanup daily
@@ -69,6 +80,8 @@ class AthenaScheduler:
             id="athena_cleanup",
             name="Athena: Cleanup old jobs",
             replace_existing=True,
+            max_instances=1,
+            coalesce=True,
         )
 
         self.scheduler.start()
@@ -83,6 +96,14 @@ class AthenaScheduler:
         self._running = False
         logger.info("Athena scheduler stopped")
 
+    @property
+    def scrape_in_progress(self) -> bool:
+        return self._scrape_lock.locked()
+
+    @property
+    def process_in_progress(self) -> bool:
+        return self._process_lock.locked()
+
     async def run_all_scrapes(self) -> None:
         """Run scrape jobs for all default configurations."""
         logger.info("Starting scheduled scrape run")
@@ -93,6 +114,15 @@ class AthenaScheduler:
                 logger.error(f"Scrape config failed: {config.query} - {e}")
 
     async def run_scrape_config(self, config: ScrapeConfig) -> ScrapeJob:
+        """Run a single scrape configuration.
+
+        Serialised against every other scrape entry point via ``_scrape_lock`` so
+        two runs never persist the jobs artifact simultaneously.
+        """
+        async with self._scrape_lock:
+            return await self._run_scrape_config_locked(config)
+
+    async def _run_scrape_config_locked(self, config: ScrapeConfig) -> ScrapeJob:
         """Run a single scrape configuration."""
         scrape_job = ScrapeJob(
             source=config.sources[0] if config.sources else JobSource.LINKEDIN,
@@ -115,24 +145,38 @@ class AthenaScheduler:
                 sources=sources,
             )
 
-            # Save jobs and count new/updated
-            new_count = 0
-            updated_count = 0
-            for job in jobs:
-                existing = None
-                for j in athena_db.jobs.get_all():
-                    if j.source_job_id and j.source_job_id == job.source_job_id:
-                        existing = j
-                        break
+            # Save jobs and count new/updated.
+            # Dedupe via a source_job_id index (O(N+M)) instead of rescanning every
+            # stored job per scraped job, and persist once rather than rewriting the
+            # whole artifact on each add/update.
+            existing_by_source_id = athena_db.index_jobs_by_source_id()
+            to_add: list[Job] = []
+            to_update: list[Job] = []
 
+            for job in jobs:
+                existing = (
+                    existing_by_source_id.get(job.source_job_id)
+                    if job.source_job_id
+                    else None
+                )
                 if existing:
                     job.id = existing.id
                     job.scraped_at = existing.scraped_at
-                    athena_db.update_job(job)
-                    updated_count += 1
+                    to_update.append(job)
+                    # Keep the index current so duplicate source ids inside one
+                    # scrape response collapse onto the same stored record.
+                    existing_by_source_id[job.source_job_id] = job
                 else:
-                    athena_db.add_job(job)
-                    new_count += 1
+                    to_add.append(job)
+                    if job.source_job_id:
+                        existing_by_source_id[job.source_job_id] = job
+
+            new_count = len(to_add)
+            updated_count = len(to_update)
+            if to_update:
+                athena_db.update_jobs(to_update)
+            if to_add:
+                athena_db.add_jobs(to_add)
 
             scrape_job.jobs_found = len(jobs)
             scrape_job.jobs_new = new_count
@@ -141,7 +185,7 @@ class AthenaScheduler:
             scrape_job.completed_at = datetime.now(UTC)
 
             logger.info(
-                f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)"
+                f"Scrape completed: {config.query} - {len(jobs)} jobs ({new_count} new, {updated_count} updated)",
             )
 
         except Exception as e:  # noqa: BLE001
@@ -159,7 +203,16 @@ class AthenaScheduler:
         return scrape_job
 
     async def process_new_jobs(self) -> None:
-        """Process new jobs: match, score, and queue for applications."""
+        """Process new jobs: match, score, and queue for applications.
+
+        Serialised via ``_process_lock``: this is reachable both from the
+        30-minute cron entry and from the tail of a scrape run, and both would
+        otherwise score and rewrite the same jobs concurrently.
+        """
+        async with self._process_lock:
+            await self._process_new_jobs_locked()
+
+    async def _process_new_jobs_locked(self) -> None:
         logger.info("Processing new jobs for matching and scoring")
 
         # Get unscored jobs
@@ -178,9 +231,12 @@ class AthenaScheduler:
             # Just mark as fetched
             for job in all_new:
                 job.status = JobStatus.FETCHED
-                athena_db.update_job(job)
+            athena_db.update_jobs(all_new)
             return
 
+        # Score every job in memory, then persist once. Calling update_job per job
+        # rewrote the entire jobs artifact each time.
+        dirty: list[Job] = []
         for job in all_new:
             try:
                 # For each profile, compute match and ATS score
@@ -201,38 +257,80 @@ class AthenaScheduler:
                     ats_breakdown = ats_scorer.score_resume_against_job(best_match, job)
                     job.ats_score = ats_breakdown.overall
 
-                    # Update job status
-                    if ats_breakdown.overall >= 90:
-                        job.status = JobStatus.SCORED
-                        # Auto-application queuing removed - scheduler is decoupled from MessageBus
-                        if ats_scorer.should_auto_apply(ats_breakdown.overall):
-                            logger.info(
-                                "Job %s meets auto-apply threshold (ATS=%.1f) - "
-                                "would queue for application if MessageBus were available",
-                                job.id,
-                                ats_breakdown.overall,
-                            )
-                    elif ats_breakdown.overall >= 80:
-                        job.status = JobStatus.SCORED
-                        # Review flagging removed - scheduler is decoupled from MessageBus
-                        logger.info(
-                            "Job %s flagged for review (ATS=%.1f) - "
-                            "would queue for review if MessageBus were available",
-                            job.id,
-                            ats_breakdown.overall,
-                        )
-                    else:
-                        job.status = JobStatus.FETCHED
+                    # Retention / automation bands.
+                    #   >= 90 : auto-apply + tailored resume and cover letter
+                    #   80-89 : flag for human review
+                    #   70-79 : retain
+                    #   <  70 : drop from the retained set
+                    overall = ats_breakdown.overall
 
-                    athena_db.update_job(job)
+                    if overall >= 90:
+                        job.status = JobStatus.APPLIED
+                        await self._auto_apply(best_match, job)
+                    elif overall >= 80:
+                        job.status = JobStatus.FLAGGED
+                        logger.info(
+                            "Job %s flagged for review (ATS=%.1f): %s",
+                            job.id,
+                            overall,
+                            job.title,
+                        )
+                    elif overall >= 70:
+                        job.status = JobStatus.SCORED
+                    else:
+                        job.status = JobStatus.REJECTED
+
+                    dirty.append(job)
                     logger.info(
-                        f"Job {job.title} scored: ATS={ats_breakdown.overall}, Match={best_score}"
+                        f"Job {job.title} scored: ATS={ats_breakdown.overall}, Match={best_score}",
                     )
 
             except Exception as e:  # noqa: BLE001
                 logger.error(f"Failed to process job {job.id}: {e}")
                 job.status = JobStatus.FETCHED
-                athena_db.update_job(job)
+                dirty.append(job)
+
+        if dirty:
+            athena_db.update_jobs(dirty)
+
+    async def _auto_apply(self, profile, job) -> None:
+        """Generate tailored resume + cover letter for a >=90 job.
+
+        Persists both documents to the per-job output directory and attaches
+        them to the job so downstream consumers can pick them up. Application
+        submission itself stays out of scope: there is no MessageBus wired up,
+        so this prepares the artefacts and records the intent rather than
+        pretending an application was sent.
+        """
+        from athena.documents import DocumentGenerator
+
+        slug = f"{job.company[:40]}-{job.title[:60]}".replace("/", "-").replace(" ", "_")
+        out_dir = athena_db.base_dir / "documents" / str(job.id)
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        generator = DocumentGenerator()
+        try:
+            resume, cover = await generator.generate_both(profile, job)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Auto-apply document generation failed for job %s: %s", job.id, exc)
+            return
+
+        written = []
+        for label, doc in (("resume", resume), ("cover_letter", cover)):
+            if doc is None or not doc.docx_bytes:
+                continue
+            path = out_dir / f"{slug}-{label}.docx"
+            path.write_bytes(doc.docx_bytes)
+            written.append(path.name)
+
+        job.auto_applied = True
+        job.auto_apply_documents = written
+        logger.info(
+            "Auto-applied %s at %s: wrote %s",
+            job.title,
+            job.company,
+            ", ".join(written) or "no documents",
+        )
 
     async def cleanup_old_jobs(self, days: int = 90) -> None:
         """Clean up old jobs beyond retention period."""

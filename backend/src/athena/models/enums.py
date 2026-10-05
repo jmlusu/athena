@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class JobSource(str, Enum):
+class JobSource(StrEnum):
     LINKEDIN = "linkedin"
     INDEED = "indeed"
     GLASSDOOR = "glassdoor"
@@ -20,7 +20,7 @@ class JobSource(str, Enum):
     OTHER = "other"
 
 
-class JobType(str, Enum):
+class JobType(StrEnum):
     FULL_TIME = "full_time"
     PART_TIME = "part_time"
     CONTRACT = "contract"
@@ -30,7 +30,7 @@ class JobType(str, Enum):
     TEMPORARY = "temporary"
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     NEW = "new"
     FETCHED = "fetched"
     MATCHED = "matched"
@@ -43,7 +43,7 @@ class JobStatus(str, Enum):
     ARCHIVED = "archived"
 
 
-class ApplicationStatus(str, Enum):
+class ApplicationStatus(StrEnum):
     PENDING = "pending"
     SUBMITTED = "submitted"
     CONFIRMED = "confirmed"
@@ -51,7 +51,7 @@ class ApplicationStatus(str, Enum):
     WITHDRAWN = "withdrawn"
 
 
-class MatchTier(str, Enum):
+class MatchTier(StrEnum):
     EXCELLENT = "excellent"  # >= 90
     GOOD = "good"  # 80-89
     FAIR = "fair"  # 70-79

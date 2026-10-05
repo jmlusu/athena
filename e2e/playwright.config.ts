@@ -10,10 +10,29 @@ const REPO_ROOT = path.resolve(CONFIG_DIR, '..');
 
 const BASE_URL = 'http://localhost:3000';
 
+// The suite generates well over 100 requests/minute from a single IP (every test
+// hits the backend over 127.0.0.1, and each app load paginates jobs in two
+// calls). The backend's sliding-window limiter (app.py, default 100/60s) then
+// answers 429 mid-suite, which surfaces as flaky unrelated failures.
+//
+// Raised only for the backend Playwright spawns below -- child processes inherit
+// process.env, and load_dotenv() does not override existing variables, so this
+// never touches a dev or production process. An explicit ATHENA_RATE_LIMIT from
+// the caller still wins.
+if (!process.env.ATHENA_RATE_LIMIT) {
+  process.env.ATHENA_RATE_LIMIT = '5000';
+}
+
 export default defineConfig({
   // Isolated test dir: the main config's testDir (`e2e/tests`) never sees these.
   testDir: path.join(CONFIG_DIR, 'aistudio'),
   fullyParallel: true,
+  // Playwright's default is cores/2, which is 8 here. Each worker launches a
+  // browser that boots the SPA and renders the full job board (~140 cards) while
+  // the BFF, Vite and FastAPI compete for the same box; at 7-8 concurrent
+  // workers even `GET /api/health` misses the 30s timeout. Every browser passes
+  // 18/18 at this width, so cap it rather than let the suite flake.
+  workers: process.env.CI ? 2 : 4,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   // Artifacts (traces/screenshots) stay in a suite-owned folder so they never

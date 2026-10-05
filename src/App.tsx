@@ -48,6 +48,28 @@ import { ApplicantProfileView } from "./components/views/ApplicantProfileView";
 import { FormFillerView } from "./components/views/FormFillerView";
 import { OpportunityDetailModal } from "./components/modals/OpportunityDetailModal";
 
+// Query per cron cycle. "all" stays broad on purpose -- the APScheduler entry
+// registered at startup uses "software engineer" for the same reason.
+const CRON_QUERIES: Record<"job" | "consultancy" | "all", string> = {
+  job: "software engineer",
+  consultancy: "ICT consultant",
+  all: "engineer",
+};
+
+// Kept modest so the button stays responsive: search_all fans out across every
+// registered board and applies max_results per source.
+const CRON_MAX_RESULTS = 25;
+
+// The backend answers 409 when the 4h scheduler is mid-scrape. Say so plainly
+// instead of surfacing a bare status code.
+function describeError(err: unknown): string {
+  const message = err instanceof Error ? err.message : "network error";
+  if (message.includes("409")) {
+    return "a scrape is already running (the 4h scheduler holds the lock) - retry when it finishes";
+  }
+  return message;
+}
+
 export default function App() {
   // Navigation View State
   const [currentView, setCurrentView] = useState<NavView>("pipeline");
@@ -60,6 +82,10 @@ export default function App() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>(initialOpportunities);
   const [applicantProfile, setApplicantProfile] = useState<ApplicantProfile>(initialApplicantProfile);
   const [isLoading, setIsLoading] = useState(true);
+  // Set when a backend read fails. The old behaviour was a console.warn plus a
+  // silent fall back to mockData, which is how a broken /jobs proxy went unnoticed:
+  // the dashboard looked populated and nothing anywhere said the data was fake.
+  const [dataLoadError, setDataLoadError] = useState<string | null>(null);
 
   // Automation Settings (Right Sidebar)
   const [settings, setSettings] = useState<AutomationSettings>(defaultSettings);
@@ -75,62 +101,84 @@ export default function App() {
   const [signOffOpportunity, setSignOffOpportunity] = useState<Opportunity | null>(null);
   const [showNotificationToast, setShowNotificationToast] = useState<string | null>(null);
 
+  // Re-read the job store. Shared by first paint and by every post-scrape reload.
+  // A successful read always wins, including when the store is genuinely empty --
+  // rendering mock rows because the backend had nothing would be a second lie.
+  const loadJobs = useCallback(async (): Promise<number> => {
+    const jobsRes = await api.listJobs();
+    const jobs = jobsRes.jobs ?? [];
+    setOpportunities(jobs);
+    setDataLoadError(null);
+    return jobs.length;
+  }, []);
+
   // Load data from backend on mount
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const [jobsRes, profilesRes] = await Promise.all([
-          api.listJobs({ limit: 200 }),
-          api.listProfiles(),
-        ]);
-        if (jobsRes.jobs && jobsRes.jobs.length > 0) {
-          setOpportunities(jobsRes.jobs);
-        }
+        await loadJobs();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "unknown error";
+        setDataLoadError(
+          `Could not load jobs from the Athena backend (${message}). These are seed rows, not live data -- check that uvicorn is running on port 8000.`
+        );
+      } finally {
+        setIsLoading(false);
+      }
+
+      // The applicant profile is non-fatal: jobs still render without it, and the
+      // jobs error banner is the one worth a user's attention.
+      try {
+        const profilesRes = await api.listProfiles();
         if (profilesRes && profilesRes.length > 0) {
           setApplicantProfile(profilesRes[0]);
         }
       } catch (err) {
-        console.warn("Failed to load backend data, using mock:", err);
-      } finally {
-        setIsLoading(false);
+        console.warn("Failed to load applicant profile:", err);
       }
     };
     loadData();
-  }, []);
+  }, [loadJobs]);
 
-  // Backend-backed cron cycle: hits the same live-scrape endpoint the Scraper view uses
+  // Real scrape chain. /scrape writes unscored jobs and returns a ScrapeJob record
+  // rather than jobs, so /process has to run before the reload or the new rows
+  // arrive with no ats_score and look like poor matches.
+  const runScrapeCycle = async (
+    type: "job" | "consultancy" | "all",
+    opts: { query: string; location?: string; jobType?: string; maxResults?: number } = { query: "" }
+  ): Promise<string> => {
+    const scrape = await api.triggerScrape({
+      query: opts.query,
+      ...(opts.location ? { location: opts.location } : {}),
+      ...(opts.jobType ? { job_type: opts.jobType } : {}),
+      max_results: opts.maxResults ?? CRON_MAX_RESULTS,
+    });
+    await api.processJobs();
+    const inPipeline = await loadJobs();
+    return `${scrape.jobsFound} found, ${scrape.jobsNew} new, ${inPipeline} in pipeline`;
+  };
+
+  // Backend-backed cron cycle. Runs the real scraper, not the AI-synthesis
+  // fallback that /api/ai/scrape-live returns when no Gemini key is configured.
   const runCronCycle = async (type: "job" | "consultancy" | "all") => {
     if (cronInFlightRef.current) return;
     cronInFlightRef.current = true;
     setCronFiring(true);
 
     const label = type.toUpperCase();
-    const searchType = type === "job" ? "jobs" : type === "consultancy" ? "consultancies" : "all";
     try {
-      const res = await fetch("/api/ai/scrape-live", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          locationFilter: "all",
-          searchType,
-          resumeSkills: applicantProfile.skills,
-        }),
+      const summary = await runScrapeCycle(type, {
+        query: CRON_QUERIES[type],
+        ...(type === "all" ? {} : { jobType: type }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const count = Array.isArray(data.listings) ? data.listings.length : 0;
-      setShowNotificationToast(
-        `4-Hour ${label} cron cycle completed - ${count} new listings discovered.`
-      );
-      setTimeout(() => setShowNotificationToast(null), 5000);
+      setShowNotificationToast(`4-Hour ${label} cron cycle completed - ${summary}.`);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "network error";
-      setShowNotificationToast(`4-Hour ${label} cron cycle failed - ${message}.`);
-      setTimeout(() => setShowNotificationToast(null), 5000);
+      setShowNotificationToast(`4-Hour ${label} cron cycle failed - ${describeError(err)}.`);
     } finally {
       cronInFlightRef.current = false;
       setCronFiring(false);
+      setTimeout(() => setShowNotificationToast(null), 6000);
     }
   };
 
@@ -190,17 +238,6 @@ export default function App() {
     );
   };
 
-  // Add freshly scraped listings
-  const handleAddListings = (newListings: Opportunity[]) => {
-    setOpportunities((prev) => {
-      const existingIds = new Set(prev.map((o) => o.id));
-      const filteredNew = newListings.filter((n) => !existingIds.has(n.id));
-      return [...filteredNew, ...prev];
-    });
-    setShowNotificationToast(`Added ${newListings.length} newly discovered positions.`);
-    setTimeout(() => setShowNotificationToast(null), 4000);
-  };
-
   // Submission Success Handler
   const handleSubmitSuccess = (oppId: string, receipt: ApplicationReceipt) => {
     setOpportunities((prev) =>
@@ -228,6 +265,24 @@ export default function App() {
         <div className="fixed top-4 right-4 z-50 bg-[#18181B] text-white px-4 py-2.5 rounded-xl shadow-xl border border-[#3E4452] flex items-center gap-2.5 text-xs animate-in fade-in slide-in-from-top-2 duration-300">
           <Sparkles className="w-4 h-4 text-[#F97316]" />
           <span>{showNotificationToast}</span>
+        </div>
+      )}
+
+      {/* Live-data failure banner. Deliberately loud: the previous silent
+          mockData fallback is what let a dead /jobs proxy look healthy. */}
+      {dataLoadError && (
+        <div className="sticky top-0 z-40 bg-red-600 text-white px-4 py-2.5 text-xs flex items-start gap-2.5 shadow-lg">
+          <AlertCircle className="w-4 h-4 mt-px shrink-0" />
+          <div className="flex-1">
+            <span className="font-semibold">Pipeline is not live.</span> {dataLoadError}
+          </div>
+          <button
+            onClick={() => setDataLoadError(null)}
+            className="shrink-0 underline hover:no-underline"
+            aria-label="Dismiss"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -353,16 +408,12 @@ export default function App() {
             {currentView === "scraper" && (
               <ScraperDiscoveryView
                 opportunities={opportunities}
-                applicantProfile={applicantProfile}
                 onOpenDetails={(opp) => setDetailModalOpp(opp)}
                 onOpenDocumentStudio={(opp) => {
                   setSelectedOpportunity(opp);
                   setCurrentView("documents");
                 }}
-                onAddListings={handleAddListings}
-                onScoreAts={(opp) => {
-                  setDetailModalOpp(opp);
-                }}
+                onReloadJobs={loadJobs}
               />
             )}
 

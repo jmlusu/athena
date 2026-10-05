@@ -5,8 +5,8 @@ Bypasses Windows shell environment variable inheritance issues.
 """
 
 import os
-import sys
 import subprocess
+import sys
 
 
 def main():

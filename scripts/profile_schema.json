@@ -1,0 +1,732 @@
+{
+  "email": "jmlusu@gmail.com",
+  "full_name": "Jacob Raymond \"Jack\" Mlusu",
+  "phone": "(+265) 0980016004",
+  "location": "Lilongwe, Malawi / Remote (also Washington, D.C.)",
+  "linkedin_url": "https://www.linkedin.com/in/jack-mlusu-50027428/",
+  "headline": "Digital Transformation & Strategy Executive · AI, Data & Technology Leader · Enterprise Architecture · Strategy, Delivery & Innovation",
+  "summary": "Strategy and digital transformation executive with 20+ years of experience spanning management consulting, technology strategy, enterprise and data architecture, applied research, and large-scale digital transformation. Experienced in translating business and organizational priorities into technology strategies, data platforms, analytics capabilities, operating models, and practical implementation roadmaps. Brings experience across public, private, healthcare, telecommunications, financial services, energy, and international development environments, with growing specialization in AI, agentic systems, and AI-enabled transformation.",
+  "skills": [
+    {
+      "name": "AI Strategy",
+      "category": "AI & Automation"
+    },
+    {
+      "name": "Generative AI",
+      "category": "AI & Automation"
+    },
+    {
+      "name": "Agentic AI",
+      "category": "AI & Automation"
+    },
+    {
+      "name": "Multi-Agent Systems",
+      "category": "AI & Automation"
+    },
+    {
+      "name": "Workflow Automation",
+      "category": "AI & Automation"
+    },
+    {
+      "name": "Self-Service Market Intelligence",
+      "category": "AI & Automation"
+    },
+    {
+      "name": "Enterprise Data Architecture",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "Data Governance",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "Data Integration",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "Data Analytics",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "BI (Tableau",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "Power BI",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "Looker)",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "Data Modeling",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "ETL",
+      "category": "Data & Analytics"
+    },
+    {
+      "name": "AWS",
+      "category": "Cloud Platforms"
+    },
+    {
+      "name": "Azure",
+      "category": "Cloud Platforms"
+    },
+    {
+      "name": "GCP",
+      "category": "Cloud Platforms"
+    },
+    {
+      "name": "Systems Integration",
+      "category": "Enterprise Architecture"
+    },
+    {
+      "name": "Cloud Migration",
+      "category": "Enterprise Architecture"
+    },
+    {
+      "name": "Legacy System Migration",
+      "category": "Enterprise Architecture"
+    },
+    {
+      "name": "Technical Governance",
+      "category": "Enterprise Architecture"
+    },
+    {
+      "name": "Agile",
+      "category": "Methodologies"
+    },
+    {
+      "name": "Scrum",
+      "category": "Methodologies"
+    },
+    {
+      "name": "DevOps",
+      "category": "Methodologies"
+    },
+    {
+      "name": "Lean",
+      "category": "Methodologies"
+    },
+    {
+      "name": "Process Optimization",
+      "category": "Methodologies"
+    },
+    {
+      "name": "DHIS2",
+      "category": "Domain Systems"
+    },
+    {
+      "name": "iCHIS",
+      "category": "Domain Systems"
+    },
+    {
+      "name": "Veeva Vault RIM",
+      "category": "Domain Systems"
+    },
+    {
+      "name": "Salesforce",
+      "category": "Domain Systems"
+    },
+    {
+      "name": "CMS",
+      "category": "Domain Systems"
+    },
+    {
+      "name": "Reaction Kinetics",
+      "category": "Chemical Engineering"
+    },
+    {
+      "name": "Mass Transfer",
+      "category": "Chemical Engineering"
+    },
+    {
+      "name": "Advanced Oxidation",
+      "category": "Chemical Engineering"
+    },
+    {
+      "name": "Environmental Remediation",
+      "category": "Chemical Engineering"
+    },
+    {
+      "name": "Process Modeling (MATLAB)",
+      "category": "Chemical Engineering"
+    },
+    {
+      "name": "Bioprocess",
+      "category": "Chemical Engineering"
+    },
+    {
+      "name": "GMP",
+      "category": "Chemical Engineering"
+    },
+    {
+      "name": "Python",
+      "category": "Languages & Tools"
+    },
+    {
+      "name": "SQL",
+      "category": "Languages & Tools"
+    },
+    {
+      "name": "MATLAB",
+      "category": "Languages & Tools"
+    },
+    {
+      "name": "R",
+      "category": "Languages & Tools"
+    }
+  ],
+  "experience": [
+    {
+      "title": "Founder / Digital Transformation and Agentic AI Strategy Leader",
+      "company": "Lightspeed Holdings Limited",
+      "location": "Lilongwe, Malawi",
+      "start_date": "2023-11-01T00:00:00+00:00",
+      "end_date": null,
+      "current": true,
+      "description": "Founder / Digital Transformation and Agentic AI Strategy Leader",
+      "achievements": [
+        "Founded and building Lightspeed Holdings — early-stage technology venture focused on AI-enabled workflow automation and self-service market intelligence for organizations in Malawi and the SADC region.",
+        "Developing product strategy, customer discovery, solution design, and early-stage development while testing opportunities and refining the business model.",
+        "Working with private-sector, development, and government stakeholders to explore practical applications of AI, digital transformation, and data-driven decision-making.",
+        "Translating emerging customer needs into prototype digital products that reduce manual work, improve access to information, and support better organizational decisions.",
+        "Balancing product development, market validation, advisory engagements, partnerships, and a scalable operating model."
+      ],
+      "skills_used": [
+        "AI Strategy",
+        "Generative AI",
+        "Agentic AI",
+        "Multi-Agent Systems",
+        "Workflow Automation",
+        "Business Process Optimization",
+        "Management Consulting",
+        "Product Strategy",
+        "Executive Advisory",
+        "Startup Development"
+      ]
+    },
+    {
+      "title": "Global Data Architect / Director of Data Systems",
+      "company": "Last Mile Health",
+      "location": "Lilongwe, Malawi",
+      "start_date": "2021-11-01T00:00:00+00:00",
+      "end_date": "2025-03-01T00:00:00+00:00",
+      "current": false,
+      "description": "Led strategic technology decisions and data architecture for global Monitoring, Evaluation, Research, and Learning (MERL) initiatives across multiple countries.",
+      "achievements": [
+        "Data Architecture & Platform Leadership: Led Last Mile Data 2.0 (LMD 2.0) — organization-wide data management and analytics web application from planning through implementation; end-to-end architecture, vendor selection, digital health data portals for national community health programs.",
+        "Cloud & Technology Strategy: Technical strategy and cloud solution design (BI, CMS, data storage) on AWS; reduced reporting latency for field operations with real-time data access.",
+        "Data Governance & Analytics: Enterprise data governance frameworks, data integration strategies, and BI capabilities; actionable insights for senior leadership and donors.",
+        "Program Leadership: Product backlogs, roadmap prioritization, ministry/donor/field stakeholder alignment; AWS Health Equity Initiative grant reporting; MIS and KPI tools.",
+        "Team Development: Managed and mentored cross-functional team of software engineers, data analysts, and technical consultants.",
+        "National Health Information Systems: Led iCHIS and DHIS2 integration supporting Malawi's community health programs."
+      ],
+      "skills_used": [
+        "Enterprise Data Architecture",
+        "Data Governance",
+        "Data Integration",
+        "Data Analytics",
+        "BI",
+        "Digital Transformation",
+        "Digital Health Systems",
+        "MEL Technology",
+        "ICT4D",
+        "DHIS2",
+        "iCHIS",
+        "AWS/Azure",
+        "Program Management",
+        "Capacity Building",
+        "Stakeholder Management",
+        "Agile"
+      ]
+    },
+    {
+      "title": "Digital Business Integration Consultant / Practitioner",
+      "company": "Accenture",
+      "location": "Washington, D.C.",
+      "start_date": "2012-10-01T00:00:00+00:00",
+      "end_date": "2021-11-01T00:00:00+00:00",
+      "current": false,
+      "description": "Delivered enterprise-grade digital transformation, data architecture, systems integration, and analytics solutions for Fortune 500 and public-sector clients across healthcare, pharmaceuticals, telecommunications, financial services, government, and utilities. Led multi-million-dollar technology integration workstreams and cross-functional teams.",
+      "achievements": [
+        "Enterprise Architecture & Integration: Multi-million-dollar integration workstreams; real-time synchronization architectures for global pharma (e.g., Veeva Vault RIM); system architecture audits; technical governance standards.",
+        "Analytics & Decision Intelligence: Analytics for global telecom IoT operations; executive performance metrics; Verizon 5G rollout reporting; Comcast Xfinity platform modernization.",
+        "Pre-Sales & Solution Design: Executive pre-sales, solutioning, effort estimation, pricing for multi-million-dollar digital transformation proposals; ACA marketplace product requirements SME.",
+        "Data Engineering & Migration: ETL for financial budgeting and enterprise operational data; cloud migration and enterprise data management (Bank of America, AmerisourceBergen).",
+        "Program Leadership: Cross-functional teams across Agile and DevOps; PMO governance; executive client relationships."
+      ],
+      "skills_used": [
+        "Digital Transformation",
+        "Enterprise Architecture",
+        "Technology Strategy",
+        "Data Architecture",
+        "Management Consulting",
+        "Systems Integration",
+        "Program Management",
+        "Pre-Sales",
+        "Cloud Migration",
+        "ETL",
+        "Veeva Vault",
+        "Agile & Scrum",
+        "DevOps"
+      ]
+    },
+    {
+      "title": "Lead Research Associate",
+      "company": "Howard University",
+      "location": "Washington, D.C.",
+      "start_date": "2008-11-01T00:00:00+00:00",
+      "end_date": "2012-10-01T00:00:00+00:00",
+      "current": false,
+      "description": "Led research projects developing novel engineering processes for hazardous waste treatment (advanced oxidation and reduction for environmental remediation).",
+      "achievements": [
+        "Research Leadership: Hexavalent chromium [Cr(VI)] and trichloroethylene (TCE) remediation; reaction kinetic models for simultaneous reduction in aqueous and soil systems.",
+        "Team Management: Managed team of 5 researchers; process design, laboratory operations, safety, budgets, procurement.",
+        "Publications: 3 peer-reviewed AIChE Annual Meeting papers (San Francisco 2013; Minneapolis 2011); ACS National Meeting proceedings (Denver, 2011); M.S. thesis on redox reaction kinetics.",
+        "Awards: Research awards for environmental engineering research at AIChE Annual Meetings.",
+        "Technical: Reaction kinetics, mass transfer, advanced oxidation, process modeling (MATLAB)."
+      ],
+      "skills_used": [
+        "Chemical Engineering",
+        "Environmental Engineering",
+        "R&D",
+        "Process Design",
+        "Reaction Kinetics",
+        "Data Modeling",
+        "Team Leadership",
+        "MATLAB",
+        "Peer-Reviewed Publications"
+      ]
+    },
+    {
+      "title": "Technology Transfer Associate",
+      "company": "MedImmune (AstraZeneca)",
+      "location": "Gaithersburg, MD",
+      "start_date": "2007-08-01T00:00:00+00:00",
+      "end_date": "2008-11-01T00:00:00+00:00",
+      "current": false,
+      "description": "Technology Transfer Associate",
+      "achievements": [
+        "Executed technology transfer protocols for therapeutic pharmaceutical and vaccine manufacturing (R&D → commercial).",
+        "Modeled, simulated, and optimized plant-floor bioprocesses for efficiency and yield.",
+        "Authored SOPs for GMP regulatory compliance and quality assurance."
+      ],
+      "skills_used": [
+        "Technology Transfer",
+        "Bioprocess Engineering",
+        "GMP",
+        "SOP Development",
+        "Process Simulation",
+        "QA",
+        "Life Sciences"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Howard University",
+      "degree": "Master of Science in Chemical Engineering",
+      "field_of_study": "Chemical Engineering",
+      "location": "Washington, D.C.",
+      "start_date": null,
+      "end_date": "2011-12-14T00:00:00+00:00",
+      "gpa": null,
+      "honors": []
+    },
+    {
+      "institution": "University of South Alabama",
+      "degree": "Bachelor of Science in Chemical Engineering",
+      "field_of_study": "Chemical Engineering",
+      "location": null,
+      "start_date": "2005-01-01T00:00:00+00:00",
+      "end_date": "2009-12-31T00:00:00+00:00",
+      "gpa": null,
+      "honors": []
+    }
+  ],
+  "certifications": [
+    "Google AI Essentials (Google, 2025)",
+    "Stay Ahead of the AI Curve (Google, 2025)",
+    "Udemy: ChatGPT Ethically — Certificate of Completion — Jacob Mlusu.pdf",
+    "Udemy: Prompt Engineering for AI Bootcamp Certification.pdf",
+    "Introduction to Python Training Certificate — Jacob Mlusu.pdf",
+    "Statistical Thinking in Python (Part 1) Training Certificate — Jacob Mlusu.pdf",
+    "Statistical Thinking in Python (Part 2) Training Certificate — Jacob Mlusu.pdf",
+    "Case Studies in Statistical Thinking Training Certificate — Jacob Mlusu.pdf",
+    "Introduction to Natural Language Processing in Python Training Certificate — Jacob Mlusu.pdf",
+    "Image Modeling with Keras Training Certificate — Jacob Mlusu.pdf",
+    "Machine Learning for Time Series Data in Python Training Certificate — Jacob Mlusu.pdf",
+    "Unsupervised Learning in Python Training Certificate — Jacob Mlusu.pdf",
+    "Introduction to Deep Learning in Python (resume list)",
+    "Informatica University Certificate — Jacob Mlusu.pdf",
+    "Informatica Data Integration Specialist",
+    "Informatica Certified Developer",
+    "Splunk User Certification.pdf",
+    "Splunk Power User Certification.pdf",
+    "Splunk Super User",
+    "Tableau Desktop Intermediate II",
+    "McKinsey — Ability to Execute",
+    "NFUC Certificate.jpg",
+    "American Institute of Chemical Engineers 3rd Place Certificate Jacob Mlusu.pdf",
+    "Mission Data Certificate of Exceptional Support (7 Oct 2020) — see awards.md"
+  ],
+  "languages": [
+    "English (Fluent)",
+    "Chichewa (Native)"
+  ],
+  "preferences": {
+    "keywords": [
+      "Chief Technology Officer (CTO)",
+      "Chief Data Officer (CDO)",
+      "Chief Innovation Officer",
+      "Director",
+      "Director of Digital Transformation",
+      "Director of IT Strategy & Innovation",
+      "Head of Information Systems",
+      "PMO Director",
+      "Enterprise Architect",
+      "ICT Strategy Consultant",
+      "Digital Health Systems Director",
+      "Head of Data Governance & Architecture",
+      "Head of MEL Systems",
+      "Director of Business Intelligence",
+      "Director of Information Management and Analytics",
+      "Technical Advisor – Data Systems",
+      "ICT4D Lead",
+      "Monitoring, Evaluation & Learning (MEL) Technology Lead",
+      "Digital Platforms Implementation Lead",
+      "Data Integration & Systems Advisor",
+      "Strategic Technology Partnerships Lead",
+      "Data & AI Strategy Advisor",
+      "Climate Data Systems Lead",
+      "AI Engineer",
+      "Digital Transformation",
+      "Project Management",
+      "Data Architecture",
+      "Business Intelligence",
+      "Monitoring & Evaluation (M&E)",
+      "Data Analytics",
+      "Cloud Platforms (AWS/Azure)",
+      "Enterprise Systems",
+      "ICT Strategy",
+      "Agile Methodology",
+      "System Integration",
+      "Data Governance",
+      "ETL Development",
+      "Team Leadership",
+      "Capacity Building",
+      "Web-Based Portals",
+      "Technology Advisory",
+      "Strategic Planning",
+      "Process Optimization",
+      "Cross-Sector Experience",
+      "AI-Native Consultancy",
+      "Digital Development Consulting",
+      "Agentic AI",
+      "Multi-Agent Systems",
+      "Generative AI",
+      "AI for Business",
+      "Strategy & Transformation",
+      "AI Strategy",
+      "Technology Strategy",
+      "Data Strategy",
+      "Enterprise Architecture",
+      "Digital Architecture",
+      "Data Integration",
+      "Cloud Architecture",
+      "AWS",
+      "Azure",
+      "ETL",
+      "Analytics",
+      "Power BI",
+      "Tableau",
+      "Qlik",
+      "Agile",
+      "DevOps",
+      "Program Management",
+      "Management Consulting",
+      "Executive Advisory",
+      "Business Process Transformation",
+      "Technology Roadmapping",
+      "Solution Architecture",
+      "Systems Integration",
+      "MERL",
+      "Stakeholder Management",
+      "Pre-Sales",
+      "Solution Design",
+      "software engineer",
+      "consultant",
+      "remote",
+      "data engineer",
+      "project manager",
+      "systems architecture",
+      "technical program management",
+      "microservices",
+      "API design",
+      "data pipelines",
+      "PostgreSQL",
+      "DHIS2",
+      "M&E systems",
+      "health information systems",
+      "supply chain management",
+      "public sector procurement",
+      "donor reporting",
+      "USAID",
+      "UNDP",
+      "EU",
+      "Global Fund",
+      "M&E frameworks",
+      "Malawi regulatory",
+      "SADC regional",
+      "government digital services",
+      "e-government",
+      "technical program director",
+      "principal consultant",
+      "distributed teams",
+      "remote team management",
+      "multi-country programs",
+      "budget management",
+      "government relations",
+      "multi-lateral coordination",
+      "Scrum",
+      "PRINCE2",
+      "PMP",
+      "M&E",
+      "n8n",
+      "workflow automation",
+      "REST APIs",
+      "React",
+      "TypeScript",
+      "Node.js",
+      "Python",
+      "data visualization",
+      "dashboard design",
+      "Chief Technology Officer",
+      "CTO",
+      "Chief Data Officer",
+      "CDO",
+      "Chief Digital Transformation Officer",
+      "MEL Technology Lead",
+      "Cloud Platforms",
+      "AI Strategy Manager",
+      "AI Transformation Manager",
+      "AI Program Director",
+      "AI Program Manager",
+      "AI Portfolio Director",
+      "AI Portfolio Manager",
+      "AI Innovation Director",
+      "AI Innovation Manager",
+      "AI Solutions Director",
+      "AI Solutions Lead",
+      "AI Solutions Architect",
+      "AI Platform Director",
+      "AI Product Director",
+      "AI Product Manager",
+      "AI Program Lead",
+      "AI Adoption Lead",
+      "AI Enablement Lead",
+      "AI Governance Lead",
+      "Responsible AI Lead",
+      "Agentic AI Lead",
+      "Agentic AI Strategy Lead",
+      "Agentic AI Program Lead",
+      "AI Automation Lead",
+      "Intelligent Automation Director",
+      "Intelligent Automation Lead",
+      "Automation Strategy Lead",
+      "Automation Transformation Manager",
+      "AI Operating Model Lead",
+      "AI Operating Model Director",
+      "AI Transformation Office Lead",
+      "AI Centre of Excellence Lead",
+      "AI Centre of Excellence Director",
+      "AI Capability Lead",
+      "AI Adoption Manager",
+      "Business Transformation Director",
+      "Business Transformation Lead",
+      "Business Transformation Manager",
+      "Enterprise Transformation Lead",
+      "Enterprise Transformation Manager",
+      "Transformation Programme Director",
+      "Transformation Programme Manager",
+      "Transformation Portfolio Director",
+      "Transformation Portfolio Manager",
+      "Strategic Transformation Lead",
+      "Strategic Transformation Manager",
+      "Enterprise Strategy Director",
+      "Enterprise Strategy Lead",
+      "Corporate Transformation Lead",
+      "Business Strategy & Transformation Lead",
+      "Digital Business Director",
+      "Digital Business Lead",
+      "Digital Innovation Director",
+      "Digital Innovation Lead",
+      "Digital Innovation Manager",
+      "Digital Strategy Manager",
+      "Digital Programme Director",
+      "Digital Programme Manager",
+      "Digital Portfolio Director",
+      "Digital Operating Model Lead",
+      "Digital Capability Director",
+      "Digital Capability Lead",
+      "Digital Enablement Director",
+      "Digital Enablement Lead",
+      "Digital Excellence Lead",
+      "Data Strategy Director",
+      "Data Strategy Lead",
+      "Data Transformation Lead",
+      "Data Transformation Manager",
+      "Data Programme Director",
+      "Data Programme Manager",
+      "Data Platform Lead",
+      "Data Platform Director",
+      "Enterprise Data Lead",
+      "Enterprise Data Manager",
+      "Information Strategy Director",
+      "Information Strategy Lead",
+      "Data Management Director",
+      "Data Management Lead",
+      "Analytics Strategy Lead",
+      "Solution Architecture Director",
+      "Solution Architecture Lead",
+      "Technology Architecture Lead",
+      "Technology Architecture Manager",
+      "Cloud Strategy Lead",
+      "Cloud Transformation Lead",
+      "Enterprise Systems Director",
+      "Enterprise Systems Lead",
+      "Technology Portfolio Director",
+      "Technology Portfolio Manager",
+      "Strategic Advisory Director",
+      "Strategy & Innovation Director",
+      "Strategy & Innovation Lead",
+      "Technology Advisory Director",
+      "Technology Advisory Lead",
+      "Digital Advisory Lead",
+      "Transformation Advisory Lead",
+      "Strategic Initiatives Director",
+      "Strategic Initiatives Lead",
+      "Enterprise Program Director"
+    ],
+    "excluded_keywords": [],
+    "locations": [
+      "Lilongwe, Malawi",
+      "Remote",
+      "Washington, D.C."
+    ],
+    "job_types": [
+      "full_time",
+      "contract"
+    ],
+    "min_salary": null,
+    "preferred_sources": [
+      "linkedin",
+      "indeed",
+      "glassdoor"
+    ],
+    "remote_only": false,
+    "visa_sponsorship_required": false,
+    "job_titles": [
+      "Chief Technology Officer",
+      "Chief Data Officer",
+      "Chief Innovation Officer",
+      "Director",
+      "Director of Digital Transformation"
+    ],
+    "keywords_category": "executive",
+    "executive_keywords": [
+      "Chief Technology Officer (CTO)",
+      "Chief Data Officer (CDO)",
+      "Chief Innovation Officer",
+      "Director",
+      "Director of Digital Transformation",
+      "Director of IT Strategy & Innovation",
+      "Head of Information Systems",
+      "PMO Director",
+      "Enterprise Architect",
+      "ICT Strategy Consultant",
+      "Digital Health Systems Director",
+      "Head of Data Governance & Architecture",
+      "Head of MEL Systems",
+      "Director of Business Intelligence",
+      "Director of Information Management and Analytics",
+      "Technical Advisor – Data Systems",
+      "ICT4D Lead",
+      "Monitoring, Evaluation & Learning (MEL) Technology Lead",
+      "Digital Platforms Implementation Lead",
+      "Data Integration & Systems Advisor",
+      "Strategic Technology Partnerships Lead",
+      "Data & AI Strategy Advisor",
+      "Climate Data Systems Lead",
+      "AI Engineer"
+    ],
+    "functional_keywords": [
+      "Digital Transformation",
+      "Project Management",
+      "Data Architecture",
+      "Business Intelligence",
+      "Monitoring & Evaluation (M&E)",
+      "Data Analytics",
+      "Cloud Platforms (AWS/Azure)",
+      "Enterprise Systems",
+      "ICT Strategy",
+      "Agile Methodology",
+      "System Integration",
+      "Data Governance",
+      "ETL Development",
+      "Team Leadership",
+      "Capacity Building",
+      "Web-Based Portals",
+      "Technology Advisory",
+      "Strategic Planning",
+      "Process Optimization",
+      "Cross-Sector Experience",
+      "AI-Native Consultancy",
+      "Digital Development Consulting",
+      "Agentic AI",
+      "Multi-Agent Systems",
+      "Generative AI",
+      "AI for Business"
+    ],
+    "core_skill_tags": [
+      "Digital Transformation",
+      "Strategy & Transformation",
+      "AI Strategy",
+      "Agentic AI",
+      "Technology Strategy",
+      "Data Strategy",
+      "Enterprise Architecture",
+      "Data Architecture",
+      "Digital Architecture",
+      "Business Intelligence",
+      "Data Governance",
+      "Data Integration",
+      "Cloud Architecture",
+      "AWS",
+      "Azure",
+      "ETL",
+      "Analytics",
+      "Power BI",
+      "Tableau",
+      "Qlik",
+      "Agile",
+      "DevOps",
+      "Program Management",
+      "Project Management",
+      "Management Consulting",
+      "Executive Advisory",
+      "Business Process Transformation",
+      "Technology Roadmapping",
+      "Solution Architecture",
+      "Systems Integration",
+      "MERL",
+      "Stakeholder Management",
+      "Pre-Sales",
+      "Solution Design"
+    ]
+  }
+}

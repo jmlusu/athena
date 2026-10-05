@@ -3,9 +3,9 @@ from urllib.parse import quote_plus, urljoin
 
 from bs4 import BeautifulSoup
 
+from athena.models import Job, JobSource, JobType
 from athena.timeutils import ensure_utc
 
-from ..models import Job, JobSource, JobType
 from .base import BaseScraper
 
 
@@ -290,7 +290,7 @@ class RemoteOKScraper(BaseScraper):
                         str(item.get("company", "")),
                         " ".join(item.get("tags") or []),
                         str(item.get("description", ""))[:500],
-                    ]
+                    ],
                 ).lower()
                 if terms and not any(t in haystack for t in terms):
                     continue
@@ -321,7 +321,7 @@ class RemoteOKScraper(BaseScraper):
             salary_max = item.get("salary_max")
             salary_range = None
             if salary_min or salary_max:
-                from ..models import SalaryRange
+                from athena.models import SalaryRange
 
                 salary_range = SalaryRange(
                     min=salary_min,
@@ -336,7 +336,7 @@ class RemoteOKScraper(BaseScraper):
             if item.get("date"):
                 try:
                     posted = ensure_utc(
-                        datetime.fromisoformat(str(item["date"]).replace("Z", "+00:00")),
+                        datetime.fromisoformat(str(item["date"])),
                     )
                 except ValueError:
                     posted = None

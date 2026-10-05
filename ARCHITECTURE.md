@@ -74,7 +74,7 @@ graph TB
     %% ===================== INFRA =====================
     subgraph INFRA["Infrastructure & CI/CD"]
         direction TB
-        CICD["<b>GitHub Actions</b><br/>ci.yml (ruff · pytest · lint · build)<br/>e2e.yml (Playwright 5 browsers + visual baselines)<br/>dependabot.yml"]
+        CICD["<b>GitHub Actions</b><br/>ci.yml (ruff · pytest · lint · build)<br/>e2e.yml (Playwright 3 engines + Chrome-only visual)<br/>dependabot.yml (npm + pip)"]
     end
 
     %% ===================== EDGES =====================
@@ -213,3 +213,5 @@ REST/JSON only. **No GraphQL, gRPC, WebSocket, or message queue.**
 3. **Frontend views still use mock data** — `src/App.tsx` loads from backend but falls back to mock; full wiring pending.
 4. **n8n webhook URL** — `ATHENA_N8N_WEBHOOK_URL` not configured; ingress endpoint exists but untested.
 5. **Docker/OCI removed** — `deploy/`, `docker-compose*.yml`, `.dockerignore` deleted; deployment TBD.
+
+

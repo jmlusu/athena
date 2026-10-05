@@ -1,6 +1,27 @@
 export type OpportunityScope = "lilongwe-local" | "lilongwe-remote" | "international-remote";
 export type OpportunityCategory = "job" | "consultancy";
-export type OpportunityPlatform = "LinkedIn" | "Upwork" | "ReliefWeb" | "Corporate" | "Devex" | "MyJobo";
+// Mirrors every JobSource member in backend/src/athena/models/enums.py so a real
+// scraped job always has a platform the UI can render. ReliefWeb and Devex are
+// retained because mockData.ts still emits them; they are not JobSource members.
+export type OpportunityPlatform =
+  | "LinkedIn"
+  | "Indeed"
+  | "Glassdoor"
+  | "Upwork"
+  | "Toptal"
+  | "Freelancer"
+  | "Guru"
+  | "PeoplePerHour"
+  | "RemoteOK"
+  | "WeWorkRemotely"
+  | "Remote.co"
+  | "MyJobo"
+  | "MalawiWork"
+  | "JobsMalawi"
+  | "ReliefWeb"
+  | "Devex"
+  | "Corporate"
+  | "Other";
 export type PipelineStatus = 
   | "discovered"
   | "evaluated"
@@ -167,11 +188,24 @@ export interface PipelineStats {
   funnel: { stage: string; count: number }[];
 }
 
+// Mirrors FastAPI's ScrapeJobResponse as the BFF camelCases it. Note there is no
+// `jobId`: /scrape records the scrape run, not the jobs it wrote, so callers must
+// reload /jobs to see results.
 export interface ScrapeJobResponse {
-  jobId: string;
+  id: string;
+  source: string;
+  query: string | null;
+  location: string | null;
+  jobType: string | null;
+  maxResults: number;
   status: string;
   jobsFound: number;
   jobsNew: number;
+  jobsUpdated: number;
+  error: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
 }
 
 export interface MatchJobsResponse {
@@ -230,6 +264,17 @@ export interface ScrapeLiveRequest {
   searchType: "jobs" | "consultancies" | "all";
   keywords?: string;
   resumeSkills: string[];
+}
+
+// The real scraper at POST /api/v1/athena/scrape. Distinct from ScrapeLiveRequest
+// above, which is the AI-synthesis fallback and returns fabricated listings.
+export interface ScrapeRequestBody {
+  query: string;
+  location?: string;
+  job_type?: string;
+  max_results?: number;
+  sources?: string[];
+  user_profile_id?: string;
 }
 
 export interface ScrapeLiveResponse {

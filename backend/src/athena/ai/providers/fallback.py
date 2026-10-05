@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from athena.ai.providers.base import AthenaAIProvider
 from athena.api.ai_schemas import (
     ATSScoreRequest,
     ATSScoreResponse,
@@ -11,9 +12,9 @@ from athena.api.ai_schemas import (
     N8nDispatchRequest,
     N8nDispatchResponse,
     N8nReceipt,
+    ScrapeLiveListing,
     ScrapeLiveRequest,
     ScrapeLiveResponse,
-    ScrapeLiveListing,
     SubmitApplicationRequest,
     SubmitApplicationResponse,
     TailorDocumentRequest,
@@ -21,7 +22,6 @@ from athena.api.ai_schemas import (
     TailorResumeRequest,
     TailorResumeResponse,
 )
-from athena.ai.providers.base import AthenaAIProvider
 
 
 class FallbackProvider(AthenaAIProvider):
@@ -465,7 +465,7 @@ class FallbackProvider(AthenaAIProvider):
             ],
             receipt=N8nReceipt(
                 items_handled=len(
-                    request.payload.get("items") or request.payload.get("job_ids") or []
+                    request.payload.get("items") or request.payload.get("job_ids") or [],
                 )
                 or 1,
                 target_action=request.payload.get("action", "AUTO_GENERATE_DOCUMENTS"),
@@ -473,7 +473,8 @@ class FallbackProvider(AthenaAIProvider):
         )
 
     async def submit_application(
-        self, request: SubmitApplicationRequest
+        self,
+        request: SubmitApplicationRequest,
     ) -> SubmitApplicationResponse:
         """Generate receipt (no actual submission)."""
         import base64
@@ -483,7 +484,7 @@ class FallbackProvider(AthenaAIProvider):
         confirmation_hash = (
             "SHA256-"
             + base64.b64encode(
-                f"{request.application_id}:{request.applicant_name}:{datetime.now(UTC).timestamp()}".encode()
+                f"{request.application_id}:{request.applicant_name}:{datetime.now(UTC).timestamp()}".encode(),
             ).decode()[:16]
         )
 

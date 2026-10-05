@@ -5,7 +5,7 @@ from typing import Optional
 
 import numpy as np
 
-from ..paths import get_data_root
+from athena.paths import get_data_root
 
 
 class EmbeddingCache:

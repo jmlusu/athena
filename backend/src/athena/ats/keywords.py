@@ -122,14 +122,14 @@ def extract_keywords_from_text(text: str, industry: str | None = None) -> list[s
 
     # Use industry-specific keywords if provided
     if industry and industry in INDUSTRY_KEYWORDS:
-        for _category, terms in INDUSTRY_KEYWORDS[industry].items():
+        for terms in INDUSTRY_KEYWORDS[industry].values():
             for term in terms:
                 if term in text_lower:
                     keywords.add(term)
     else:
         # Use all industries
         for ind_keywords in INDUSTRY_KEYWORDS.values():
-            for _category, terms in ind_keywords.items():
+            for terms in ind_keywords.values():
                 for term in terms:
                     if term in text_lower:
                         keywords.add(term)
@@ -148,7 +148,7 @@ def extract_keywords_from_text(text: str, industry: str | None = None) -> list[s
     acronyms = re.findall(r"\b[A-Z]{3,}\b", text)
     keywords.update([a.lower() for a in acronyms])
 
-    return sorted(list(keywords))
+    return sorted(keywords)
 
 
 def get_keyword_frequency(texts: list[str], industry: str | None = None) -> dict[str, int]:
@@ -171,8 +171,8 @@ def compare_keywords(keywords1: list[str], keywords2: list[str]) -> dict[str, An
     set2 = set(keywords2)
 
     return {
-        "common": sorted(list(set1 & set2)),
-        "only_in_first": sorted(list(set1 - set2)),
-        "only_in_second": sorted(list(set2 - set1)),
+        "common": sorted(set1 & set2),
+        "only_in_first": sorted(set1 - set2),
+        "only_in_second": sorted(set2 - set1),
         "jaccard_similarity": len(set1 & set2) / len(set1 | set2) if (set1 | set2) else 0,
     }

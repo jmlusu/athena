@@ -17,25 +17,26 @@ import {
   Database,
   Cpu,
 } from "lucide-react";
-import { Opportunity, OpportunityScope, OpportunityCategory, ApplicantProfile } from "../../types";
+import { Opportunity, OpportunityScope, OpportunityCategory } from "../../types";
+import { api } from "../../api";
 import { CircularGauge } from "../charts/CircularGauge";
 
 interface ScraperDiscoveryViewProps {
   opportunities: Opportunity[];
-  applicantProfile: ApplicantProfile;
   onOpenDetails: (opp: Opportunity) => void;
   onOpenDocumentStudio: (opp: Opportunity) => void;
-  onAddListings: (newListings: Opportunity[]) => void;
-  onScoreAts: (opp: Opportunity) => void;
+  onReloadJobs: () => Promise<number>;
 }
+
+// The backend fans out across every registered board and applies max_results per
+// source, so keep this modest enough that the button stays responsive.
+const LIVE_SCRAPE_MAX_RESULTS = 25;
 
 export const ScraperDiscoveryView: React.FC<ScraperDiscoveryViewProps> = ({
   opportunities,
-  applicantProfile,
   onOpenDetails,
   onOpenDocumentStudio,
-  onAddListings,
-  onScoreAts,
+  onReloadJobs,
 }) => {
   const [activeScope, setActiveScope] = useState<OpportunityScope | "all">("all");
   const [activeCategory, setActiveCategory] = useState<OpportunityCategory | "all">("all");
@@ -52,45 +53,52 @@ export const ScraperDiscoveryView: React.FC<ScraperDiscoveryViewProps> = ({
     return true;
   });
 
-  // Live scrape trigger
+  // Real scrape: POST /api/v1/athena/scrape, then POST /process to score what it
+  // wrote, then reload. The old path called /api/ai/scrape-live, which returns
+  // AI-synthesized listings with invented ATS scores whenever no Gemini key is set,
+  // and merged them under synthetic scraped-<timestamp>-<n> ids.
   const handleExecuteLiveScrape = async () => {
     setIsScraping(true);
     setScrapeSuccessMsg(null);
 
+    // The keyword box holds a comma-separated phrase list; the scraper takes a
+    // single query, so lead with the first entry.
+    const query = searchKeywords
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)[0];
+
+    if (!query) {
+      setScrapeSuccessMsg("Enter at least one search keyword before scraping.");
+      setIsScraping(false);
+      return;
+    }
+
     try {
-      const res = await fetch("/api/ai/scrape-live", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          locationFilter: activeScope,
-          searchType: activeCategory,
-          keywords: searchKeywords,
-          resumeSkills: applicantProfile.skills,
-        }),
+      const scrape = await api.triggerScrape({
+        query,
+        ...(activeScope !== "all" ? { location: activeScope } : {}),
+        ...(activeCategory !== "all" ? { job_type: activeCategory } : {}),
+        max_results: LIVE_SCRAPE_MAX_RESULTS,
       });
+      await api.processJobs();
+      const inPipeline = await onReloadJobs();
 
-      const data = await res.json();
-      if (data.listings && Array.isArray(data.listings)) {
-        // Format and merge
-        const formatted: Opportunity[] = data.listings.map((item: any, i: number) => ({
-          ...item,
-          id: item.id || `scraped-${Date.now()}-${i}`,
-          status: item.atsScore >= 90 ? "tailored" : "evaluated",
-          isFlagged: item.atsScore >= 80 && item.atsScore < 90,
-          autoCreatedDocs: item.atsScore >= 90 ? { hasResume: true, hasCoverLetter: true } : undefined,
-        }));
-
-        onAddListings(formatted);
-        setScrapeSuccessMsg(
-          `Successfully aggregated and semantically scored ${formatted.length} new opportunities across LinkedIn, Upwork, and Lilongwe career nodes.`
-        );
-      }
+      setScrapeSuccessMsg(
+        `Scraped ${scrape.source}: ${scrape.jobsFound} found, ${scrape.jobsNew} new, ${scrape.jobsUpdated} updated. ${inPipeline} roles now in the pipeline.`
+      );
     } catch (err) {
+      const message = err instanceof Error ? err.message : "network error";
+      // 409 means the 4h scheduler holds the scrape lock, not that this failed.
+      setScrapeSuccessMsg(
+        message.includes("409")
+          ? "A scrape is already running (the 4h scheduler holds the lock). Try again when it finishes."
+          : `Scrape failed: ${message}`
+      );
       console.error("Scrape error:", err);
-      setScrapeSuccessMsg("Scraper completed query using local live index.");
     } finally {
       setIsScraping(false);
-      setTimeout(() => setScrapeSuccessMsg(null), 6000);
+      setTimeout(() => setScrapeSuccessMsg(null), 8000);
     }
   };
 
