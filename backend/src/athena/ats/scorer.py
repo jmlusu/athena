@@ -178,8 +178,10 @@ class ATSScorer:
         if job.description:
             keywords.update(self._extract_skills_from_text(job.description))
 
-        # From title
-        keywords.update(self._extract_skills_from_text(job.title))
+        # The job's own title is deliberately NOT treated as a required
+        # keyword. Requiring the resume to restate the vacancy title penalised
+        # every posting by construction and was a large part of why the
+        # component scored near zero.
 
         # Filter out common words
         stopwords = {
@@ -226,7 +228,7 @@ class ATSScorer:
             "these",
             "those",
         }
-        return {k for k in keywords if k not in stopwords and len(k) > 2}
+        return {k for k in keywords if k not in stopwords and not self._is_noise(k)}
 
     def _extract_profile_keywords(self, profile: UserProfile) -> set[str]:
         """Extract keywords from user profile."""
@@ -244,6 +246,10 @@ class ATSScorer:
             keywords.update(self._extract_skills_from_text(exp.description))
             for used_skill in exp.skills_used:
                 keywords.add(used_skill.lower().strip())
+            # From experience achievements: tokenize like titles/descriptions —
+            # raw sentences never intersect the tokenized job keywords.
+            for achievement in exp.achievements:
+                keywords.update(self._extract_skills_from_text(str(achievement)))
 
         # From headline and summary
         if profile.headline:
@@ -255,7 +261,62 @@ class ATSScorer:
         for cert in profile.certifications:
             keywords.add(cert.lower().strip())
 
+        # The curated targeting bank. This is the whole point of
+        # preferences.keywords / job_titles: it was populated but never read by
+        # the scorer, so the 231-term bank contributed nothing to matching.
+        prefs = getattr(profile, "preferences", None)
+        if prefs is not None:
+            # Executive keywords
+            for kw in getattr(prefs, "executive_keywords", []) or []:
+                cleaned = str(kw).strip().lower()
+                if cleaned and not self._is_noise(cleaned):
+                    keywords.add(cleaned)
+            # Functional keywords
+            for kw in getattr(prefs, "functional_keywords", []) or []:
+                cleaned = str(kw).strip().lower()
+                if cleaned and not self._is_noise(cleaned):
+                    keywords.add(cleaned)
+            # Core skill tags
+            for kw in getattr(prefs, "core_skill_tags", []) or []:
+                cleaned = str(kw).strip().lower()
+                if cleaned and not self._is_noise(cleaned):
+                    keywords.add(cleaned)
+            # Flat keywords list, added unconditionally alongside the
+            # categorical lists above (union, not a conditional fallback)
+            for kw in getattr(prefs, "keywords", []) or []:
+                cleaned = str(kw).strip().lower()
+                if cleaned and not self._is_noise(cleaned):
+                    keywords.add(cleaned)
+            for title in getattr(prefs, "job_titles", []) or []:
+                cleaned = str(title).strip().lower()
+                if cleaned and not self._is_noise(cleaned):
+                    keywords.add(cleaned)
+            for loc in getattr(prefs, "locations", []) or []:
+                keywords.update(self._extract_skills_from_text(str(loc)))
+
         return keywords
+
+    # Words that survive capitalisation in job ads but carry no signal. Without
+    # this, Title Case ad copy ("Please apply... Companies... Together...") was
+    # mined as if it were skills, inflating the keyword denominator until the
+    # component scored ~2/100 on every job.
+    NOISE_TERMS = frozenset(
+        """
+        please kindly apply application applicants candidate candidates opportunity opportunities
+        company companies organisation organization organisations organizations team teams role roles
+        position positions job jobs career careers work working works working environment business
+        join joining help helping support supporting build building create creating develop developing
+        deliver delivering drive driving ensure ensuring grow growing make making new well good great
+        strong excellent proven track record required requirements responsibilities qualifications
+        responsibilities employer employers employee employees client clients customer customers
+        including include includes included etc via well-known fast-paced self-service best practices
+        solutions solution services service products product programs program project projects
+        together exec execs executive executives admin administration office offices global world
+        across within while who what when where which will would shall should may might must can
+        also just only very more most much many some any all both each other others another same
+        such own too own s t don now use used using useful like likely know knows known well
+        """.split()
+    )
 
     def _extract_skills_from_text(self, text: str) -> set[str]:
         """Extract potential skill keywords from text."""
@@ -263,27 +324,35 @@ class ATSScorer:
         text_lower = text.lower()
         skills = set()
 
-        # Known tech skills
+        # Known tech skills. Word-boundary matched: the previous bare
+        # `tech in text_lower` substring test fired on fragments ("cloud"
+        # inside "clinical data cloud") and double-counted them.
         for tech in self.TECH_KEYWORDS:
-            if tech in text_lower:
+            if re.search(rf"(?<!\w){re.escape(tech)}(?!\w)", text_lower):
                 skills.add(tech)
 
         # Known soft skills
         for soft in self.SOFT_SKILLS:
-            if soft in text_lower:
+            if re.search(rf"(?<!\w){re.escape(soft)}(?!\w)", text_lower):
                 skills.add(soft)
 
-        # Extract capitalized words (potential proper nouns/technologies)
-        words = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", text)
-        for word in words:
-            if len(word) > 2:
-                skills.add(word.lower())
+        # Extract proper nouns (Agile, Digital Transformation, Power BI,
+        # Splunk). Single capitalised words are kept because they carry real
+        # signal in job ads; NOISE_TERMS is what removes the Title Case
+        # vocabulary ("Please", "Together", "Companies") that previously
+        # dominated the denominator.
+        for phrase in re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", text):
+            if len(phrase) > 2:
+                skills.add(phrase.lower())
 
         # Extract hyphenated terms
         hyphenated = re.findall(r"\b\w+(?:-\w+)+\b", text_lower)
         skills.update(hyphenated)
 
-        return skills
+        return {s for s in skills if s not in self.NOISE_TERMS}
+
+    def _is_noise(self, term: str) -> bool:
+        return term in self.NOISE_TERMS or len(term) <= 2
 
     def _compute_experience_relevance(
         self,
