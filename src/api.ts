@@ -23,6 +23,7 @@ import type {
   DehumanizeResponse,
   ScrapeLiveRequest,
   ScrapeLiveResponse,
+  ScrapeRequestBody,
   SubmitApplicationRequest,
   SubmitApplicationResponse,
   N8nDispatchRequest,
@@ -38,6 +39,12 @@ import type {
 
 const API_BASE = "/api";
 
+// FastAPI's /jobs validator rejects limit > 100 with a 422, so the client pages
+// rather than asking for more than the backend will give. JOB_LOAD_CAP is the most
+// the dashboard will hold; relax the backend validator before raising it.
+const JOB_PAGE_LIMIT = 100;
+const JOB_LOAD_CAP = 200;
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json", ...options.headers },
@@ -51,11 +58,32 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  // Jobs
-  listJobs: (params?: { scope?: string; category?: string; limit?: number }) =>
-    request<{ jobs: Opportunity[]; total: number }>(
-      `/v1/athena/jobs${params ? "?" + new URLSearchParams(params as Record<string, string>).toString() : ""}`
-    ),
+  // Jobs. Pages at the backend's own 100-row ceiling up to JOB_LOAD_CAP, so a
+  // 138-job store arrives whole without ever requesting limit > 100.
+  listJobs: async (params?: { scope?: string; category?: string }) => {
+    const collected: Opportunity[] = [];
+    let total = 0;
+
+    for (let offset = 0; collected.length < JOB_LOAD_CAP; offset += JOB_PAGE_LIMIT) {
+      const query = new URLSearchParams({
+        limit: String(JOB_PAGE_LIMIT),
+        offset: String(offset),
+        ...(params?.scope ? { scope: params.scope } : {}),
+        ...(params?.category ? { category: params.category } : {}),
+      });
+      const page = await request<{ jobs: Opportunity[]; total: number }>(
+        `/v1/athena/jobs?${query.toString()}`
+      );
+      const jobs = page.jobs ?? [];
+      total = page.total ?? 0;
+      collected.push(...jobs);
+      // A short page means the store is exhausted; so does total <= offset + jobs.
+      if (jobs.length < JOB_PAGE_LIMIT) break;
+    }
+
+    return { jobs: collected.slice(0, JOB_LOAD_CAP), total };
+  },
+
   getJob: (id: string) => request<Opportunity>(`/v1/athena/jobs/${id}`),
   createJob: (job: Partial<Opportunity>) => request<Opportunity>("/v1/athena/jobs", { method: "POST", body: JSON.stringify(job) }),
 
@@ -78,9 +106,12 @@ export const api = {
   getPipelineStats: () => request<PipelineStats>("/v1/athena/stats/pipeline"),
 
   // Actions
-  triggerScrape: (body: { location_filter?: string; search_type?: string; keywords?: string; resume_skills?: string[] }) =>
+  // The real scraper. Writes unscored jobs and returns a ScrapeJob record -- it
+  // does not return jobs, so callers must POST /process afterwards to score them
+  // and then reload. See api.processJobs.
+  triggerScrape: (body: ScrapeRequestBody) =>
     request<ScrapeJobResponse>("/v1/athena/scrape", { method: "POST", body: JSON.stringify(body) }),
-  processJobs: () => request<unknown>("/v1/athena/process", { method: "POST" }),
+  processJobs: () => request<{ status: string; totalJobs: number; scored: number }>("/v1/athena/process", { method: "POST", body: "{}" }),
   matchJobs: (body: Record<string, unknown>) => request<MatchJobsResponse>("/v1/athena/match", { method: "POST", body: JSON.stringify(body) }),
   scoreJob: (jobId: string, profileId: string) => request<ATSScoreResponse>(`/v1/athena/score/${jobId}/${profileId}`),
 
@@ -138,6 +169,7 @@ export type {
   DehumanizeResponse,
   ScrapeLiveRequest,
   ScrapeLiveResponse,
+  ScrapeRequestBody,
   SubmitApplicationRequest,
   SubmitApplicationResponse,
   N8nDispatchRequest,

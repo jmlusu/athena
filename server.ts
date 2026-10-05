@@ -3,6 +3,7 @@ import path from "path";
 import fs from "node:fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import { toApplicantProfile, toApplicantProfileList, toOpportunity, toOpportunityList } from "./athena-mapper.ts";
 
 dotenv.config();
 
@@ -330,9 +331,11 @@ function forwardToBackend(
   res: express.Response,
   method: "POST" | "GET",
   backendPath: string,
-  body?: unknown
+  body?: unknown,
+  opts: { search?: string; transform?: (payload: unknown) => unknown } = {}
 ): void {
-  const target = `${BACKEND_URL}${BACKEND_PREFIX}${backendPath}`;
+  const search = opts.search ? `?${opts.search}` : "";
+  const target = `${BACKEND_URL}${BACKEND_PREFIX}${backendPath}${search}`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), BACKEND_TIMEOUT_MS);
 
@@ -356,7 +359,14 @@ function forwardToBackend(
           return;
         }
       }
-      // FastAPI's own errors are {"detail": ...}; keep them readable.
+      // FastAPI's own errors are {"detail": ...}; keep them readable. Error
+      // payloads are never job-shaped, so mapping them would turn a 404
+      // {"detail":"Job not found"} into a fabricated "Untitled role" listing.
+      const failed = upstream.status >= 400;
+      if (opts.transform && !failed) {
+        res.status(upstream.status).json(opts.transform(payload));
+        return;
+      }
       res.status(upstream.status).json(camelCaseKeys(payload));
     })
     .catch((err: unknown) => {
@@ -398,6 +408,63 @@ app.post("/api/submit-application", proxyPost(`${AI_PREFIX}/submit-application`)
 app.post("/api/n8n/dispatch-webhook", proxyPost(`${AI_PREFIX}/n8n/dispatch`));
 // n8n webhook ingress does not exist in FastAPI yet; kept for Phase 4.
 app.post("/api/webhooks/n8n", proxyPost(`${AI_PREFIX}/webhooks/n8n`));
+
+// ── Core data proxy: /api/v1/athena/* ──────────────────────────────────
+// FastAPI owns routing and validation for jobs, profiles, scraping, scoring and
+// stats, so this forwards the sub-path verbatim rather than mirroring that route
+// table here. Mirroring it is exactly how the SPA ended up silently rendering
+// mockData: the BFF had no route for /api/v1/athena/*, so those calls fell
+// through to the SPA fallback and came back as text/html.
+//
+// MUST stay registered above the Vite/static + app.get("*") fallback in start().
+// If it moves below, index.html answers again and the bug returns undisguised.
+const JOB_DETAIL_PATH = /^\/jobs\/[^/]+$/;
+const PROFILE_DETAIL_PATH = /^\/profiles\/[^/]+$/;
+
+function mapJobsList(payload: unknown): unknown {
+  const envelope = payload as { jobs?: unknown } | null;
+  if (envelope && typeof envelope === "object" && Array.isArray(envelope.jobs)) {
+    // Spread first so the mapper's jobs win over the raw envelope's.
+    return {
+      ...(camelCaseKeys(payload) as Record<string, unknown>),
+      jobs: toOpportunityList(envelope.jobs),
+    };
+  }
+  return { jobs: toOpportunityList(payload), total: Array.isArray(payload) ? payload.length : 0 };
+}
+
+function transformAthenaResponse(backendPath: string, payload: unknown): unknown {
+  if (backendPath === "/jobs") return mapJobsList(payload);
+  if (JOB_DETAIL_PATH.test(backendPath)) {
+    return toOpportunity((payload ?? {}) as Record<string, unknown>);
+  }
+  // Profiles need a real mapper, not just camelCasing: backend `skills` is a list
+  // of objects and the SPA renders them as strings, so a raw pass-through crashes
+  // React with "Objects are not valid as a React child".
+  if (backendPath === "/profiles") {
+    return toApplicantProfileList(payload);
+  }
+  if (PROFILE_DETAIL_PATH.test(backendPath)) {
+    const record = (payload ?? {}) as Record<string, unknown>;
+    return toApplicantProfile(record);
+  }
+  return camelCaseKeys(payload);
+}
+
+app.use(BACKEND_PREFIX, (req: express.Request, res: express.Response) => {
+  // Express strips the mount path, so req.url is the remainder: "/jobs?limit=100".
+  const [rawPath, rawSearch = ""] = req.url.split("?");
+  const backendPath = rawPath === "/" ? "" : rawPath.replace(/\/+$/, "");
+  const method = req.method === "POST" ? "POST" : "GET";
+
+  forwardToBackend(
+    res,
+    method,
+    backendPath,
+    method === "POST" ? snakeCaseKeys(req.body) : undefined,
+    { search: rawSearch, transform: (payload) => transformAthenaResponse(backendPath, payload) }
+  );
+});
 
 // Backend reachability, surfaced separately so /api/health stays a cheap
 // liveness probe for the e2e suite.

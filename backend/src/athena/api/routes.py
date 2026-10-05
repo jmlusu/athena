@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
 
 from athena.ats import ats_scorer
 from athena.documents import DocumentGenerator, DocumentOutput
@@ -150,10 +150,22 @@ async def delete_job(job_id: UUID):
 
 # User Profile endpoints
 @router.post("/profiles", response_model=UserProfileResponse)
-async def create_profile(profile: UserProfileCreate):
-    """Create a new user profile."""
-    profile_obj = UserProfile(**profile.model_dump())
-    return athena_db.add_user_profile(profile_obj)
+async def create_profile(profile: UserProfileCreate) -> UserProfileResponse:
+    """Create a user profile, replacing any existing profile with the same email.
+
+    Single atomic write: the previous delete-then-add sequence left a window in
+    which a crash permanently destroyed the profile.
+    """
+    profile_data = profile.model_dump()
+    existing = athena_db.get_user_profile_by_email(profile.email)
+    if existing:
+        # Preserve identity and creation time so an upsert is not a new profile.
+        profile_data["id"] = str(existing.id)
+        profile_data["created_at"] = existing.created_at
+        saved = athena_db.put_user_profile(UserProfile(**profile_data))
+    else:
+        saved = athena_db.add_user_profile(UserProfile(**profile_data))
+    return UserProfileResponse.model_validate(saved)
 
 
 @router.get("/profiles", response_model=list[UserProfileResponse])
@@ -564,6 +576,12 @@ async def trigger_scrape(request: ScrapeJobRequest, background_tasks: Background
             started_at=datetime.now(UTC),
             completed_at=datetime.now(UTC),
             created_at=datetime.now(UTC),
+        )
+
+    if athena_scheduler.scrape_in_progress:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A scrape is already running; retry once it completes",
         )
 
     config = ScrapeConfig(

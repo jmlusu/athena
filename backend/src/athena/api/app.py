@@ -10,6 +10,7 @@ Security hardening (mirrors GAP-010 from dashboard):
 
 from __future__ import annotations
 
+import contextlib
 import ipaddress
 import logging
 import os
@@ -17,11 +18,13 @@ import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, cast
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from filelock import FileLock, Timeout as FileLockTimeout
 
 load_dotenv()
 
@@ -154,10 +157,45 @@ def is_loopback_host(host: str) -> bool:
 # ── Lifespan ────────────────────────────────────────────────────────────
 
 
+def _acquire_instance_lock(data_root) -> FileLock | None:
+    """Claim exclusive ownership of the data directory for this process.
+
+    Returns the held lock, or None when there is nothing to hold (bypass enabled
+    or no resolvable data root). Raises RuntimeError when another live instance
+    already owns the directory.
+    """
+    if os.environ.get("ATHENA_ALLOW_MULTIPLE_INSTANCES", "").lower() in ("1", "true", "yes"):
+        return None
+    if data_root is None:
+        return None
+
+    lock_path = Path(data_root) / "athena_instance.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    # The guard file is held open exclusively while locked, so the pid breadcrumb
+    # goes in a sidecar; Windows refuses a second writer on the locked file.
+    owner_path = lock_path.with_name(lock_path.name + ".owner")
+    lock = FileLock(str(lock_path), timeout=0)
+    try:
+        lock.acquire()
+    except FileLockTimeout as err:
+        holder = owner_path.read_text(encoding="utf-8").strip() if owner_path.exists() else "?"
+        raise RuntimeError(
+            f"Another Athena instance (pid={holder}) already owns {data_root}. "
+            "Stop it first, set ATHENA_ALLOW_MULTIPLE_INSTANCES=true, or point "
+            "ATHENA_DATA_DIR elsewhere.",
+        ) from err
+    try:
+        owner_path.write_text(str(os.getpid()), encoding="utf-8")
+    except OSError:  # pragma: no cover - breadcrumb only
+        logger.debug("Could not record instance pid in %s", owner_path)
+    return lock
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan handler for FastAPI Athena app."""
     # Initialize Athena data directory
+    data_root = None
     try:
         from athena.paths import get_data_root
 
@@ -166,6 +204,12 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("Athena data directory initialised: %s", data_root)
     except Exception:  # noqa: BLE001 - non-critical startup hook
         logger.debug("Data directory initialisation skipped (non-critical)")
+
+    # Claim a single-instance lock. Two servers pointed at one data directory both
+    # write the same JSONL artifacts; making that explicit turns a silent
+    # corruption risk into a loud startup failure.
+    instance_lock = _acquire_instance_lock(data_root)
+    logger.info("Athena instance lock acquired (pid=%d)", os.getpid())
 
     # Auto-start scheduler with a default scrape config (unattended operation)
     scheduler_started = False
@@ -207,6 +251,14 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
             athena_scheduler.stop()
         except Exception:  # noqa: BLE001 - non-critical shutdown hook
             logger.debug("Scheduler shutdown skipped")
+
+    if instance_lock is not None:
+        with contextlib.suppress(Exception):
+            instance_lock.release()
+        with contextlib.suppress(Exception):
+            if data_root is not None:
+                (Path(data_root) / "athena_instance.lock.owner").unlink(missing_ok=True)
+        logger.info("Athena instance lock released (pid=%d)", os.getpid())
 
 
 # ── App factory ─────────────────────────────────────────────────────────
