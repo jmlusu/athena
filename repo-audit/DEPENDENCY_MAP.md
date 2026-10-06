@@ -16,19 +16,19 @@
 
 Smell (not removal): `vite`, `@vitejs/plugin-react`, `@tailwindcss/vite`, `tailwindcss` sit in `dependencies` though build-only → reclassify to `devDependencies` = **R2** (re-verify `npm ci --omit=dev` + build).
 
-## 2. Python (`backend/pyproject.toml`) — verdict: 5 removal candidates
+## 2. Python (`backend/pyproject.toml`) — verdict: 6 candidates removed (B10); mypy kept (advisory CI job)
 
 USED (verified imports): fastapi, uvicorn, pydantic, apscheduler, httpx, google-genai, beautifulsoup4, python-docx, weasyprint, pdfplumber, filelock, python-dotenv, email-validator (via `EmailStr`), numpy, sentence-transformers (guarded), playwright (guarded). Dev: pytest, pytest-asyncio, ruff.
 
 | # | Candidate | Evidence of non-use | Risk | Note |
 |---|---|---|---|---|
-| 1 | `structlog` | 0 imports outside lock/pyproject:23 (stdlib logging used) | **R1** | |
-| 2 | `types-requests` (dev) | no `import requests` in backend/scripts | **R1** | |
-| 3 | `pydantic-settings` | no `pydantic_settings`/`BaseSettings` anywhere | **R2** | reserved for settings refactor? |
-| 4 | `python-multipart` | no `Form/File/UploadFile/.form()`; upload route is JSON (`routes.py:414`) | **R2** | future upload route re-requires it |
-| 5 | `pytest-cov` (dev) | config exists (`pyproject:114-125`), no `--cov` invocation anywhere | **R2** | intended-but-unwired coverage gate |
-| 6 | `lxml` direct pin | no direct import; bs4 always `"html.parser"` | **R2** | stays transitively via python-docx |
-| 7 | `mypy` (dev) | not in CI/health; manual only | **R3** | AGENTS.md §5 mandates mypy — human decision |
+| 1 | `structlog` | 0 imports outside lock/pyproject:23 (stdlib logging used) | **R1** | removed (B10) |
+| 2 | `types-requests` (dev) | no `import requests` in backend/scripts | **R1** | removed (B10) |
+| 3 | `pydantic-settings` | no `pydantic_settings`/`BaseSettings` anywhere | **R2** | removed (B10); settings refactor re-adds if needed |
+| 4 | `python-multipart` | no `Form/File/UploadFile/.form()`; upload route is JSON (`routes.py:414`) | **R2** | removed (B10); future upload route re-requires it |
+| 5 | `pytest-cov` (dev) | config exists (`pyproject:114-125`), no `--cov` invocation anywhere | **R2** | removed (B10); `[tool.coverage]` config kept for the future gate |
+| 6 | `lxml` direct pin | no direct import; bs4 always `"html.parser"` | **R2** | unpinned (B10); stays transitively via python-docx (6.1.3) |
+| 7 | `mypy` (dev) | not in CI/health; manual only | **R3** | kept — advisory CI job added (C15 / NEW-Q7a) |
 
 No npm package qualifies for outright removal.
 
