@@ -218,7 +218,10 @@ def test_tailor_document_cover_letter(client, fallback_provider, sample_job, sam
 
 
 def test_tailor_document_consultancy_proposal(
-    client, fallback_provider, sample_job, sample_profile,
+    client,
+    fallback_provider,
+    sample_job,
+    sample_profile,
 ):
     payload = {
         "doc_type": "consultancy-proposal",

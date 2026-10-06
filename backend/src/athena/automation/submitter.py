@@ -641,7 +641,8 @@ class ApplicationSubmitter:
                 )
                 audit_file.write_text(
                     json.dumps(
-                        {"result": self._result.to_dict(), "audit_log": audit_log}, indent=2,
+                        {"result": self._result.to_dict(), "audit_log": audit_log},
+                        indent=2,
                     ),
                 )
                 logger.info("Audit trail saved: %s", audit_file)

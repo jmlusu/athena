@@ -54,7 +54,7 @@ extend-exclude = ["*.egg-info"]
 select = [
     "E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "T10", "PTH", "ERA", "PL", "RET", "PERF", "ARG", "TID", "FURB", "LOG", "TRY", "NPY", "PD", "EXE", "COM",
 ]
-ignore = ["TRY400", "PLR2004", "ARG002"]
+ignore = ["TRY400", "PLR2004", "ARG002", "COM812"]
 fixable = ["ALL"]
 unfixable = []
 
