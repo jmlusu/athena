@@ -16,6 +16,7 @@ import type {
   OpportunityScope,
   PipelineStatus,
 } from "./src/types.ts";
+import { ATS_CRITICAL_MIN, ATS_FLAGGED_MIN } from "./src/lib/athena/metrics-registry.ts";
 
 export const SOURCE_PLATFORM: Record<string, OpportunityPlatform> = {
   linkedin: "LinkedIn",
@@ -56,11 +57,9 @@ export const STATUS_MAP: Record<string, PipelineStatus> = {
   archived: "evaluated",
 };
 
-// UI bands stay at >=90 auto-generate / 80-89 flagged even though real scores
-// currently top out at 57.5 (spec: thresholds deliberately unchanged).
-const ATS_AUTO_GENERATE = 90;
-const ATS_FLAGGED = 80;
-
+// UI bands come from the canonical registry constants (ATS >= 90 auto-generate /
+// 80-89 flagged) even though real scores currently top out at 57.5 (spec:
+// thresholds deliberately unchanged).
 export function str(value: unknown): string {
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
@@ -119,7 +118,7 @@ export function toOpportunity(job: Record<string, unknown>): Opportunity {
     atsScore,
     postedDate: str(job.posted_date) || str(job.scraped_at),
     status: STATUS_MAP[str(job.status)] ?? "discovered",
-    isFlagged: atsScore >= ATS_FLAGGED && atsScore < ATS_AUTO_GENERATE,
+    isFlagged: atsScore >= ATS_FLAGGED_MIN && atsScore < ATS_CRITICAL_MIN,
   };
 }
 

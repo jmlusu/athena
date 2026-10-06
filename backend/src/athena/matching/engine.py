@@ -1,4 +1,5 @@
 from athena.models import Job, MatchTier, Skill, UserProfile
+from athena.models.thresholds import ATS_CRITICAL_MIN, ATS_FLAGGED_MIN
 
 from .embeddings import cosine_similarity, embedding_model
 
@@ -142,9 +143,9 @@ class MatchingEngine:
         return scored_jobs
 
     def _get_match_tier(self, score: float) -> MatchTier:
-        if score >= 90:
+        if score >= ATS_CRITICAL_MIN:
             return MatchTier.EXCELLENT
-        if score >= 80:
+        if score >= ATS_FLAGGED_MIN:
             return MatchTier.GOOD
         if score >= 70:
             return MatchTier.FAIR

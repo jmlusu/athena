@@ -5,6 +5,7 @@ from typing import Any
 
 from athena.matching import matching_engine
 from athena.models import Job, UserProfile
+from athena.models.thresholds import ATS_CRITICAL_MIN, ATS_FLAGGED_MAX, ATS_FLAGGED_MIN
 
 
 @dataclass
@@ -430,9 +431,9 @@ class ATSScorer:
 
     def get_score_tier(self, score: float) -> str:
         """Get tier label for score."""
-        if score >= 90:
+        if score >= ATS_CRITICAL_MIN:
             return "excellent"
-        if score >= 80:
+        if score >= ATS_FLAGGED_MIN:
             return "good"
         if score >= 70:
             return "fair"
@@ -440,11 +441,11 @@ class ATSScorer:
 
     def should_auto_apply(self, score: float) -> bool:
         """Determine if application should be auto-submitted."""
-        return score >= 90
+        return score >= ATS_CRITICAL_MIN
 
     def should_flag_for_review(self, score: float) -> bool:
         """Determine if application should be flagged for human review."""
-        return 80 <= score < 90
+        return ATS_FLAGGED_MIN <= score < ATS_FLAGGED_MAX
 
 
 # Global instance

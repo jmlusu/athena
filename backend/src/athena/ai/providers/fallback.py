@@ -25,6 +25,7 @@ from athena.api.ai_schemas import (
     TailorResumeRequest,
     TailorResumeResponse,
 )
+from athena.models.thresholds import ATS_CRITICAL_MIN, ATS_FLAGGED_MIN
 
 
 class FallbackProvider(AthenaAIProvider):
@@ -54,9 +55,9 @@ class FallbackProvider(AthenaAIProvider):
         ratio = matched / len(req_list) if req_list else 0.85
         base_score = min(97, max(68, round(72 + ratio * 24)))
 
-        if base_score >= 90:
+        if base_score >= ATS_CRITICAL_MIN:
             match_category = "CRITICAL_MATCH"
-        elif base_score >= 80:
+        elif base_score >= ATS_FLAGGED_MIN:
             match_category = "FLAGGED_REVIEW"
         else:
             match_category = "STANDARD"
@@ -72,7 +73,7 @@ class FallbackProvider(AthenaAIProvider):
             ],
             recommendation=(
                 "Immediate auto-application recommended"
-                if base_score >= 90
+                if base_score >= ATS_CRITICAL_MIN
                 else "Tailor resume highlights prior to submission"
             ),
             dehumanized_pitch=(
