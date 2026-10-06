@@ -3,30 +3,15 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from fastapi.testclient import TestClient
+from conftest import HEADERS
 
-from athena.api.app import create_app
 from athena.models import Document, Job, JobSource, JobStatus, JobType, UserProfile
-from athena.store import AthenaDB
 
-HEADERS = {"X-API-Key": "dev-admin-key"}
 OK = 200
 NOT_FOUND = 404
 UNPROCESSABLE = 422
 EXPECTED_ATS_SCORE = 91.5
 EXPECTED_MATCH_SCORE = 87.0
-
-
-@pytest.fixture
-def temp_db(tmp_path, monkeypatch):
-    db = AthenaDB(base_dir=tmp_path / "athena")
-    monkeypatch.setattr("athena.api.routes.athena_db", db)
-    return db
-
-
-@pytest.fixture
-def client():
-    return TestClient(create_app())
 
 
 @pytest.fixture

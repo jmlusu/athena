@@ -2,6 +2,13 @@
 
 
 import pytest
+from fastapi.testclient import TestClient
+
+from athena.api.app import create_app
+from athena.store import AthenaDB
+
+BASE = "/api/v1/athena"
+HEADERS = {"X-API-Key": "dev-admin-key"}
 
 
 class MockDocumentOutput:
@@ -53,3 +60,19 @@ def mock_document_generator(monkeypatch):
 def mock_weasyprint_import(monkeypatch):
     """Mock weasyprint import to simulate missing dependency."""
     monkeypatch.setitem(__import__("sys").modules, "weasyprint", None)
+
+
+@pytest.fixture
+def client():
+    return TestClient(create_app())
+
+
+@pytest.fixture
+def temp_db(tmp_path, monkeypatch):
+    """Route API writes at a temp directory (side effect; many tests never read it back).
+
+    Without it the routes write through to the repo's real data directory.
+    """
+    db = AthenaDB(base_dir=tmp_path / "athena")
+    monkeypatch.setattr("athena.api.routes.athena_db", db)
+    return db
