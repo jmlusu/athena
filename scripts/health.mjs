@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 
 const ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const results = [];
-const RUFF_BASELINE = 237;
+const RUFF_BASELINE = 81;
 
 function record(name, status, detail) {
   results.push({ name, status, detail });

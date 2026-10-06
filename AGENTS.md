@@ -132,7 +132,7 @@ Before any PR/merge:
 - [ ] `npm run build` succeeds
 - [ ] `npm run test:unit` passes (node --test, tests/server/)
 - [ ] `cd backend && uv sync --extra dev` succeeds
-- [ ] `cd backend && uv run ruff check .` (237 pre-existing errors tolerated by CI — no NEW errors)
+- [ ] `cd backend && uv run ruff check .` (81 pre-existing errors tolerated by CI — no NEW errors)
 - [ ] `cd backend && uv run pytest -q` passes
 - [ ] `npm run test:e2e` passes when services are running (else document)
 - [ ] No secrets in diff (`git diff | Select-String "API_KEY|SECRET|PASSWORD"` on added lines)

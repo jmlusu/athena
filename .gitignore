@@ -75,3 +75,8 @@ AppData/
 *.tmp
 *.temp
 build/
+*.err
+*_out.txt
+*_output.txt
+remaining.txt
+
