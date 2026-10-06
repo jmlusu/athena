@@ -118,27 +118,9 @@ export const api = {
     return { jobs: collected.slice(0, JOB_LOAD_CAP), total };
   },
 
-  getJob: (id: string) => request<Opportunity>(`/v1/athena/jobs/${id}`),
-  createJob: (job: Partial<Opportunity>) => request<Opportunity>("/v1/athena/jobs", { method: "POST", body: JSON.stringify(job) }),
-
   // Profiles
   listProfiles: () => request<ApplicantProfile[]>("/v1/athena/profiles"),
-  getProfile: (id: string) => request<ApplicantProfile>(`/v1/athena/profiles/${id}`),
-  createProfile: (profile: Partial<ApplicantProfile>) => request<ApplicantProfile>("/v1/athena/profiles", { method: "POST", body: JSON.stringify(profile) }),
   updateProfile: (id: string, profile: Partial<ApplicantProfile>) => request<ApplicantProfile>(`/v1/athena/profiles/${id}`, { method: "PUT", body: JSON.stringify(profile) }),
-
-  // Applications
-  listApplications: () => request<ApplicationReceipt[]>("/v1/athena/applications"),
-  getApplication: (id: string) => request<ApplicationReceipt>(`/v1/athena/applications/${id}`),
-  createApplication: (app: Record<string, unknown>) => request<ApplicationReceipt>("/v1/athena/applications", { method: "POST", body: JSON.stringify(app) }),
-
-  // Receipts
-  listReceipts: () => request<ApplicationReceipt[]>("/v1/athena/receipts"),
-  getReceipt: (id: string) => request<ApplicationReceipt>(`/v1/athena/receipts/${id}`),
-
-  // Stats
-  getStats: () => request<Record<string, unknown>>("/v1/athena/stats"),
-  getPipelineStats: () => request<PipelineStats>("/v1/athena/stats/pipeline"),
 
   // Actions
   // The real scraper. Writes unscored jobs and returns a ScrapeJob record -- it
@@ -147,27 +129,6 @@ export const api = {
   triggerScrape: (body: ScrapeRequestBody) =>
     request<ScrapeJobResponse>("/v1/athena/scrape", { method: "POST", body: JSON.stringify(body) }),
   processJobs: () => request<{ status: string; totalJobs: number; scored: number }>("/v1/athena/process", { method: "POST", body: "{}" }),
-  matchJobs: (body: Record<string, unknown>) => request<MatchJobsResponse>("/v1/athena/match", { method: "POST", body: JSON.stringify(body) }),
-  scoreJob: (jobId: string, profileId: string) => request<ATSScoreResponse>(`/v1/athena/score/${jobId}/${profileId}`),
-
-  // Scheduler
-  startScheduler: () => request<unknown>("/v1/athena/scheduler/start", { method: "POST" }),
-  stopScheduler: () => request<unknown>("/v1/athena/scheduler/stop", { method: "POST" }),
-  schedulerStatus: () => request<SchedulerStatus>("/v1/athena/scheduler/status"),
-
-  // AI (proxied through Express)
-  scoreAts: (body: ATSScoreRequest) => request<ATSScoreResponse>("/ai/score-ats", { method: "POST", body: JSON.stringify(body) }),
-  tailorResume: (body: TailorResumeRequest) => request<TailorResumeResponse>("/ai/tailor-resume", { method: "POST", body: JSON.stringify(body) }),
-  tailorDocument: (body: TailorDocumentRequest) => request<TailorDocumentResponse>("/ai/tailor-document", { method: "POST", body: JSON.stringify(body) }),
-  dehumanize: (body: DehumanizeRequest) => request<DehumanizeResponse>("/ai/dehumanize", { method: "POST", body: JSON.stringify(body) }),
-  scrapeLive: (body: ScrapeLiveRequest) => request<ScrapeLiveResponse>("/ai/scrape-live", { method: "POST", body: JSON.stringify(body) }),
-  submitApplication: (body: SubmitApplicationRequest) => request<SubmitApplicationResponse>("/submit-application", { method: "POST", body: JSON.stringify(body) }),
-  dispatchN8n: (body: N8nDispatchRequest) => request<N8nDispatchResponse>("/n8n/dispatch-webhook", { method: "POST", body: JSON.stringify(body) }),
-  n8nIngress: (body: N8nIngressRequest) => request<N8nIngressResponse>("/webhooks/n8n", { method: "POST", body: JSON.stringify(body) }),
-
-  // Health
-  health: () => request<HealthResponse>("/health"),
-  backendHealth: () => request<BackendHealthResponse>("/backend-health"),
 
   // Profile Documents
   listProfileDocuments: () => request<ProfileDocument[]>("/profile-documents"),
