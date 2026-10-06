@@ -18,8 +18,8 @@ The data root is resolved in `backend/src/athena/paths.py` with the following pr
 
 | Store Type | Location | Purpose | Technology | Status |
 |---|---|---|---|---|
-| PostgreSQL | `DATABASE_URL` (prod config) | Production RDBMS | Relational DB | Configured only, not active |
-| Redis | `REDIS_URL` (prod config) | Caching / rate limiting | Key-value | Configured only, not active |
+| PostgreSQL | `DATABASE_URL` | Production RDBMS (planned) | Relational DB | **Not configured** — no code/env references |
+| Redis | `REDIS_URL` | Caching / rate limiting (planned) | Key-value | **Not configured** — no code/env references |
 | AthenaDB (JSONL) | `company/athena/*.jsonl` | Primary persistence | File-based JSONL + filelock | **Active** |
 | Embeddings Cache | `company/athena/embeddings_cache/*.npy` | Vector cache | NumPy float32 files | **Active** |
 | Lock files | `company/athena/locks/*.lock` | Agent coordination | `filelock` | **Active** |
@@ -40,7 +40,7 @@ graph TB
     end
 
     subgraph API["FastAPI — backend/src/athena/api"]
-        RT["routes.py · 31 endpoints"]
+        RT["routes.py · 36 endpoints"]
         MET["metrics/prometheus.py"]
     end
 
@@ -215,7 +215,7 @@ ATHENA_DATA_DIR (e.g. company/athena/)
 └── approvals/{uuid}.json                      HITL gate request
 
 DISJOINT NAMESPACES (not covered by the instance lock):
-  <repo>/artifacts/locks/*.lock       Express server.ts + src/lockfile.ts
+  <repo>/artifacts/locks/*.lock       Express server.ts
   backend/artifacts/locks/*.lock      orphans from tmp-data-dir test runs
 ```
 
@@ -238,7 +238,7 @@ graph TB
         C1["locks/global_agent.lock<br/>AthenaDB.with_global_lock(func)<br/>0 production call sites"]
     end
     subgraph L5["Tier E — Node-Side Lock (DISJOINT)"]
-        E1["repo/artifacts/locks/*.lock<br/>server.ts /api/lock/* + src/lockfile.ts<br/>read-check-then-write, NOT atomic<br/>does not exclude Tier B"]
+        E1["repo/artifacts/locks/*.lock<br/>server.ts /api/lock/*<br/>read-check-then-write, NOT atomic<br/>does not exclude Tier B"]
     end
     L4 --> L1 --> L2
     L3 -.->|"escape hatch (unused)"| L1

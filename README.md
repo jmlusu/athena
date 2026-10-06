@@ -29,7 +29,7 @@ athena/
 ├── e2e/                     # Playwright E2E (aistudio smoke suite)
 ├── docs/                    # Guides, specs, implementation plans (archive/ = historical)
 ├── repo-audit/              # Cleanup audit artifacts (inventory, plan, decisions)
-├── .github/workflows/       # CI (ruff, pytest, lint, build)
+├── .github/workflows/       # CI (lint, build, ruff, pytest, health)
 ├── .env.example             # Environment template (canonical)
 ├── AGENTS.md                # Rules for AI agents working this repo
 ├── ARCHITECTURE.md          # System architecture diagram
@@ -87,6 +87,8 @@ npm run dev
 ```bash
 npm run lint      # TypeScript type-check
 npm run build     # Build client + server bundle
+# Requires NODE_ENV=production in .env — otherwise the dev middleware
+# branch serves the app instead of the built dist/ bundle
 npm start         # Runs dist/server.mjs (serves dist/ statically)
 ```
 
@@ -100,16 +102,16 @@ npm start         # Runs dist/server.mjs (serves dist/ statically)
 | `ATHENA_API_KEY` | Shared secret for FastAPI auth (Express injects) | Yes |
 | `ATHENA_CORS_ORIGINS` | Comma-separated allowed origins | No (defaults to localhost) |
 | `ATHENA_AUTH_MODE` | `api_key` or `open` | No (default: `api_key`) |
-| `ATHENA_DATA_DIR` | Data directory for JSONL stores | No (default: `./company/athena`) |
+| `ATHENA_DATA_DIR` | Data directory for JSONL stores | No (default: `<repo>/company/athena`) |
+| `ATHENA_AI_PROVIDER` | `gemini` or `fallback` (rule-based, no key needed) | No (default: `fallback`) |
 | `NODE_ENV` | `development` or `production` | No |
 | `DISABLE_HMR` | Disable Vite HMR | No |
-| `VITE_ATHENA_API_BASE` | Base path for API calls | No (default: `/api/v1/athena`) |
 
 ---
 
 ## Key Features
 
-- **14 job board scrapers** (LinkedIn, Upwork, ReliefWeb, Lilongwe, etc.)
+- **14 job board scrapers** (lilongwe, remote, and consultancy source families)
 - **Semantic matching** with all-MiniLM-L6-v2 (384-dim embeddings)
 - **ATS scoring** (40/35/15/10 weights) with rule-based fallback
 - **Document generation** (resume, cover letter, consultancy proposal) with AI + dehumanizer
@@ -146,6 +148,7 @@ npm run test:e2e
 GitHub Actions workflow (`.github/workflows/ci.yml`):
 - **quality** — Node lint + build
 - **backend-quality** — Python ruff + pytest
+- **health** — `npm run health` (structure, deps, config, types, lint baseline, tests, build, security, artifacts, git-status)
 
 ---
 

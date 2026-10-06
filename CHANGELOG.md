@@ -6,6 +6,30 @@
 
 ---
 
+## [2.4.0] — 2026-10-06 (Repository Consolidation & Health Gate)
+
+### Added
+- `npm run health` — single repository health check (structure, dependencies, configuration, types, lint baseline, tests, build, security, generated-artifacts, git-status, e2e) + CI `health` job
+- `docs/REPOSITORY_HEALTH.md` — before/after metrics and remaining technical-debt register
+- Metrics registry `src/lib/athena/metrics-registry.ts` (ATS thresholds, stats/funnel math), adopted by `MetricsAndBarChart`
+- `repo-audit/` refreshed: Phase 1 read-only audit deliverables (inventory, dependency map, duplicates, dead code, configuration, documentation, security) + phased approval protocol
+
+### Changed
+- Documentation consolidated into `docs/` with `docs/archive/` historical separation
+- `ATHENA_AGENT_RULES.md` renamed to `AGENTS.md` (standard discovery name)
+- README: repo map, documentation index, corrected scraper/test/CI facts
+- Configuration aligned with reality; unused npm dependencies removed (`@google/genai`, `motion`, `autoprefixer`)
+- E2E results recorded: 57/66 pass (3 pre-existing failures × 3 browsers)
+
+### Removed
+- Stale `athena/` fork (duplicate backend/frontend) and one-off cleanup scripts
+- Generated artifacts untracked (`.npy`, `*.egg-info`, `*.jsonl`, junk logs); `.gitignore` hardened
+
+### Notes
+- Ruff baseline: 81 pre-existing errors tolerated by CI (no new errors)
+
+---
+
 ## [Unreleased] — Migration Integration (Branch: `integration/athena-ai-studio`)
 
 ### Added
@@ -56,14 +80,14 @@
 - Semantic matching (`all-MiniLM-L6-v2`, cosine cache, `POST /match`)
 - Heuristic ATS scoring (40/35/15/10 weights, sub-scores)
 - JSONL persistence + filelock + dedupe + embeddings cache
-- 28 existing REST endpoints (`/api/v1/athena/*`)
+- 46 REST endpoints (`/api/v1/athena/*`)
 - Security stack (`X-API-Key`, rate limit, CORS, CSP/HSTS, loopback)
 - APScheduler (4h scrape / 30m score / 1d cleanup)
 - DOCX generation (`python-docx`, resume/cover-letter templates)
-- Backend test suite (44 tests)
-- Frontend test suite (23 tests)
-- CI/CD pipelines (ruff, mypy, pytest, vitest, docker)
-- Containerization (Dockerfiles, compose, OCI deploy)
+- Backend test suite (110 tests: 102 pass + 8 GTK-gated)
+- Frontend test suite (58 tests, `node --test`)
+- CI/CD pipelines (lint, build, ruff, pytest, health gate, e2e)
+- Deployment configs (compose/OCI removed 2026-10; `backend/Dockerfile` retained as reference)
 
 ### Changed
 - `backend/src/athena/api/app.py` — registered AI router at `/api/v1/athena/ai`
@@ -124,15 +148,17 @@ The `[Unreleased]` section above represents the **complete AI Studio → OpenCod
 ## Verification Commands
 
 ```bash
-# Backend tests (should pass: 44/44)
-cd backend && uv run pytest tests -v
+# Full repository health (lint, build, tests, ruff baseline, security, artifacts)
+npm run health
 
-# Frontend unit tests (should pass: 23/23)
-cd frontend && pnpm run test
+# Backend tests (102 passing, 8 GTK-gated skips)
+cd backend && uv run pytest -q
 
-# Build verification
-cd frontend && pnpm run build
-cd backend && uv run python -m mypy src/athena/api/ai_routes.py
+# Node unit tests (58 passing)
+npm run test:unit
+
+# Type-check + build
+npm run lint && npm run build
 
 # AI health check (requires backend running)
 curl http://localhost:8000/api/v1/athena/ai/health

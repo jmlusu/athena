@@ -3,7 +3,7 @@
 ## Current State
 - **Status**: Not Started — gap analysis was truncated; 17 inventory categories vs current implementation status
 - **Key Files**: `backend/src/athena/scrapers/base.py`, `backend/src/athena/scrapers/remote.py`, `backend/src/athena/scrapers/lilongwe.py`
-- **Reference**: `MIGRATION_GAP_ANALYSIS.md` SCR-02 section
+- **Note**: original SCR-02 gap-analysis document (`MIGRATION_GAP_ANALYSIS.md`) was deleted without archiving — ticket list below is the surviving record
 
 ## Decision Tickets (Resolve One at a Time)
 
