@@ -45,7 +45,7 @@ graph TB
             AUTO["<b>automation/</b><br/>browser.py (Playwright stealth)<br/>form_filler.py · submitter.py<br/>7-stage submitter + LocalApprovalGate"]
             AIPV["<b>ai/providers/</b><br/>base.py ABC → factory.py<br/>gemini.py ⇄ fallback.py (rule-based)"]
             SCHED["<b>scheduler/</b> — APScheduler AsyncIOScheduler<br/>4h scrape · 30m process · 1d cleanup<br/>autostart via lifespan"]
-            ADAPT["<b>adapters/</b> · <b>models/</b><br/>ai_studio.py · Pydantic v2 domain models"]
+            ADAPT["<b>models/</b><br/>Pydantic v2 domain models<br/>status_mapping.py = canonical status map"]
         end
     end
 
