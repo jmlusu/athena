@@ -24,7 +24,7 @@ if (!process.env.ATHENA_RATE_LIMIT) {
 }
 
 export default defineConfig({
-  // Isolated test dir: the main config's testDir (`e2e/tests`) never sees these.
+  // Isolated test dir: only *.spec.ts under e2e/aistudio/ are collected.
   testDir: path.join(CONFIG_DIR, 'aistudio'),
   fullyParallel: true,
   // Playwright's default is cores/2, which is 8 here. Each worker launches a
@@ -60,14 +60,10 @@ export default defineConfig({
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
-      // Screenshots are Chrome-only: skip visual regression suite on non-Chromium
-      testIgnore: ['**/visual-regression.spec.ts'],
     },
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-      // Screenshots are Chrome-only: skip visual regression suite on non-Chromium
-      testIgnore: ['**/visual-regression.spec.ts'],
     },
   ],
   // Root AI Studio SPA: `npm run dev` -> tsx server.ts (Express BFF + Vite
