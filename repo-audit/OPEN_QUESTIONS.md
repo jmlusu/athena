@@ -18,28 +18,17 @@ Supersedes the 2026-10-06 list. Resolved questions recorded with commit evidence
 | Q12 | `ATHENA_AGENT_RULES.md` → `AGENTS.md`? | **DONE** — `be31414` |
 | Q13 | Health command form? | **DONE** — `npm run health` `be14655` + CI gate `f86b704` |
 | Q14 | Unused npm deps? | **DONE** — `ab09821`; re-audit confirms **0 unused npm** |
+| NEW-Q1 | GitHub remote public/private? | **ANSWERED 2026-10-07: PRIVATE** → no history purge (R5) for visibility; C-sec5 becomes documented-acceptance path; `.media/` already gitignored in `c71cea5` |
+| NEW-Q2a | Status-claims doc authority? | **ANSWERED: DATA_STORES for stores, ARCHITECTURE for flow** (doc-level claim authority) |
+| NEW-Q3 | humanizer.py + automation/ fate? | **ANSWERED: KEEP as live features** → B3/B4 = KEEP; ARCHITECTURE A6/A7 listings stand as-is |
+| NEW-Q4 | Deployment story? | **ANSWERED: removed-for-good; keep `backend/Dockerfile` as reference** → delete `Caddyfile` (B8), no compose restore |
+| NEW-Q5 | Auth posture scope? | **ANSWERED: security track (Wave C, Gate 4) IS in scope for this cleanup branch** → S1/S2/S3 proceed under Gate 4 |
 
 ---
 
-## BLOCKING — must answer before Phase 2/3 execution
+## BLOCKING — resolved (kept here for the audit trail)
 
-**NEW-Q1 (from S7/S8/S9). Is the GitHub remote public or private?**
-PII (5.3 MB cert PDFs, resume markdown, JSONL with email) exists in **pushed history**. Public → history purge = **R5** (rewrite + force-push, explicit approval + plan). Private → document as accepted risk + add `.media/` to `.gitignore`.
-→ Drives the entire security wave. **Also decide S4:** drop local stash (`git stash drop`) + rotate the Gemini credential found in it (R3)?
-
-**NEW-Q2 (D1). Which status mapping is authoritative?** `athena-mapper.ts:44-55` vs `models/status_mapping.py:6-28` disagree on `scored/rejected/archived`. May be intentionally directional. Options: (a) Python canonical + TS derived + contract test [recommended]; (b) document as intentionally different layers. **R3.**
-
-**NEW-Q3 (D3/DC5). Two dead-ish subsystems: keep, wire, or delete?**
-(a) `documents/humanizer.py` (586 LOC, zero callers; live path = AI provider) — historical DEC-004 said to port prompts *into* it;
-(b) `automation/` (1,827 LOC, unreachable; ARCHITECTURE documents it as live; `athena.executor.hitl_gate` target doesn't exist).
-Options each: DELETE / ARCHIVE / implement endpoint. **Ambiguous deletion = §15 STOP. R3.**
-
-**NEW-Q4 (D12/C26). Deployment story?** `Caddyfile` proxies a deleted `frontend` service; `backend/Dockerfile` orphaned; ARCHITECTURE:215 says "Docker/OCI removed". Options: (a) delete both [recommended if no near-term deploy]; (b) restore compose stack + fix Caddyfile. **R2.**
-
-**NEW-Q5 (S1/S2/S3). Auth posture — how far does the cleanup go?**
-These are behavior/security changes, not sanitation: fail-closed dev key (R3) · unauthenticated PII GETs (R4) · BFF auth neutralization DEF-008 (R4). Approve as separate Phase 6 track or defer with documented acceptance? **GATE 4.**
-
-**NEW-Q6 (Q6-original). PII history check — ANSWERED:** `.media/` + `profile/` + JSONL **were committed and are on origin/main** (see SECURITY_AUDIT Q5/Q6). Decision rides on NEW-Q1.
+**NEW-Q2 (D1) code-level mapping. Which mapping is authoritative?** `athena-mapper.ts:44-55` vs `models/status_mapping.py:6-28` disagree on `scored/rejected/archived`. Plan (B1, Gate 1 approved) = Python canonical + TS derived + cross-language contract test — proceeds under **R3**.
 
 ---
 
@@ -63,4 +52,4 @@ These are behavior/security changes, not sanitation: fail-closed dev key (R3) ·
 
 ## Where decisions get recorded
 
-Protocol approval replies in-session + `docs/integration/MERGE_DECISIONS.md` (path fix pending — AGENTS.md:17 currently points at the nonexistent live path; real file is `docs/archive/integration/MERGE_DECISIONS.md` → decide: revive live file or retarget the rule).
+Protocol approval replies in-session + `docs/integration/MERGE_DECISIONS.md` (live path **revived** `cd5f0d4`; historical records: `docs/archive/integration/`).
