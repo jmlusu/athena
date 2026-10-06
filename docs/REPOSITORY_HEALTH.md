@@ -19,7 +19,7 @@ Reproduce at any time: `npm run health` (PASS/WARN/FAIL per area).
 | `npm run test:unit` | 58/58 PASS | 59/59 PASS |
 | `npm run build` | PASS | PASS |
 | `uv run pytest -q` | 102/102 PASS | 104/104 PASS |
-| `uv run ruff check .` | 237 errors (CI-tolerated) | **81 errors** (ruff fixes landed; baseline now 81) |
+| `uv run ruff check .` | 237 errors (CI-tolerated) | **80 errors** (ruff format landed; baseline now 80) |
 | Secrets committed | none (placeholders only) | none — enforced by `npm run health` |
 | Repo health command | none | `npm run health` (11 areas) |
 
@@ -50,7 +50,7 @@ Aggregate diff: **185 files changed, +6,709 / −16,255** across 20 commits (`cl
 
 | # | Item | Severity | Notes |
 |---|---|---|---|
-| 1 | Ruff: 81 pre-existing errors in `backend/src/athena/` (was 237; batch fix landed 2026-10-06) | Medium | CI `continue-on-error`; burn down separately, health fails only above baseline |
+| 1 | Ruff: 80 pre-existing errors in `backend/src/athena/` (was 237; batch fix landed 2026-10-06) | Medium | CI `continue-on-error`; burn down separately, health fails only above baseline |
 | 2 | E2E run with services: **57/66 pass** (9 fail × 3 browsers) | Medium | 3 pre-existing failures in `real-data.spec.ts`: pagination fixture missing, profile `hourly_rate_usd` undefined, pager UI not found; smoke/contract tests all pass |
 | 3 | ~~`METRICS_REGISTRY_GUIDE` points at deleted `frontend/` path~~ **CLOSED** — pattern implemented at `src/lib/athena/metrics-registry.ts` (`aff4a37`); guide samples fixed (`cd5f0d4`) | Closed | — |
 | 4 | `humanizer.py` optional-`ai_company` branches (L17, L22, L291) | Low | Feature **kept live** per NEW-Q3; guarded imports are optional-dependency handling, not dead code. `factory.py` OmniRoute comment no longer exists |

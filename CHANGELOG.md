@@ -26,7 +26,7 @@
 - Generated artifacts untracked (`.npy`, `*.egg-info`, `*.jsonl`, junk logs); `.gitignore` hardened
 
 ### Notes
-- Ruff baseline: 81 pre-existing errors tolerated by CI (no new errors)
+- Ruff baseline: 80 pre-existing errors tolerated by CI (no new errors)
 
 ---
 
