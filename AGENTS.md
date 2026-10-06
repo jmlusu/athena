@@ -39,6 +39,7 @@ Before touching code, answer "which file owns this?" from this map. Full detail:
 | Python tests | `backend/tests/` |
 | Node tests | `tests/server/` |
 | E2E tests | `e2e/` |
+| Agent permission levels (A0–A4) | `docs/agent-authority-matrix.md` |
 | Historical records | `docs/archive/` — never treat as current guidance |
 
 ---
