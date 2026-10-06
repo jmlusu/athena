@@ -171,15 +171,6 @@ export const api = {
 
   // Profile Documents
   listProfileDocuments: () => request<ProfileDocument[]>("/profile-documents"),
-
-  // Locks
-  acquireArtifactLock: (entity: string, entityId: string, agentId: string, ttl: number) =>
-    request<ArtifactLockResponse>(`/lock/artifact?entity=${entity}&id=${entityId}`, { method: "POST", body: JSON.stringify({ agentId, ttl }) }),
-  releaseArtifactLock: (entity: string, entityId: string, lockToken: string, agentId: string) =>
-    request<ArtifactLockResponse>(`/lock/artifact/release?entity=${entity}&id=${entityId}`, { method: "POST", body: JSON.stringify({ lockToken, agentId }) }),
-  acquireGlobalLock: (agentId: string) => request<ArtifactLockResponse>("/lock/global", { method: "POST", body: JSON.stringify({ agentId }) }),
-  releaseGlobalLock: (lockToken: string, agentId: string) => request<ArtifactLockResponse>("/lock/global/release", { method: "POST", body: JSON.stringify({ lockToken, agentId }) }),
-  scanStaleLocks: (agentId: string) => request<StaleLockResponse>("/lock/stale", { method: "POST", body: JSON.stringify({ agentId }) }),
 };
 
 export type {
