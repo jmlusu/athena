@@ -71,7 +71,7 @@ export default defineConfig({
   webServer: [
     {
       // FastAPI backend (port 8000) — required for contract tests that proxy via Express BFF
-      command: 'uv run uvicorn src.athena.api.app:app --host 0.0.0.0 --port 8000',
+      command: 'uv run uvicorn src.athena.api.app:app --host 127.0.0.1 --port 8000',
       cwd: path.resolve(REPO_ROOT, 'backend'),
       url: 'http://localhost:8000/health',
       timeout: 120000,

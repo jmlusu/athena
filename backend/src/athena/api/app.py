@@ -284,12 +284,8 @@ def create_app() -> FastAPI:
 
     # ── CORS (configurable, restricted allowlist) ────────────────────────
     _default_origins = [
-        "http://localhost",
         "http://localhost:3000",
-        "http://127.0.0.1",
         "http://127.0.0.1:3000",
-        "http://localhost:8530",
-        "http://127.0.0.1:8530",
     ]
     origins_raw = os.environ.get("ATHENA_CORS_ORIGINS", "")
     origins = [o.strip() for o in origins_raw.split(",") if o.strip()]

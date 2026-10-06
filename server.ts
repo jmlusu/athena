@@ -108,8 +108,6 @@ app.use((err: any, _req: express.Request, res: express.Response, next: express.N
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
-    backend: BACKEND_URL,
-    hasBackendKey: Boolean(process.env.ATHENA_API_KEY),
     timestamp: new Date().toISOString(),
   });
 });
