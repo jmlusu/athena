@@ -126,7 +126,7 @@ function gitFiles() {
   if (unit.code !== 0 || pytest.code !== 0) {
     record("tests", "FAIL", `node: ${unitPass} passed/${unitFail} failed; pytest: ${pyPass} passed/${pyFail} failed`);
   } else {
-    record("tests", "PASS", `node ${unitPass}/58 pass, pytest ${pyPass} passed`);
+    record("tests", "PASS", `node ${unitPass} pass, pytest ${pyPass} passed`);
   }
 }
 
@@ -143,7 +143,8 @@ function gitFiles() {
   const forbidden = tracked.filter((f) =>
     /\.(key|pem|p12|pfx)$/.test(f) || /^\.env$/.test(f) || /(^|\/)\.env\.(local|development|production)$/.test(f),
   );
-  const keyScan = run("git", ["grep", "-lE", "AIza[0-9A-Za-z_-]{35}|BEGIN [A-Z ]*PRIVATE KEY"]);
+  const keyScan = run("git", ["grep", "-lE",
+    "AIza[0-9A-Za-z_-]{35}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}|xox[baprs]-[A-Za-z0-9-]{10,}|BEGIN [A-Z ]*PRIVATE KEY|sk-[A-Za-z0-9]{32,}"]);
   const hits = keyScan.code === 0 ? keyScan.out.split(/\r?\n/).filter(Boolean) : [];
   if (forbidden.length || hits.length) {
     const parts = [];
