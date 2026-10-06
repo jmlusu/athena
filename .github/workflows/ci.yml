@@ -68,3 +68,33 @@ jobs:
 
       - name: Pytest
         run: uv run pytest -q
+
+  health:
+    name: Repository health (npm run health)
+    needs: [quality, backend-quality]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'backend/uv.lock'
+          python-version: '3.12'
+
+      - name: Sync backend dependencies
+        run: uv sync --extra dev
+        working-directory: backend
+
+      - name: Run health check
+        run: npm run health

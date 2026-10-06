@@ -1,7 +1,7 @@
 # Athena Metrics Registry — Team Usage Guide
 
-> Canonical source: `frontend/src/lib/athena/metrics-registry.ts`
-> Status: adopted by Dashboard, MetricsAndBarChart, PipelineKanbanBoard (2026-09-28)
+> Canonical source: `src/lib/athena/metrics-registry.ts`
+> Status: implemented and adopted by MetricsAndBarChart (2026-10-06)
 
 ## The one rule
 
@@ -57,15 +57,14 @@ import { ATS_CRITICAL_MIN, ATS_FLAGGED_MIN, ATS_FLAGGED_MAX } from '@/lib/athena
 
 Classification rule everywhere in the app:
 
-- **Critical**: `ats_score >= ATS_CRITICAL_MIN`
-- **Flagged**: `ATS_FLAGGED_MIN <= ats_score < ATS_FLAGGED_MAX`
+- **Critical**: `atsScore >= ATS_CRITICAL_MIN`
+- **Flagged**: `ATS_FLAGGED_MIN <= atsScore < ATS_FLAGGED_MAX`
 
-Example already in the codebase (`PipelineKanbanBoard.tsx`):
+Implemented in the registry itself (`buildStatsShapeFromJobs`):
 
-```tsx
-const isJobFlagged = (job: Job) =>
-  job.status === 'flagged' ||
-  ((job.ats_score || 0) >= ATS_FLAGGED_MIN && (job.ats_score || 0) < ATS_FLAGGED_MAX);
+```ts
+const criticalMatch = jobs.filter((j) => j.atsScore >= ATS_CRITICAL_MIN).length;
+const flaggedReview = jobs.filter((j) => j.atsScore >= ATS_FLAGGED_MIN && j.atsScore < ATS_FLAGGED_MAX).length;
 ```
 
 Changing a threshold constant changes it everywhere. That is the point.
@@ -115,11 +114,9 @@ total_jobs, new, criticalMatch, flaggedReview, signOffPending, submitted, avg_at
 
 ## Currently adopted by
 
-| File                                        | Uses                                                    |
-| ------------------------------------------- | ------------------------------------------------------- |
-| `components/athena/charts/MetricsAndBarChart.tsx` | `calculateFunnelData`, `defaultFunnelData`            |
-| `pages/athena/Dashboard.tsx`                | `buildStatsShapeFromJobs`                               |
-| `components/athena/pipeline/PipelineKanbanBoard.tsx` | `ATS_FLAGGED_MIN`, `ATS_FLAGGED_MAX`             |
+| File | Uses |
+|---|---|
+| `src/components/charts/MetricsAndBarChart.tsx` | `calculateFunnelData`, `defaultFunnelData`, `buildStatsShapeFromJobs`, ATS constants |
 
 ## Backend counterpart — Prometheus endpoint
 
@@ -139,7 +136,7 @@ Implementation: `backend/src/athena/metrics/prometheus.py` (mounted under the
 
 ```bash
 # Frontend typecheck (registry + all consumers)
-cd frontend && npm run lint          # tsc --noEmit
+npm run lint              # tsc --noEmit
 
 # Backend metrics endpoint (server must be running)
 curl http://127.0.0.1:8000/api/v1/athena/metrics
