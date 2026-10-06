@@ -23,13 +23,6 @@ def get_ai_provider(provider_name: str | None = None) -> AthenaAIProvider:
         model = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
         return GeminiProvider(api_key=api_key, model=model)
 
-    # Future providers can be added here:
-    # elif name == "omniroute":
-    #     return OmniRouteProvider(...)
-    # elif name == "local":
-    #     return LocalProvider(...)
-
-    # Default to fallback
     return FallbackProvider()
 
 
@@ -38,11 +31,11 @@ def create_provider(
     provider_type: str,
     api_key: str | None = None,
     model: str | None = None,
-    **kwargs,
+    **_kwargs,
 ) -> AthenaAIProvider:
     """Create a specific provider with explicit configuration."""
     if provider_type == "gemini":
         return GeminiProvider(api_key=api_key, model=model or "gemini-3.8-flash")
     if provider_type == "fallback":
         return FallbackProvider()
-    raise ValueError(f"Unknown provider type: {provider_type}")
+    raise ValueError(f"Unknown provider type: {provider_type}")  # noqa: TRY003

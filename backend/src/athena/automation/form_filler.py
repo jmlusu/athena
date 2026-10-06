@@ -379,7 +379,7 @@ class FormFiller:
         self.detected_fields: list[FormField] = []
 
     @classmethod
-    def detect_platform(cls, url: str) -> ATSPlatform:
+    def detect_platform(cls, url: str) -> ATSPlatform:  # noqa: PLR0911
         """Detect ATS platform from URL."""
         url_lower = url.lower()
         if "greenhouse.io" in url_lower or "boards.greenhouse.io" in url_lower:
@@ -399,7 +399,7 @@ class FormFiller:
     async def detect_fields(self) -> list[FormField]:
         """Detect form fields on current page using heuristics."""
         if not self.page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
 
         self.detected_platform = self.detect_platform(self.page.url)
         logger.info("Detected platform: %s", self.detected_platform.value)
@@ -549,7 +549,7 @@ class FormFiller:
             index = await element.evaluate("""
                 el => Array.from(el.parentNode.querySelectorAll(el.tagName)).indexOf(el) + 1
             """)
-            return f"{tag_name}:nth-of-type({index})"
+            return f"{tag_name}:nth-of-type({index})"  # noqa: TRY300
         except Exception:  # noqa: BLE001 - fall back when the DOM probe fails
             return tag_name
 
@@ -710,7 +710,7 @@ class FormFiller:
 
         return None
 
-    async def _fill_field(self, field: FormField, value: Any) -> bool:
+    async def _fill_field(self, field: FormField, value: Any) -> bool:  # noqa: PLR0911
         """Fill a single field based on its type."""
         if not self.page:
             return False
@@ -727,7 +727,7 @@ class FormFiller:
                     return await self.browser.click(field.selector)
                 return True
             logger.warning("Unknown field type: %s", field.field_type)
-            return False
+            return False  # noqa: TRY300
         except Exception as e:  # noqa: BLE001 - per-field fill errors are handled per-field
             logger.warning("Failed to fill field %s: %s", field.selector, e)
             return False

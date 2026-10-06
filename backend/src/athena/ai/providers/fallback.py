@@ -1,5 +1,8 @@
 """Deterministic fallback AI provider - no API key required."""
 
+import base64
+import random
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -290,8 +293,6 @@ class FallbackProvider(AthenaAIProvider):
             ("foster an ecosystem", "build a collaborative group"),
         ]
 
-        import re
-
         humanized = text
         for pattern, replacement in replacements:
             matches = re.findall(pattern, humanized, re.IGNORECASE)
@@ -440,7 +441,6 @@ class FallbackProvider(AthenaAIProvider):
 
     async def dispatch_n8n(self, request: N8nDispatchRequest) -> N8nDispatchResponse:
         """Stub n8n dispatcher."""
-        import random
 
         execution_id = f"n8n-exec-{int(datetime.now(UTC).timestamp())}-{random.randint(1000, 9999)}"
         webhook_url = (
@@ -477,8 +477,6 @@ class FallbackProvider(AthenaAIProvider):
         request: SubmitApplicationRequest,
     ) -> SubmitApplicationResponse:
         """Generate receipt (no actual submission)."""
-        import base64
-        import random
 
         receipt_id = f"ATH-RCPT-{random.randint(100000, 999999)}"
         confirmation_hash = (

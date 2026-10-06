@@ -1,16 +1,17 @@
 """Adapter for converting between AI Studio Opportunity and OpenCode Job models."""
 
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
 from athena.models.enums import JobSource, JobStatus, JobType
 from athena.models.jobs import Job, SalaryRange
-from athena.models.status_mapping import pipeline_to_job_status
+from athena.models.status_mapping import job_to_pipeline_status, pipeline_to_job_status
 from athena.timeutils import ensure_utc
 
 
-def opportunity_to_job(opp: dict[str, Any], profile_id: UUID | None = None) -> Job:
+def opportunity_to_job(opp: dict[str, Any], _profile_id: UUID | None = None) -> Job:
     """Convert AI Studio Opportunity dict to OpenCode Job model."""
     # Map scope to location and job_type
     scope = opp.get("scope", "international-remote")
@@ -92,7 +93,7 @@ def opportunity_to_job(opp: dict[str, Any], profile_id: UUID | None = None) -> J
     )
 
 
-def job_to_opportunity(job: Job, profile_data: dict | None = None) -> dict[str, Any]:
+def job_to_opportunity(job: Job, _profile_data: dict | None = None) -> dict[str, Any]:
     """Convert OpenCode Job model to AI Studio Opportunity dict."""
     # Determine scope from location and job_type
     scope = "international-remote"
@@ -118,8 +119,6 @@ def job_to_opportunity(job: Job, profile_data: dict | None = None) -> dict[str, 
     platform = source_to_platform.get(job.source, "LinkedIn")
 
     # Map status
-    from athena.models.status_mapping import job_to_pipeline_status
-
     pipeline_status = job_to_pipeline_status(job.status)
 
     opp = {
@@ -168,8 +167,6 @@ def job_to_opportunity(job: Job, profile_data: dict | None = None) -> dict[str, 
 def _parse_salary_range(salary_str: str) -> SalaryRange | None:
     """Parse salary string into SalaryRange."""
     # Simple parser for common formats
-    import re
-
     # Match patterns like "$38,000 - $48,000 USD / yr" or "MWK 3,200,000 - 4,500,000 / month"
     numbers = re.findall(r"[\d,]+", salary_str.replace(",", ""))
     if len(numbers) >= 2:
@@ -199,7 +196,6 @@ def _format_salary_range(salary: SalaryRange | None) -> str:
 
 def _parse_posted_date(posted_str: str) -> datetime:
     """Parse posted date string like '1 hour ago', '3 hours ago', '1 day ago'."""
-    import re
 
     now = datetime.now(UTC)
     posted_lower = posted_str.lower()

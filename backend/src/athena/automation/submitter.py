@@ -8,20 +8,32 @@ and audit trail logging.
 from __future__ import annotations
 
 import asyncio
+import importlib
+import json
 import logging
 import os
+import re
+import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 from athena.models.enums import ApplicationStatus
 from athena.models.jobs import Application, Document, Job, UserProfile
+from athena.paths import get_data_root
 from athena.store import athena_db
 
 from .browser import AthenaBrowser, BrowserConfig
 from .form_filler import FormFiller
+
+# Error message constants (to avoid TRY003)
+ERR_FORM_FILLER_NOT_INIT = "Form filler not initialized"
+ERR_BROWSER_NOT_INIT = "Browser not initialized"
+ERR_NO_SUBMISSION_CTX = "No completed submission context to retry"
+ERR_RESUME_REQUIRED = "Resume is required to retry submission"
 
 logger = logging.getLogger(__name__)
 
@@ -38,16 +50,11 @@ class LocalApprovalGate:
     """
 
     def __init__(self) -> None:
-        from athena.paths import get_data_root
-
         self.data_dir = get_data_root() / "approvals"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
     def request_and_park(self, task_id: str, agent_id: str, tool: str, args: dict[str, Any]) -> str:
         """Create an approval request and return its ID."""
-        import json
-        import uuid
-
         request_id = str(uuid.uuid4())
         request_file = self.data_dir / f"{request_id}.json"
         request_data = {
@@ -65,8 +72,6 @@ class LocalApprovalGate:
 
     def resume_approved(self, request_id: str) -> bool | None:
         """Check approval status. Returns True if approved, False if rejected, None if pending."""
-        import json
-
         request_file = self.data_dir / f"{request_id}.json"
         if not request_file.exists():
             return None
@@ -87,9 +92,9 @@ def get_hitl_gate():
     if os.getenv("ATHENA_HITL_EXTERNAL"):
         # Try to import external gate; fall back to local
         try:
-            from ...executor.hitl_gate import HITLGate
-
-            return HITLGate()
+            module = importlib.import_module("athena.executor.hitl_gate")
+            hitl_gate_class = module.HITLGate
+            return hitl_gate_class()
         except ImportError:
             logger.warning(
                 "ATHENA_HITL_EXTERNAL set but external HITLGate not available; using local gate",
@@ -105,17 +110,28 @@ class DummyMessageBus:
         logger.debug("MessageBus.send_task called (no-op): %s", getattr(task, "name", task))
 
     def __getattr__(self, name: str) -> Any:
-        return lambda *args, **kwargs: None
+        return lambda *_, **__: None
 
 
 def get_message_bus():
     """Factory to get message bus (always dummy in standalone)."""
     return DummyMessageBus()
 
-    # ─── Workflow Types ────────────────────────────────────────────────
+
+class SubmissionStage(StrEnum):
     """Stages of the submission workflow."""
 
-    return None
+    INITIALIZED = "initialized"
+    NAVIGATING = "navigating"
+    DETECTING_FIELDS = "detecting_fields"
+    FILLING_FORM = "filling_form"
+    VALIDATING = "validating"
+    AWAITING_APPROVAL = "awaiting_approval"
+    SUBMITTING = "submitting"
+    CONFIRMING = "confirming"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 @dataclass
@@ -275,7 +291,7 @@ class ApplicationSubmitter:
             # Stage 2: Detect form fields
             await self._update_stage(SubmissionStage.DETECTING_FIELDS)
             if not self.form_filler:
-                raise RuntimeError("Form filler not initialized")
+                raise RuntimeError(ERR_FORM_FILLER_NOT_INIT)  # noqa: TRY301
             await self.form_filler.detect_fields()
 
             # Stage 3: Fill form
@@ -346,7 +362,7 @@ class ApplicationSubmitter:
         logger.info("Navigating to application URL: %s", url)
 
         if not self.browser:
-            raise RuntimeError("Browser not initialized")
+            raise RuntimeError(ERR_BROWSER_NOT_INIT)
 
         await self.browser.navigate(url, wait_until="networkidle")
 
@@ -390,7 +406,7 @@ class ApplicationSubmitter:
         cover_letter_path = Path(cover_letter.file_path) if cover_letter else None
 
         if not self.form_filler:
-            raise RuntimeError("Form filler not initialized")
+            raise RuntimeError(ERR_FORM_FILLER_NOT_INIT)
 
         # Try multi-step form handling
         results = await self.form_filler.handle_multi_step_form(
@@ -559,8 +575,6 @@ class ApplicationSubmitter:
                     text = await element.text_content()
                     if text:
                         # Extract number from text
-                        import re
-
                         numbers = re.findall(r"[\w-]{6,}", text)
                         if numbers:
                             result["number"] = numbers[0]
@@ -625,11 +639,9 @@ class ApplicationSubmitter:
                     self.config.audit_dir
                     / f"submission_{self._result.application_id}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.json"
                 )
-                import json
-
                 audit_file.write_text(
                     json.dumps(
-                        {"result": self._result.to_dict(), "audit_log": audit_log}, indent=2
+                        {"result": self._result.to_dict(), "audit_log": audit_log}, indent=2,
                     ),
                 )
                 logger.info("Audit trail saved: %s", audit_file)
@@ -652,9 +664,9 @@ class ApplicationSubmitter:
             await asyncio.sleep(self.config.retry_delay_seconds)
 
             if self._current_job is None or self._current_profile is None:
-                raise RuntimeError("No completed submission context to retry")
+                raise RuntimeError(ERR_NO_SUBMISSION_CTX)
             if self._current_resume is None:
-                raise RuntimeError("Resume is required to retry submission")
+                raise RuntimeError(ERR_RESUME_REQUIRED)
 
             result = await self.submit_application(
                 self._current_job,

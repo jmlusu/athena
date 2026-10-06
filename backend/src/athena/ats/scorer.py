@@ -301,21 +301,7 @@ class ATSScorer:
     # mined as if it were skills, inflating the keyword denominator until the
     # component scored ~2/100 on every job.
     NOISE_TERMS = frozenset(
-        """
-        please kindly apply application applicants candidate candidates opportunity opportunities
-        company companies organisation organization organisations organizations team teams role roles
-        position positions job jobs career careers work working works working environment business
-        join joining help helping support supporting build building create creating develop developing
-        deliver delivering drive driving ensure ensuring grow growing make making new well good great
-        strong excellent proven track record required requirements responsibilities qualifications
-        responsibilities employer employers employee employees client clients customer customers
-        including include includes included etc via well-known fast-paced self-service best practices
-        solutions solution services service products product programs program project projects
-        together exec execs executive executives admin administration office offices global world
-        across within while who what when where which will would shall should may might must can
-        also just only very more most much many some any all both each other others another same
-        such own too own s t don now use used using useful like likely know knows known well
-        """.split()
+        ["please", "kindly", "apply", "application", "applicants", "candidate", "candidates", "opportunity", "opportunities", "company", "companies", "organisation", "organization", "organisations", "organizations", "team", "teams", "role", "roles", "position", "positions", "job", "jobs", "career", "careers", "work", "working", "works", "working", "environment", "business", "join", "joining", "help", "helping", "support", "supporting", "build", "building", "create", "creating", "develop", "developing", "deliver", "delivering", "drive", "driving", "ensure", "ensuring", "grow", "growing", "make", "making", "new", "well", "good", "great", "strong", "excellent", "proven", "track", "record", "required", "requirements", "responsibilities", "qualifications", "responsibilities", "employer", "employers", "employee", "employees", "client", "clients", "customer", "customers", "including", "include", "includes", "included", "etc", "via", "well-known", "fast-paced", "self-service", "best", "practices", "solutions", "solution", "services", "service", "products", "product", "programs", "program", "project", "projects", "together", "exec", "execs", "executive", "executives", "admin", "administration", "office", "offices", "global", "world", "across", "within", "while", "who", "what", "when", "where", "which", "will", "would", "shall", "should", "may", "might", "must", "can", "also", "just", "only", "very", "more", "most", "much", "many", "some", "any", "all", "both", "each", "other", "others", "another", "same", "such", "own", "too", "own", "s", "t", "don", "now", "use", "used", "using", "useful", "like", "likely", "know", "knows", "known", "well"],
     )
 
     def _extract_skills_from_text(self, text: str) -> set[str]:

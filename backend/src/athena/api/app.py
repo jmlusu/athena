@@ -24,7 +24,14 @@ from typing import Any, cast
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from filelock import FileLock, Timeout as FileLockTimeout
+from filelock import FileLock
+from filelock import Timeout as FileLockTimeout
+
+from athena.api.ai_routes import router as ai_router
+from athena.api.routes import router as athena_router
+from athena.metrics.prometheus import router as metrics_router
+from athena.paths import get_data_root
+from athena.scheduler import ScrapeConfig, athena_scheduler
 
 load_dotenv()
 
@@ -179,10 +186,9 @@ def _acquire_instance_lock(data_root) -> FileLock | None:
         lock.acquire()
     except FileLockTimeout as err:
         holder = owner_path.read_text(encoding="utf-8").strip() if owner_path.exists() else "?"
-        raise RuntimeError(
-            f"Another Athena instance (pid={holder}) already owns {data_root}. "
-            "Stop it first, set ATHENA_ALLOW_MULTIPLE_INSTANCES=true, or point "
-            "ATHENA_DATA_DIR elsewhere.",
+        raise RuntimeError(  # noqa: TRY003
+            f"Another Athena instance (pid={holder}) owns {data_root}. "
+            "Stop it, set ATHENA_ALLOW_MULTIPLE_INSTANCES=true, or change ATHENA_DATA_DIR.",
         ) from err
     try:
         owner_path.write_text(str(os.getpid()), encoding="utf-8")
@@ -192,13 +198,11 @@ def _acquire_instance_lock(data_root) -> FileLock | None:
 
 
 @asynccontextmanager
-async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Lifespan handler for FastAPI Athena app."""
     # Initialize Athena data directory
     data_root = None
     try:
-        from athena.paths import get_data_root
-
         data_root = get_data_root()
         data_root.mkdir(parents=True, exist_ok=True)
         logger.info("Athena data directory initialised: %s", data_root)
@@ -214,8 +218,6 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Auto-start scheduler with a default scrape config (unattended operation)
     scheduler_started = False
     try:
-        from athena.scheduler import ScrapeConfig, athena_scheduler
-
         if not athena_scheduler.default_configs:
             default_query = os.environ.get("ATHENA_DEFAULT_SCRAPE_QUERY", "software engineer")
             default_location = os.environ.get("ATHENA_DEFAULT_SCRAPE_LOCATION") or None
@@ -246,8 +248,6 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     if scheduler_started:
         try:
-            from athena.scheduler import athena_scheduler
-
             athena_scheduler.stop()
         except Exception:  # noqa: BLE001 - non-critical shutdown hook
             logger.debug("Scheduler shutdown skipped")
@@ -278,13 +278,12 @@ def create_app() -> FastAPI:
     if os.environ.get("ATHENA_AUTH_MODE", "api_key") == "open":
         bind_host = os.environ.get("ATHENA_HOST", "").strip()
         if bind_host and not is_loopback_host(bind_host):
-            raise RuntimeError(
-                "ATHENA_AUTH_MODE=open is only allowed on loopback hosts "
-                f"(127.0.0.1 / ::1); ATHENA_HOST='{bind_host}'",
+            raise RuntimeError(  # noqa: TRY003
+                f"ATHENA_AUTH_MODE=open only allowed on loopback hosts; got {bind_host}",
             )
 
     # ── CORS (configurable, restricted allowlist) ────────────────────────
-    _DEFAULT_ORIGINS = [
+    _default_origins = [
         "http://localhost",
         "http://localhost:3000",
         "http://127.0.0.1",
@@ -295,12 +294,12 @@ def create_app() -> FastAPI:
     origins_raw = os.environ.get("ATHENA_CORS_ORIGINS", "")
     origins = [o.strip() for o in origins_raw.split(",") if o.strip()]
     if not origins:
-        origins = _DEFAULT_ORIGINS
+        origins = _default_origins
     if "*" in origins:
         logger.warning("ATHENA_CORS_ORIGINS contained '*'; ignoring wildcard for security.")
         origins = [o for o in origins if o != "*"]
     if not origins:
-        origins = _DEFAULT_ORIGINS
+        origins = _default_origins
 
     app.add_middleware(
         CORSMiddleware,
@@ -342,13 +341,12 @@ def create_app() -> FastAPI:
         if _is_exempt_from_auth(request.url.path):
             return cast(Response, await call_next(request))
         # Only enforce on mutating methods
-        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-            if not _check_api_key(request):
-                return Response(
-                    content='{"detail":"Invalid or missing API key"}',
-                    status_code=401,
-                    media_type="application/json",
-                )
+        if request.method in ("POST", "PUT", "PATCH", "DELETE") and not _check_api_key(request):
+            return Response(
+                content='{"detail":"Invalid or missing API key"}',
+                status_code=401,
+                media_type="application/json",
+            )
         return cast(Response, await call_next(request))
 
     # ── Security headers ────────────────────────────────────────────────
@@ -360,9 +358,6 @@ def create_app() -> FastAPI:
         return response
 
     # ── Routers ─────────────────────────────────────────────────────────
-    from athena.api.ai_routes import router as ai_router
-    from athena.api.routes import router as athena_router
-    from athena.metrics.prometheus import router as metrics_router
 
     app.include_router(athena_router, prefix="/api/v1/athena")
     app.include_router(ai_router, prefix="/api/v1/athena")

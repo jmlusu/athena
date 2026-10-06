@@ -8,8 +8,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from athena.ats import ats_scorer
+from athena.documents import DocumentGenerator
 from athena.matching import matching_engine
-from athena.models import JobSource, JobStatus, JobType, ScrapeJob
+from athena.models import Job, JobSource, JobStatus, JobType, ScrapeJob
 from athena.scrapers import scraper_registry
 from athena.store import athena_db
 
@@ -302,8 +303,6 @@ class AthenaScheduler:
         so this prepares the artefacts and records the intent rather than
         pretending an application was sent.
         """
-        from athena.documents import DocumentGenerator
-
         slug = f"{job.company[:40]}-{job.title[:60]}".replace("/", "-").replace(" ", "_")
         out_dir = athena_db.base_dir / "documents" / str(job.id)
         out_dir.mkdir(parents=True, exist_ok=True)

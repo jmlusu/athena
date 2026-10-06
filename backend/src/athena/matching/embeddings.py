@@ -5,6 +5,11 @@ from typing import Optional
 
 import numpy as np
 
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None  # type: ignore
+
 from athena.paths import get_data_root
 
 
@@ -35,7 +40,7 @@ class EmbeddingCache:
             try:
                 embedding: np.ndarray = np.load(cache_path)
                 self._memory_cache[key] = embedding
-                return embedding
+                return embedding  # noqa: TRY300
             except (OSError, ValueError):
                 pass
         return None
@@ -69,12 +74,10 @@ class EmbeddingModel:
 
     def _load_model(self) -> None:
         """Load the sentence-transformers model."""
-        try:
-            from sentence_transformers import SentenceTransformer
-
+        if SentenceTransformer is not None:
             # Use a lightweight but effective model
             self._model = SentenceTransformer("all-MiniLM-L6-v2")
-        except ImportError:
+        else:
             self._model = None
 
     def is_available(self) -> bool:
@@ -83,7 +86,7 @@ class EmbeddingModel:
     def encode(self, texts: list[str], use_cache: bool = True) -> np.ndarray:
         """Encode texts to embeddings."""
         if not self.is_available():
-            raise RuntimeError("sentence-transformers not available")
+            raise RuntimeError("sentence-transformers not available")  # noqa: TRY003
 
         if isinstance(texts, str):
             texts = [texts]

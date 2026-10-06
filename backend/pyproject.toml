@@ -107,6 +107,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+markers = [
+    "weasyprint: tests requiring WeasyPrint/GTK (PDF generation)",
+]
 
 [tool.coverage.run]
 source = ["src/athena"]

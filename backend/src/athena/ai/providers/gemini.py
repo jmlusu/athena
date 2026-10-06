@@ -17,6 +17,7 @@ from athena.api.ai_schemas import (
     DehumanizeResponse,
     N8nDispatchRequest,
     N8nDispatchResponse,
+    ScrapeLiveListing,
     ScrapeLiveRequest,
     ScrapeLiveResponse,
     SubmitApplicationRequest,
@@ -329,7 +330,7 @@ Return strict JSON:
             data = json.loads(response.text or "{}")
             if data.get("listings") and isinstance(data["listings"], list):
                 return ScrapeLiveResponse(
-                    listings=[ScrapeLiveListing(**l) for l in data["listings"]],
+                    listings=[ScrapeLiveListing(**listing) for listing in data["listings"]],
                     timestamp=datetime.now(UTC),
                 )
         except Exception as e:

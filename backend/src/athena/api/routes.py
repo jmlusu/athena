@@ -1,8 +1,9 @@
 import logging
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
 
@@ -562,13 +563,10 @@ async def flag_job(job_id: UUID, request: FlagJobRequest | None = None) -> JobRe
 
 # Scraping endpoints
 @router.post("/scrape", response_model=ScrapeJobResponse)
-async def trigger_scrape(request: ScrapeJobRequest, background_tasks: BackgroundTasks):
+async def trigger_scrape(request: ScrapeJobRequest, _background_tasks: BackgroundTasks):
     """Trigger a scrape job."""
     # Test mode: return mock response instantly without hitting external APIs
     if os.getenv("ATHENA_TEST_MODE") == "true":
-        from datetime import UTC, datetime
-        from uuid import uuid4
-
         # Return the seeded test jobs (5 jobs from global-setup)
         return ScrapeJobResponse(
             id=uuid4(),
@@ -687,8 +685,8 @@ async def get_pipeline_stats():
     jobs = athena_db.jobs.get_all()
 
     by_status = {}
-    for status in JobStatus:
-        by_status[status.value] = len([j for j in jobs if j.status == status])
+    for job_status in JobStatus:
+        by_status[job_status.value] = len([j for j in jobs if j.status == job_status])
 
     by_source = {}
     for source in JobSource:
@@ -758,13 +756,12 @@ async def stop_scheduler():
 @router.get("/scheduler/status")
 async def get_scheduler_status():
     """Get scheduler status."""
-    jobs = []
-    for job in athena_scheduler.scheduler.get_jobs():
-        jobs.append(
-            {
-                "id": job.id,
-                "name": job.name,
-                "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
-            },
-        )
+    jobs = [
+        {
+            "id": job.id,
+            "name": job.name,
+            "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
+        }
+        for job in athena_scheduler.scheduler.get_jobs()
+    ]
     return {"running": athena_scheduler._running, "jobs": jobs}

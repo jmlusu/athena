@@ -1,9 +1,10 @@
 import re
+from datetime import datetime
 from urllib.parse import quote_plus, urljoin
 
 from bs4 import BeautifulSoup
 
-from athena.models import Job, JobSource, JobType
+from athena.models import Job, JobSource, JobType, SalaryRange
 from athena.timeutils import ensure_utc
 
 from .base import BaseScraper
@@ -321,16 +322,12 @@ class RemoteOKScraper(BaseScraper):
             salary_max = item.get("salary_max")
             salary_range = None
             if salary_min or salary_max:
-                from athena.models import SalaryRange
-
                 salary_range = SalaryRange(
                     min=salary_min,
                     max=salary_max,
                     currency="USD",
                     period="yearly",
                 )
-
-            from datetime import datetime
 
             posted = None
             if item.get("date"):

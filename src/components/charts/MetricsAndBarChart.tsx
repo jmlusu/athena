@@ -1,21 +1,27 @@
 import React from "react";
 import { Sparkles, FileText, CheckCircle2, AlertTriangle, Send, Clock, Layers } from "lucide-react";
 import { Opportunity } from "../../types";
+import {
+  ATS_CRITICAL_MIN,
+  ATS_FLAGGED_MIN,
+  ATS_FLAGGED_MAX,
+  buildStatsShapeFromJobs,
+  StatsShape,
+  calculateFunnelData,
+  calculateConversionRate,
+} from "../../lib/athena/metrics-registry";
 
 interface MetricsAndBarChartProps {
   opportunities: Opportunity[];
   onCardClick?: (filterType: string) => void;
-  stats?: StatsData;
+  stats?: StatsShape;
 }
 
-interface StatsData {
-  discovered: number;
-  critical_matches: number;
-  flagged_matches: number;
-  awaiting_signoff: number;
-  submitted: number;
-  skills_distribution: Array<{ label: string; count: number; percentage: number; color: string }>;
-  pipeline_trend: Array<{ stage: string; count: number }>;
+interface SkillsData {
+  label: string;
+  count: number;
+  percentage: number;
+  color: string;
 }
 
 export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
@@ -23,38 +29,17 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
   onCardClick,
   stats,
 }) => {
-  const total = opportunities.length;
-  const criticalMatches = opportunities.filter((o) => o.atsScore >= 90).length;
-  const flaggedMatches = opportunities.filter((o) => o.atsScore >= 80 && o.atsScore < 90).length;
-  const awaitingSignoff = opportunities.filter((o) => o.status === "awaiting_signoff").length;
-  const submitted = opportunities.filter((o) => o.status === "submitted" || Boolean(o.receipt)).length;
+  const derived = buildStatsShapeFromJobs(opportunities);
+  const statsDiscovered = stats?.new ?? derived.new;
+  const statsCritical = stats?.criticalMatch ?? derived.criticalMatch;
+  const statsFlagged = stats?.flaggedReview ?? derived.flaggedReview;
+  const statsAwaitingSignoff = stats?.signOffPending ?? derived.signOffPending;
+  const statsSubmitted = stats?.submitted ?? derived.submitted;
 
-  // Use provided stats data, fall back to defaults if not available
-  const statsDiscovered = stats?.discovered ?? total;
-  const statsCritical = stats?.critical_matches ?? criticalMatches;
-  const statsFlagged = stats?.flagged_matches ?? flaggedMatches;
-  const statsAwaitingSignoff = stats?.awaiting_signoff ?? awaitingSignoff;
-  const statsSubmitted = stats?.submitted ?? submitted;
+  const funnelData = calculateFunnelData(derived);
+  const trendPoints = stats?.pipeline_trend ?? funnelData.map((f: { stage: string; count: number }) => ({ stage: f.stage, count: f.count }));
 
-  // Skills distribution from stats or default data
-  const skillsDistribution = stats?.skills_distribution ?? [
-    { label: "Systems Architecture & MIS", count: 18, percentage: 92, color: "bg-[#F97316]" },
-    { label: "n8n & Workflow Automation", count: 14, percentage: 88, color: "bg-[#18181B]" },
-    { label: "Lilongwe Public Sector & USAID", count: 16, percentage: 95, color: "bg-emerald-600" },
-    { label: "Full-Stack Development (React/TS)", count: 12, percentage: 84, color: "bg-[#475569]" },
-    { label: "Consultancy Advisory & Proposals", count: 15, percentage: 90, color: "bg-[#DC2626]" },
-  ];
-
-  // Pipeline stage trend points from stats or default data
-  const trendPoints = stats?.pipeline_trend ?? [
-    { stage: "Scraped", count: 32 },
-    { stage: "Evaluated", count: 28 },
-    { stage: "≥90 Tailored", count: 19 },
-    { stage: "Authorized", count: 12 },
-    { stage: "Submitted", count: 8 },
-  ];
-
-  const maxTrend = 35;
+  const maxTrend = Math.max(...trendPoints.map((p: { count: number }) => p.count), 1);
   const graphWidth = 260;
   const graphHeight = 70;
   const padding = 15;
@@ -68,8 +53,16 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
   };
 
   const trendPath = trendPoints
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${getTrendX(i)},${getTrendY(p.count)}`)
+    .map((p: { count: number }, i: number) => `${i === 0 ? "M" : "L"} ${getTrendX(i)},${getTrendY(p.count)}`)
     .join(" ");
+
+  const skillsDistribution: SkillsData[] = stats?.skills_distribution ?? [
+    { label: "Systems Architecture & MIS", count: 18, percentage: 92, color: "bg-[#F97316]" },
+    { label: "n8n & Workflow Automation", count: 14, percentage: 88, color: "bg-[#18181B]" },
+    { label: "Lilongwe Public Sector & USAID", count: 16, percentage: 95, color: "bg-emerald-600" },
+    { label: "Full-Stack Development (React/TS)", count: 12, percentage: 84, color: "bg-[#475569]" },
+    { label: "Consultancy Advisory & Proposals", count: 15, percentage: 90, color: "bg-[#DC2626]" },
+  ];
 
   return (
     <div className="space-y-4">
@@ -84,7 +77,7 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
             <span>Discovered</span>
             <Layers className="w-3.5 h-3.5 text-[#64748B]" />
           </div>
-          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{total}</div>
+          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{statsDiscovered}</div>
           <div className="text-[11px] text-[#64748B] mt-0.5">Across 4 platforms</div>
         </div>
 
@@ -97,7 +90,7 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
             <span>ATS ≥ 90 Match</span>
             <Sparkles className="w-3.5 h-3.5 text-[#F97316]" />
           </div>
-          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{criticalMatches}</div>
+          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{statsCritical}</div>
           <div className="text-[11px] text-[#EA580C] mt-0.5 font-medium">Auto-Document Ready</div>
         </div>
 
@@ -110,7 +103,7 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
             <span>ATS 80-89 Flagged</span>
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{flaggedMatches}</div>
+          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{statsFlagged}</div>
           <div className="text-[11px] text-amber-600 mt-0.5">Review Queue</div>
         </div>
 
@@ -123,7 +116,7 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
             <span>Human Sign-Off</span>
             <Clock className="w-3.5 h-3.5 text-[#DC2626]" />
           </div>
-          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{awaitingSignoff}</div>
+          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{statsAwaitingSignoff}</div>
           <div className="text-[11px] text-[#DC2626] mt-0.5 font-medium">Authorization Gate</div>
         </div>
 
@@ -136,7 +129,7 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
             <span>Submitted Proofs</span>
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
           </div>
-          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{submitted}</div>
+          <div className="text-2xl font-bold font-mono text-[#18181B] tracking-tight">{statsSubmitted}</div>
           <div className="text-[11px] text-emerald-600 mt-0.5">Receipts Archived</div>
         </div>
       </div>
@@ -158,7 +151,7 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
           </div>
 
           <div className="space-y-2.5">
-            {skillsDistribution.map((item, idx) => (
+            {skillsDistribution.map((item: SkillsData, idx: number) => (
               <div key={idx} className="space-y-1">
                 <div className="flex justify-between text-xs">
                   <span className="font-medium text-[#18181B]">{item.label}</span>
@@ -211,7 +204,7 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
               <path d={trendPath} fill="none" stroke="#18181B" strokeWidth="2" strokeLinecap="round" />
 
               {/* Data Point Markers */}
-              {trendPoints.map((pt, idx) => {
+              {trendPoints.map((pt: { stage: string; count: number }, idx: number) => {
                 const x = getTrendX(idx);
                 const y = getTrendY(pt.count);
                 return (
@@ -228,7 +221,9 @@ export const MetricsAndBarChart: React.FC<MetricsAndBarChartProps> = ({
 
           <div className="pt-2 border-t border-[#F1F5F9] flex justify-between items-center text-[11px]">
             <span className="text-[#64748B]">Scraped to Submit Ratio</span>
-            <span className="font-mono font-bold text-[#18181B]">25.0% Conversion</span>
+            <span className="font-mono font-bold text-[#18181B]">
+              {calculateConversionRate(derived.submitted, derived)}% Conversion
+            </span>
           </div>
         </div>
       </div>

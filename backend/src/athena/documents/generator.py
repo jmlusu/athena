@@ -33,6 +33,9 @@ from athena.models import Education, Experience, Job, Skill, UserProfile
 
 logger = logging.getLogger(__name__)
 
+# Error message constants (to avoid TRY003)
+ERR_WEASYPRINT_NOT_AVAILABLE = "PDF generation requires weasyprint"
+
 # LightSpeed Brand Colors (from brand-tokens.json)
 BRAND_NAVY = RGBColor(0x07, 0x0A, 0x40)  # #070A40
 BRAND_RED = RGBColor(0xE6, 0x39, 0x46)  # #E63946
@@ -934,9 +937,9 @@ class DocumentGenerator:
         para.paragraph_format.space_after = SPACING_8
 
         # Add bottom border to paragraph
-        pPr = para._p.get_or_add_pPr()
-        pBdr = pPr.makeelement(qn("w:pBdr"), {})
-        bottom = pBdr.makeelement(
+        p_pr = para._p.get_or_add_pPr()
+        p_bdr = p_pr.makeelement(qn("w:pBdr"), {})
+        bottom = p_bdr.makeelement(
             qn("w:bottom"),
             {
                 qn("w:val"): "single",
@@ -945,8 +948,8 @@ class DocumentGenerator:
                 qn("w:color"): f"{color[0]:02X}{color[1]:02X}{color[2]:02X}",
             },
         )
-        pBdr.append(bottom)
-        pPr.append(pBdr)
+        p_bdr.append(bottom)
+        p_pr.append(p_bdr)
 
     # =========================================================================
     # PDF Generation
@@ -959,10 +962,11 @@ class DocumentGenerator:
         Note: This requires WeasyPrint and its dependencies to be installed.
         For production, consider using LibreOffice headless conversion for better fidelity.
         """
+        # Lazy import to avoid GTK/Pango dependency at module load time
         try:
-            from weasyprint import CSS, HTML
+            from weasyprint import CSS, HTML  # noqa: PLC0415
         except ImportError as e:
-            raise RuntimeError(f"PDF generation requires weasyprint: {e}") from e
+            raise RuntimeError(f"{ERR_WEASYPRINT_NOT_AVAILABLE}: {e}") from e  # noqa: TRY003
 
         # Convert DOCX to HTML
         html_content = await asyncio.to_thread(self._docx_to_html, docx_bytes)
@@ -1407,9 +1411,9 @@ def _add_template_line(doc: "DocxDocumentType") -> None:
     para.paragraph_format.space_before = SPACING_8
     para.paragraph_format.space_after = SPACING_8
 
-    pPr = para._p.get_or_add_pPr()
-    pBdr = pPr.makeelement(qn("w:pBdr"), {})
-    bottom = pBdr.makeelement(
+    p_pr = para._p.get_or_add_pPr()
+    p_bdr = p_pr.makeelement(qn("w:pBdr"), {})
+    bottom = p_bdr.makeelement(
         qn("w:bottom"),
         {
             qn("w:val"): "single",
@@ -1418,8 +1422,8 @@ def _add_template_line(doc: "DocxDocumentType") -> None:
             qn("w:color"): f"{BRAND_RED[0]:02X}{BRAND_RED[1]:02X}{BRAND_RED[2]:02X}",
         },
     )
-    pBdr.append(bottom)
-    pPr.append(pBdr)
+    p_bdr.append(bottom)
+    p_pr.append(p_bdr)
 
 
 # =========================================================================

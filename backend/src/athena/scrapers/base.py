@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import time
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Any, cast
@@ -90,15 +91,15 @@ class BaseScraper(ABC):
 
     async def _get_browser(self) -> PlaywrightBrowser:
         if not PLAYWRIGHT_AVAILABLE:
-            raise RuntimeError("Athena browser fetching requires the optional 'playwright' package")
+            raise RuntimeError(  # noqa: TRY003
+                "Athena browser fetching requires the optional 'playwright' package",
+            )
         if self._browser is None or not self._browser.is_connected():
             playwright = await async_playwright().start()
             self._browser = await playwright.chromium.launch(headless=True)
         return self._browser
 
     async def _rate_limit_wait(self) -> None:
-        import time
-
         elapsed = time.time() - self._last_request_time
         if elapsed < self.rate_limit:
             await asyncio.sleep(self.rate_limit - elapsed)

@@ -14,6 +14,16 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+try:
+    import pdfplumber
+except ImportError:
+    pdfplumber = None  # type: ignore
+
+try:
+    from docx import Document as DocxDocument
+except ImportError:
+    DocxDocument = None  # type: ignore
+
 from athena.models import Document, Education, Experience, Skill, UserProfile
 
 logger = logging.getLogger(__name__)
@@ -176,8 +186,8 @@ class DocumentParser(ABC):
             skill_text = skill_section.group(1)
             # Split by common delimiters
             skill_items = re.split(r"[,\n•|;]", skill_text)
-            for item in skill_items:
-                item = item.strip()
+            for raw_item in skill_items:
+                item = raw_item.strip()
                 if item and len(item) > 1:
                     # Try to extract level
                     level_match = re.search(
@@ -209,8 +219,8 @@ class DocumentParser(ABC):
             exp_text = exp_section.group(1)
             # Split by job entries (look for date patterns or company names)
             job_entries = re.split(r"\n\s*\n", exp_text)
-            for entry in job_entries:
-                entry = entry.strip()
+            for raw_entry in job_entries:
+                entry = raw_entry.strip()
                 if not entry:
                     continue
 
@@ -290,9 +300,7 @@ class DocumentParser(ABC):
             "agile",
             "scrum",
         ]
-        for kw in skill_keywords:
-            if kw.lower() in text.lower():
-                skills_used.append(kw)
+        skills_used = [kw for kw in skill_keywords if kw.lower() in text.lower()]
 
         return {
             "title": title,
@@ -316,8 +324,8 @@ class DocumentParser(ABC):
         if edu_section:
             edu_text = edu_section.group(1)
             entries = re.split(r"\n\s*\n", edu_text)
-            for entry in entries:
-                entry = entry.strip()
+            for raw_entry in entries:
+                entry = raw_entry.strip()
                 if not entry:
                     continue
 
@@ -503,8 +511,8 @@ class DocumentParser(ABC):
         if cert_section:
             cert_text = cert_section.group(1)
             items = re.split(r"[\n•|;]", cert_text)
-            for item in items:
-                item = item.strip()
+            for raw_item in items:
+                item = raw_item.strip()
                 if item and len(item) > 3:
                     certs.append(item)
         return certs
@@ -520,8 +528,8 @@ class DocumentParser(ABC):
         if lang_section:
             lang_text = lang_section.group(1)
             items = re.split(r"[\n,•|;]", lang_text)
-            for item in items:
-                item = item.strip()
+            for raw_item in items:
+                item = raw_item.strip()
                 if item and len(item) > 1:
                     languages.append(item)
         return languages
@@ -535,11 +543,9 @@ class PDFParser(DocumentParser):
         self._try_import()
 
     def _try_import(self) -> None:
-        try:
-            import pdfplumber
-
+        if pdfplumber is not None:
             self._pdfplumber = pdfplumber
-        except ImportError:
+        else:
             logger.warning("pdfplumber not installed. PDF parsing will be limited.")
             self._pdfplumber = None
 
@@ -668,9 +674,13 @@ class DOCXParser(DocumentParser):
         sections = []
         full_text = ""
 
-        try:
-            from docx import Document as DocxDocument
+        if DocxDocument is None:
+            return ParseResult(
+                success=False,
+                errors=["python-docx not installed. Install with: pip install python-docx"],
+            )
 
+        try:
             doc = DocxDocument(str(file_path))
 
             # Extract paragraphs with style info
@@ -786,7 +796,7 @@ class ResumeParser:
 
         try:
             profile = result.to_user_profile(email, str(file_path))
-            return profile, result
+            return profile, result  # noqa: TRY300
         except Exception as e:
             logger.exception("Error converting to UserProfile")
             result.success = False

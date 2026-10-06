@@ -7,6 +7,7 @@ Bypasses Windows shell environment variable inheritance issues.
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 
 def main():
@@ -33,12 +34,12 @@ def main():
 
     # Use venv python to ensure Python 3.12+ for PEP 695 syntax.
     # Windows venvs live in Scripts/, POSIX venvs in bin/.
-    venv_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv")
+    venv_dir = Path(__file__).resolve().parent / ".venv"
     if os.name == "nt":
-        venv_python = os.path.join(venv_dir, "Scripts", "python.exe")
+        venv_python = venv_dir / "Scripts" / "python.exe"
     else:
-        venv_python = os.path.join(venv_dir, "bin", "python")
-    if not os.path.exists(venv_python):
+        venv_python = venv_dir / "bin" / "python"
+    if not venv_python.exists():
         # No venv (e.g. uv-managed interpreter already active) - use ourselves.
         venv_python = sys.executable
 

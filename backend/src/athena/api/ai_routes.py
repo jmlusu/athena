@@ -33,7 +33,7 @@ async def get_provider() -> AthenaAIProvider:
 
 
 @router.get("/health", response_model=AIHealthResponse)
-async def ai_health(provider: AthenaAIProvider = Depends(get_provider)) -> AIHealthResponse:
+async def ai_health(provider: AthenaAIProvider = Depends(get_provider)) -> AIHealthResponse:  # noqa: B008
     """Health check for AI provider."""
     return await provider.health_check()
 
@@ -41,7 +41,7 @@ async def ai_health(provider: AthenaAIProvider = Depends(get_provider)) -> AIHea
 @router.post("/score-ats", response_model=ATSScoreResponse)
 async def score_ats(
     request: ATSScoreRequest,
-    provider: AthenaAIProvider = Depends(get_provider),
+    provider: AthenaAIProvider = Depends(get_provider),  # noqa: B008
 ) -> ATSScoreResponse:
     """Score a job/profile pair using AI-powered ATS evaluation.
 
@@ -54,13 +54,13 @@ async def score_ats(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"ATS scoring failed: {str(e)}",
-        )
+        ) from None
 
 
 @router.post("/tailor-resume", response_model=TailorResumeResponse)
 async def tailor_resume(
     request: TailorResumeRequest,
-    provider: AthenaAIProvider = Depends(get_provider),
+    provider: AthenaAIProvider = Depends(get_provider),  # noqa: B008
 ) -> TailorResumeResponse:
     """Generate a tailored resume for a job/profile pair.
 
@@ -73,13 +73,13 @@ async def tailor_resume(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Resume tailoring failed: {str(e)}",
-        )
+        ) from None
 
 
 @router.post("/tailor-document", response_model=TailorDocumentResponse)
 async def tailor_document(
     request: TailorDocumentRequest,
-    provider: AthenaAIProvider = Depends(get_provider),
+    provider: AthenaAIProvider = Depends(get_provider),  # noqa: B008
 ) -> TailorDocumentResponse:
     """Generate a tailored document (cover letter, executive summary, or consultancy proposal).
 
@@ -92,13 +92,13 @@ async def tailor_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Document tailoring failed: {str(e)}",
-        )
+        ) from None
 
 
 @router.post("/dehumanize", response_model=DehumanizeResponse)
 async def dehumanize(
     request: DehumanizeRequest,
-    provider: AthenaAIProvider = Depends(get_provider),
+    provider: AthenaAIProvider = Depends(get_provider),  # noqa: B008
 ) -> DehumanizeResponse:
     """Remove AI tells from text to produce authentic human voice.
 
@@ -110,13 +110,13 @@ async def dehumanize(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Dehumanization failed: {str(e)}",
-        )
+        ) from None
 
 
 @router.post("/scrape-live", response_model=ScrapeLiveResponse)
 async def scrape_live(
     request: ScrapeLiveRequest,
-    provider: AthenaAIProvider = Depends(get_provider),
+    provider: AthenaAIProvider = Depends(get_provider),  # noqa: B008
 ) -> ScrapeLiveResponse:
     """Synthesize job listings via AI (fallback mode).
 
@@ -129,13 +129,13 @@ async def scrape_live(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Live scraping failed: {str(e)}",
-        )
+        ) from None
 
 
 @router.post("/n8n/dispatch", response_model=N8nDispatchResponse)
 async def dispatch_n8n(
     request: N8nDispatchRequest,
-    provider: AthenaAIProvider = Depends(get_provider),
+    provider: AthenaAIProvider = Depends(get_provider),  # noqa: B008
 ) -> N8nDispatchResponse:
     """Dispatch n8n webhook trigger.
 
@@ -147,13 +147,13 @@ async def dispatch_n8n(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"n8n dispatch failed: {str(e)}",
-        )
+        ) from None
 
 
 @router.post("/submit-application", response_model=SubmitApplicationResponse)
 async def submit_application(
     request: SubmitApplicationRequest,
-    provider: AthenaAIProvider = Depends(get_provider),
+    provider: AthenaAIProvider = Depends(get_provider),  # noqa: B008
 ) -> SubmitApplicationResponse:
     """Generate submission receipt with human authorization.
 
@@ -172,7 +172,7 @@ async def submit_application(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Application submission failed: {str(e)}",
-        )
+        ) from None
 
 
 @router.post("/webhooks/n8n", response_model=N8nIngressResponse)
@@ -184,7 +184,7 @@ async def n8n_ingress(request: N8nIngressRequest) -> N8nIngressResponse:
     submit. The event type determines which action(s) fire.
 
     Example event types:
-    - "cron.4hour_tick": triggers full scrape → process → match pipeline
+    - "cron.4hour_tick": triggers full scrape -> process -> match pipeline
     - "job.match.high_ats": triggers document generation for matched jobs
     - "manual.submit": triggers application submission for a specific applicant
 
@@ -217,4 +217,4 @@ async def n8n_ingress(request: N8nIngressRequest) -> N8nIngressResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"n8n ingress failed: {str(e)}",
-        )
+        ) from None

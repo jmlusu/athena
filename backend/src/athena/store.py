@@ -101,7 +101,7 @@ class AthenaStore[T: BaseModel]:
                 handle.write(payload)
                 handle.flush()
                 os.fsync(handle.fileno())
-            os.replace(tmp, self.filepath)
+            tmp.replace(self.filepath)
 
     def _serialize(self, data: Any) -> Any:
         # UUID/Decimal/HttpUrl all serialize via str(); grouped here to keep

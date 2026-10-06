@@ -13,6 +13,16 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+try:
+    from ai_company.llm.client import LLMClient
+except ImportError:
+    LLMClient = None  # type: ignore
+
+try:
+    from ai_company.model_router import ModelRouter
+except ImportError:
+    ModelRouter = None  # type: ignore
+
 if TYPE_CHECKING:
     from docx.document import Document as DocxDocumentType
 
@@ -275,44 +285,35 @@ class Humanizer:
     def _check_llm_available(self) -> bool:
         """Check if external LLM is available via env var."""
         if os.getenv("ATHENA_LLM_PROVIDER"):
-            try:
-                # Test import
-                from ai_company.llm.client import LLMClient
-                from ai_company.model_router import ModelRouter
-
+            if LLMClient is not None and ModelRouter is not None:
                 return True
-            except ImportError:
-                logger.warning(
-                    "ATHENA_LLM_PROVIDER set but ai_company LLM not available; using template fallback",
-                )
-                return False
+            logger.warning(
+                "ATHENA_LLM_PROVIDER set but ai_company LLM not available; using template fallback",
+            )
+            return False
         return False
 
     @property
     def llm_client(self):
         if self._llm_client is None and self._llm_available:
-            try:
-                from ai_company.llm.client import LLMClient
-
+            if LLMClient is not None:
                 self._llm_client = LLMClient(
                     config_path=self.config_path,
                     registry_path=self.registry_path,
                 )
-            except ImportError:
+            else:
                 self._llm_available = False
         return self._llm_client
 
     @property
     def model_router(self):
         if self._model_router is None and self._llm_available:
-            try:
-                from ai_company.model_router import ModelRouter
-
+            if ModelRouter is not None:
                 self._model_router = ModelRouter(
                     config_path=self.config_path,
                     registry_path=self.registry_path,
                 )
-            except ImportError:
+            else:
                 self._llm_available = False
         return self._model_router
 
@@ -465,7 +466,6 @@ class Humanizer:
 
     def _template_humanize(self, content: str) -> str:
         """Basic template-based humanization without LLM."""
-        import re
 
         result = content
 
@@ -515,14 +515,13 @@ class Humanizer:
         changes = []
 
         # Check for AI tell removal
-        for category, patterns in AI_TELL_PATTERNS.items():
-            for pattern in patterns:
-                if re.search(pattern, original, re.IGNORECASE) and not re.search(
-                    pattern,
-                    humanized,
-                    re.IGNORECASE,
-                ):
-                    changes.append(f"Removed {category}: '{pattern}'")
+        changes.extend(
+            f"Removed {category}: '{pattern}'"
+            for category, patterns in AI_TELL_PATTERNS.items()
+            for pattern in patterns
+            if re.search(pattern, original, re.IGNORECASE)
+            and not re.search(pattern, humanized, re.IGNORECASE)
+        )
 
         # Check sentence structure variation
         orig_sentences = re.split(r"[.!?]+", original)
@@ -593,8 +592,8 @@ class Humanizer:
         for i, para_text in enumerate(paragraphs):
             # Handle bullet points
             if para_text.startswith(("•", "-", "*")):
-                for line in para_text.split("\n"):
-                    line = line.strip()
+                for raw_line in para_text.split("\n"):
+                    line = raw_line.strip()
                     if line:
                         p = doc.add_paragraph(style="List Bullet")
                         p.add_run(line.lstrip("•-* ").strip())
@@ -613,8 +612,8 @@ class Humanizer:
 
         # Simple paragraph-based formatting for resume sections
         sections = text.split("\n\n")
-        for section in sections:
-            section = section.strip()
+        for raw_section in sections:
+            section = raw_section.strip()
             if not section:
                 continue
 

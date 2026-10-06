@@ -34,6 +34,9 @@ except ImportError:  # pragma: no cover - playwright is an optional e2e dependen
     Playwright = Any  # noqa: F811
     async_playwright = Any  # noqa: F811
 
+# Error message constants (to avoid TRY003)
+ERR_PLAYWRIGHT_NOT_AVAILABLE = "Athena browser fetching requires the optional 'playwright' package"
+
 logger = logging.getLogger(__name__)
 
 
@@ -141,10 +144,7 @@ class AthenaBrowser:
         logger.info("Starting Athena browser (headless=%s)", self.config.headless)
 
         if not PLAYWRIGHT_AVAILABLE:
-            raise RuntimeError(
-                "Athena browser automation requires the optional 'playwright' package. "
-                "Install the e2e extras with: uv sync --extra e2e",
-            )
+            raise RuntimeError(ERR_PLAYWRIGHT_NOT_AVAILABLE)
 
         self._playwright = await async_playwright().start()
 
@@ -415,7 +415,7 @@ class AthenaBrowser:
     async def navigate(self, url: str, wait_until: str = "networkidle") -> Page:
         """Navigate to URL and return page."""
         if not self._page:
-            raise RuntimeError("Browser not started. Call start() first.")
+            raise RuntimeError("Browser not started. Call start() first.")  # noqa: TRY003
 
         logger.info("Navigating to: %s", url)
         await self._page.goto(url, wait_until=wait_until)
@@ -444,7 +444,7 @@ class AthenaBrowser:
     async def get_page_content(self) -> str:
         """Get current page HTML content."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         return cast(str, await self._page.content())
 
     async def wait_for_selector(
@@ -455,17 +455,17 @@ class AthenaBrowser:
     ) -> bool:
         """Wait for selector to appear."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         try:
             await self._page.wait_for_selector(selector, timeout=timeout, state=state)
-            return True
+            return True  # noqa: TRY300
         except TimeoutError:
             return False
 
     async def fill_field(self, selector: str, value: str, delay: int = 50) -> bool:
         """Fill a form field with human-like typing."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         try:
             await self._page.fill(selector, value, timeout=self.config.action_timeout)
             if delay > 0:
@@ -474,7 +474,7 @@ class AthenaBrowser:
                 await self.screenshot(
                     f"fill_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
-            return True
+            return True  # noqa: TRY300
         except (TimeoutError, ValueError) as e:
             logger.warning("Failed to fill field %s: %s", selector, e)
             return False
@@ -482,14 +482,14 @@ class AthenaBrowser:
     async def click(self, selector: str, force: bool = False) -> bool:
         """Click an element."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         try:
             await self._page.click(selector, force=force, timeout=self.config.action_timeout)
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(
                     f"click_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
-            return True
+            return True  # noqa: TRY300
         except (TimeoutError, ValueError) as e:
             logger.warning("Failed to click %s: %s", selector, e)
             return False
@@ -497,7 +497,7 @@ class AthenaBrowser:
     async def select_option(self, selector: str, value: str) -> bool:
         """Select option from dropdown."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         try:
             await self._page.select_option(
                 selector,
@@ -508,7 +508,7 @@ class AthenaBrowser:
                 await self.screenshot(
                     f"select_{selector.replace('[', '').replace(']', '').replace('=', '_')[:50]}",
                 )
-            return True
+            return True  # noqa: TRY300
         except (TimeoutError, ValueError) as e:
             logger.warning("Failed to select option %s: %s", selector, e)
             return False
@@ -516,12 +516,12 @@ class AthenaBrowser:
     async def upload_file(self, selector: str, file_path: Path) -> bool:
         """Upload a file to file input."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         try:
             await self._page.set_input_files(selector, str(file_path))
             if self.config.screenshot_on_action and self.config.audit_dir:
                 await self.screenshot(f"upload_{file_path.stem}")
-            return True
+            return True  # noqa: TRY300
         except (TimeoutError, ValueError, OSError) as e:
             logger.warning("Failed to upload file %s: %s", file_path, e)
             return False
@@ -529,7 +529,7 @@ class AthenaBrowser:
     async def get_text(self, selector: str) -> str | None:
         """Get text content of an element."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         try:
             return cast(str | None, await self._page.text_content(selector))
         except (TimeoutError, ValueError):
@@ -538,7 +538,7 @@ class AthenaBrowser:
     async def get_attribute(self, selector: str, attribute: str) -> str | None:
         """Get attribute of an element."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         try:
             return cast(str | None, await self._page.get_attribute(selector, attribute))
         except (TimeoutError, ValueError):
@@ -547,7 +547,7 @@ class AthenaBrowser:
     async def evaluate(self, script: str) -> Any:
         """Evaluate JavaScript in page context."""
         if not self._page:
-            raise RuntimeError("No active page")
+            raise RuntimeError("No active page")  # noqa: TRY003
         return await self._page.evaluate(script)
 
     @property
