@@ -10,6 +10,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Python build artifacts
+*.egg-info/
+.pytest_cache/
+.benchmarks/
+
 # Build outputs
 dist/
 
@@ -46,8 +51,12 @@ playwright-report/
 # TypeScript cache
 *.tsbuildinfo
 
-# Data
+# Data (runtime stores — reproducible or local-only)
 company/athena/
+athena/company/
+jobs.jsonl
+user_profiles.jsonl
+scrape_jobs.jsonl
 *.db
 *.sqlite
 
