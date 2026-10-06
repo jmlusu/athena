@@ -45,7 +45,7 @@ Aggregate diff: **135 files changed, +3,861 / −15,744** across 8 commits (`cle
 | # | Item | Severity | Notes |
 |---|---|---|---|
 | 1 | Ruff: 237 pre-existing errors in `backend/src/athena/` | Medium | CI `continue-on-error`; burn down separately, health fails only above baseline |
-| 2 | E2E not executed during cleanup | Medium | Requires running services; run `npm run test:e2e` before any release |
+| 2 | E2E run with services: **57/66 pass** (9 fail × 3 browsers) | Medium | 3 pre-existing failures in `real-data.spec.ts`: pagination fixture missing, profile `hourly_rate_usd` undefined, pager UI not found; smoke/contract tests all pass |
 | 3 | `docs/METRICS_REGISTRY_GUIDE.md` points at `frontend/src/lib/athena/metrics-registry.ts` — **deleted** with legacy `frontend/` in `64f8de0` | Medium | Pattern never re-implemented in root `src/`; re-implement or retitle as design doc |
 | 4 | Dead branches: `humanizer.py:275-320` (`ai_company` import), `factory.py` omniroute comment | Low | `ai_company` package not bundled; unreachable code — refactor ticket |
 | 5 | Provider coverage: `gemini` + rule fallback only; OmniRoute/external LLM unimplemented | Low | Documented as planned in architecture; do not present as implemented |
@@ -57,5 +57,6 @@ Aggregate diff: **135 files changed, +3,861 / −15,744** across 8 commits (`cle
 
 - Inventory & plan: `repo-audit/INVENTORY.md` (archived: `docs/archive/repo-audit/`), `repo-audit/CLEANUP_PLAN.md`
 - Decisions: `repo-audit/OPEN_QUESTIONS.md`
-- Health: `npm run health` → last run: **8 PASS, 3 WARN (ruff baseline, e2e skipped, tree dirty), 0 FAIL**
+- Health: `npm run health` → last run: **9 PASS, 2 WARN (ruff baseline, e2e skipped), 0 FAIL**
+- E2E with services: **57/66 pass** (3 distinct failures × 3 browsers; pre-existing)
 - Directive: `repo-audit/DIRECTIVE_SOURCE.md`
