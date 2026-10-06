@@ -24,7 +24,7 @@
 | Env config (backend prod) | `backend/.env.production.example` | **Rewritten to reality** (states "NO PostgreSQL/Redis/SMTP"); no longer the obsolete DATABASE_URL doc |
 | CI | `.github/workflows/{ci,e2e}.yml` + `dependabot.yml` | 3 jobs: quality, backend-quality, health |
 | Tests (Python) | `backend/tests/` (**14** files) | pytest testpaths=`["tests"]`; 102 pass + 8 GTK-gated skip |
-| Tests (Node) | `tests/server/mapper.test.ts` (1 file, 58 tests) | `npm run test:unit` |
+| Tests (Node) | `tests/server/mapper.test.ts` (1 file, 59 tests) | `npm run test:unit` |
 | Tests (E2E) | `e2e/` (config + 2 specs, 66 cases × 3 browsers) | 57/66 pass, 3 pre-existing failures |
 | Audit record | `repo-audit/` (11 files) | This phase regenerated 7 deliverables; archive copy in `docs/archive/repo-audit/` |
 

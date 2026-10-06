@@ -16,9 +16,9 @@ Reproduce at any time: `npm run health` (PASS/WARN/FAIL per area).
 | Generated files tracked (`.npy`, `*.egg-info`, caches) | 14 | **0** |
 | Executed directives/plans in root | 13 | **0** (deleted/archived) |
 | `npm run lint` (tsc) | **FAIL — 83 errors** (all in dead `athena/` fork) | **PASS — 0 errors** |
-| `npm run test:unit` | 58/58 PASS | 58/58 PASS |
+| `npm run test:unit` | 58/58 PASS | 59/59 PASS |
 | `npm run build` | PASS | PASS |
-| `uv run pytest -q` | 102/102 PASS | 102/102 PASS |
+| `uv run pytest -q` | 102/102 PASS | 104/104 PASS |
 | `uv run ruff check .` | 237 errors (CI-tolerated) | **81 errors** (ruff fixes landed; baseline now 81) |
 | Secrets committed | none (placeholders only) | none — enforced by `npm run health` |
 | Repo health command | none | `npm run health` (11 areas) |

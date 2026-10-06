@@ -36,16 +36,18 @@ export const SOURCE_PLATFORM: Record<string, OpportunityPlatform> = {
   other: "Other",
 };
 
-// JobStatus has 10 members, PipelineStatus 7. `rejected` and `archived` collapse
-// into `evaluated` on purpose: the frontend has no rejected state, and the reason
-// every job is currently rejected is tracked separately (spec Q1/Q2). Folding them
-// into `awaiting_signoff` would be worse -- it invites a human to sign off on a
-// role the engine already declined.
+// JobStatus has 10 members, PipelineStatus 7. DERIVED table: must equal
+// backend/src/athena/models/status_mapping.py JOB_TO_PIPELINE_STATUS (canonical),
+// enforced by backend/tests/test_status_contract.py. `rejected`/`archived`
+// collapse into `evaluated` on purpose: the frontend has no rejected state, and
+// the reason every job is currently rejected is tracked separately (spec Q1/Q2).
+// Folding them into `awaiting_signoff` would be worse -- it invites a human to
+// sign off on a role the engine already declined.
 export const STATUS_MAP: Record<string, PipelineStatus> = {
   new: "discovered",
-  fetched: "evaluated",
+  fetched: "discovered",
   matched: "evaluated",
-  scored: "tailored",
+  scored: "evaluated",
   flagged: "awaiting_signoff",
   applied: "submitted",
   interview: "interview",

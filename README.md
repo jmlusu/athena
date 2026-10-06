@@ -25,7 +25,7 @@ athena/
 │   └── ...
 ├── server.ts                # Express BFF: proxies AI/data to FastAPI, serves SPA
 ├── athena-mapper.ts         # Front↔back data model mapping (adapters)
-├── tests/server/            # Node unit tests (58 passing, node --test)
+├── tests/server/            # Node unit tests (59 passing, node --test)
 ├── e2e/                     # Playwright E2E (aistudio smoke suite)
 ├── docs/                    # Guides, specs, current plans (archive/ = historical)
 ├── repo-audit/              # Cleanup audit artifacts (inventory, plan, decisions)
@@ -134,7 +134,7 @@ cd backend && uv run ruff check .
 # Frontend type-check
 npm run lint
 
-# Node unit tests (58 passing)
+# Node unit tests (59 passing)
 npm run test:unit
 
 # E2E tests (Playwright; requires backend + frontend running)
@@ -154,7 +154,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 
 ## Project Status
 
-- ✅ FastAPI backend (102/102 tests pass)
+- ✅ FastAPI backend (104/104 tests pass)
 - ✅ Express BFF proxies all AI/data routes to FastAPI
 - ✅ n8n webhook ingress added
 - ✅ API client + frontend data loading wired

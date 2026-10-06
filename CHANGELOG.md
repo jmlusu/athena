@@ -84,8 +84,8 @@
 - Security stack (`X-API-Key`, rate limit, CORS, CSP/HSTS, loopback)
 - APScheduler (4h scrape / 30m score / 1d cleanup)
 - DOCX generation (`python-docx`, resume/cover-letter templates)
-- Backend test suite (110 tests: 102 pass + 8 GTK-gated)
-- Frontend test suite (58 tests, `node --test`)
+- Backend test suite (112 tests: 104 pass + 8 GTK-gated)
+- Frontend test suite (59 tests, `node --test`)
 - CI/CD pipelines (lint, build, ruff, pytest, health gate, e2e)
 - Deployment configs (compose/OCI removed 2026-10; `backend/Dockerfile` retained as reference)
 
@@ -154,7 +154,7 @@ npm run health
 # Backend tests (102 passing, 8 GTK-gated skips)
 cd backend && uv run pytest -q
 
-# Node unit tests (58 passing)
+# Node unit tests (59 passing)
 npm run test:unit
 
 # Type-check + build

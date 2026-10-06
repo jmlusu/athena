@@ -13,7 +13,9 @@ PIPELINE_TO_JOB_STATUS = {
     "offer": JobStatus.OFFER,
 }
 
-# OpenCode JobStatus -> AI Studio PipelineStatus (for reverse mapping)
+# OpenCode JobStatus -> AI Studio PipelineStatus.
+# CANONICAL status table: athena-mapper.ts STATUS_MAP must match it exactly;
+# backend/tests/test_status_contract.py parses the TS file and enforces equality.
 JOB_TO_PIPELINE_STATUS = {
     JobStatus.NEW: "discovered",
     JobStatus.FETCHED: "discovered",
@@ -23,8 +25,8 @@ JOB_TO_PIPELINE_STATUS = {
     JobStatus.APPLIED: "submitted",
     JobStatus.INTERVIEW: "interview",
     JobStatus.OFFER: "offer",
-    JobStatus.REJECTED: "submitted",  # no direct equivalent
-    JobStatus.ARCHIVED: "submitted",  # no direct equivalent
+    JobStatus.REJECTED: "evaluated",  # no rejected stage in the frontend; never awaiting_signoff
+    JobStatus.ARCHIVED: "evaluated",  # same
 }
 
 
