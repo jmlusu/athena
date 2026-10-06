@@ -71,7 +71,7 @@ No GraphQL/gRPC/WebSocket/queue/SQL/Redis.
 | `ARCHITECTURE.md` (root) | **CANONICAL** — fix A5–A9 rows |
 | `ATHENA_MASTER_SPEC.md` | KEEP as spec, **UPDATE stale sections (R3)** |
 | `docs/DATA_STORES.md` | KEEP + fix A26/A27/A28 |
-| `docs/PRS_TRACEABILITY_MATRIX.md` | **ARCHIVE** (maps deleted `frontend/` tree) |
+| `docs/archive/PRS_TRACEABILITY_MATRIX.md` | **ARCHIVED 2026-10-07** (mapped deleted `frontend/` tree) |
 | `docs/agent-authority-matrix.md` | ORPHAN — cross-link/merge into PROTOCOL (D14, R2) |
 | `docs/ATHENA_ARCHITECTURE_AND_BRANDING.md`, `ATHENA_FUNCTIONAL_AND_TECHNICAL_SPECIFICATION.md`, `docs/audits/*` | Already in `docs/archive/` — no action |
 | `repo-audit/DIRECTIVE_SOURCE.md` | Historical directive record; superseded in practice by the PROTOCOL |

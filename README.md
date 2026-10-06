@@ -27,7 +27,7 @@ athena/
 ├── athena-mapper.ts         # Front↔back data model mapping (adapters)
 ├── tests/server/            # Node unit tests (58 passing, node --test)
 ├── e2e/                     # Playwright E2E (aistudio smoke suite)
-├── docs/                    # Guides, specs, implementation plans (archive/ = historical)
+├── docs/                    # Guides, specs, current plans (archive/ = historical)
 ├── repo-audit/              # Cleanup audit artifacts (inventory, plan, decisions)
 ├── .github/workflows/       # CI (lint, build, ruff, pytest, health)
 ├── .env.example             # Environment template (canonical)

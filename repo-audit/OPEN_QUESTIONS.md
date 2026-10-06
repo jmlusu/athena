@@ -48,7 +48,7 @@ These are behavior/security changes, not sanitation: fail-closed dev key (R3) ·
 **Q8.** Caddyfile/Dockerfile → folded into NEW-Q4.
 **Q9.** `scripts/seed_data.py` (unreferenced), `build_profile_payload.py` (**broken from clean clone** — missing `profile/*.md` inputs, runbook unrunnable), `setup-git-hooks.sh` (installs nothing): wire up or archive? `keyword_bank_recovered.json` + `profile_schema.json` are live pipeline (keep; but profile_schema has PII → S6 R2).
 **Q10.** `ROADMAP_STEP2_ANALYSIS.md`, `dual_environment_compatibility_standard.md`, `AUTONOMOUS_CONTROLS_...`, `WAYFINDER_MAP_1/2` → already in archive or superseded; confirm at Gate 1.
-**Q11.** `tasks/` — archive the two executed files or delete? (Plan says archive; dir can stay for future agent tasks.)
+**Q11.** `tasks/` — **RESOLVED conservatively 2026-10-07:** `plan.md`/`todo.md` (21/21 done) archived to `docs/archive/tasks/`; `tasks/` dir vacated, recreate on demand (no destructive delete).
 **NEW-Q7.** `mypy` (dev dep) — AGENTS §5 mandates mypy-strict but CI never runs it. (a) add advisory CI job [recommended]; (b) remove dep + rule. **R3 to remove.**
 **NEW-Q8.** Ruff scope: `extend-exclude="tests/"` hides 14 test files from lint. Enabling them **raises the 81 baseline** — accept new baseline or lint-then-fix? **R2.**
 **NEW-Q9.** `docs/agent-authority-matrix.md` (879 L, zero inbound refs, stale §15): merge into PROTOCOL / cross-link from AGENTS / archive? **R2.**

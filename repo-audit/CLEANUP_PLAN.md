@@ -32,8 +32,8 @@ Legend: **KEEP** · **CONSOLIDATE** · **ARCHIVE** · **DELETE** · **FIX** · *
 | A4 | Stale-ref fixes | `AGENTS.md:17` (MERGE_DECISIONS path), `test_prometheus_metrics.py:3` docstring, e2e `testIgnore` ghosts, `scraper-discovery-gap` dead ref | DC16 |
 | A5 | Config hygiene | drop `.npmrc` (0 B) + `.gitattributes:1-3` pnpm drivers; trim ruff `extend-exclude` (note: removing `tests/` **increases lint scope → baseline re-measure**); delete dead mypy override; pytest marker decision (C23); drop `/58` literal in health.mjs | C22–C25, C19 |
 | A6 | Env example sync | add `ATHENA_AI_PROVIDER` + documented block for C2 vars to `.env.example`; delete `VITE_ATHENA_API_BASE`/`ATHENA_N8N_WEBHOOK_URL` rows or wire them; fix `ATHENA_DATA_DIR` relative/absolute contradiction; `NODE_ENV=production` in README prod path | C1–C7 |
-| A7 | Archive executed/superseded docs | `docs/specs/{legacy-cleanup,remaining-items-remediation}.md`, `docs/implementation-plans/{LEGACY_RETIREMENT_PLAN,PDF_GENERATION_PLAN}.md`, `docs/PRS_TRACEABILITY_MATRIX.md` → `docs/archive/`; verify inbound refs first | D13, doc dispositions |
-| A8 | tasks/ scratch | ARCHIVE `tasks/{plan,todo}.md` (21/21 done) or delete per Q11 | DC2, Q11 |
+| A7 | **EXECUTED** (2026-10-07) — archive executed/superseded docs | `docs/specs/{legacy-cleanup,remaining-items-remediation}.md`, `docs/implementation-plans/{LEGACY_RETIREMENT_PLAN,PDF_GENERATION_PLAN}.md`, `docs/PRS_TRACEABILITY_MATRIX.md` → `docs/archive/` (inbound refs verified: none live) | D13, doc dispositions |
+| A8 | **EXECUTED** (2026-10-07) — tasks/ scratch | ARCHIVED `tasks/{plan,todo}.md` → `docs/archive/tasks/` (21/21 done); dir vacated — recreate `tasks/` on demand (closes Q11 conservatively) | DC2, Q11 |
 | A9 | CORS/health quick fixes | drop `:8530` origins (C30); collapse `/api/health` fields (C32/S19); broaden health secret patterns (S23); e2e uvicorn → `127.0.0.1` (S22) | R1 |
 | A10 | Git housekeeping (local, ask first) | delete merged local branch `chore/legacy-retirement`; propose stale remote branch cleanup (40+ dependabot/merged) — **remote changes = confirm** | INVENTORY |
 
