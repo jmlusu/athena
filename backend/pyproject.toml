@@ -48,7 +48,7 @@ include = ["athena*"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = [".git", "__pycache__", "dist", "build", "*.egg-info", "tests/"]
+extend-exclude = ["*.egg-info"]
 
 [tool.ruff.lint]
 select = [
@@ -57,6 +57,9 @@ select = [
 ignore = ["TRY400", "PLR2004", "ARG002"]
 fixable = ["ALL"]
 unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501", "ARG001", "PLC0415", "PLR0912", "PLR0913", "PLR0915", "PLR0917", "RET504", "E731", "PLW0108"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -96,7 +99,6 @@ module = [
     "athena.matching.*",
     "athena.scheduler.*",
     "athena.ai.*",
-    "athena.ai.providers.*",
 ]
 ignore_missing_imports = true
 

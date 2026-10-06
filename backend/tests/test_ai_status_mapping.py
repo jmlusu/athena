@@ -6,10 +6,10 @@ import pytest
 
 from athena.models import Job, JobSource, JobStatus, JobType
 from athena.models.status_mapping import (
-    pipeline_to_job_status,
-    job_to_pipeline_status,
-    PIPELINE_TO_JOB_STATUS,
     JOB_TO_PIPELINE_STATUS,
+    PIPELINE_TO_JOB_STATUS,
+    job_to_pipeline_status,
+    pipeline_to_job_status,
 )
 
 

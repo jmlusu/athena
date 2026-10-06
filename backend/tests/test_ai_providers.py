@@ -1,12 +1,12 @@
 """Tests for AI provider implementations (Fallback + Gemini)."""
 
+from athena.ai.providers.fallback import FallbackProvider
 from athena.api.ai_schemas import (
     ATSScoreRequest,
     DehumanizeRequest,
     TailorDocumentRequest,
     TailorResumeRequest,
 )
-from athena.ai.providers.fallback import FallbackProvider
 
 
 def test_fallback_provider_is_instantiable():
@@ -37,7 +37,7 @@ async def test_fallback_provider_has_valid_ats_score():
                 "headline": "Senior Engineer",
                 "summary": "Experienced professional",
             },
-        )
+        ),
     )
     assert 0 <= response.ats_score <= 100
     assert response.match_category in ("CRITICAL_MATCH", "FLAGGED_REVIEW", "STANDARD")
@@ -52,7 +52,7 @@ async def test_fallback_provider_tailor_resume():
             applicant_profile={"fullName": "Test User"},
             column_layout="two-column",
             dehumanize=True,
-        )
+        ),
     )
     resume = response.tailored_resume
     assert resume.full_name == "Test User"
@@ -73,7 +73,7 @@ async def test_fallback_provider_tailor_document():
             applicant_profile={"fullName": "Test User"},
             column_layout="one-column",
             dehumanize=True,
-        )
+        ),
     )
     doc = response.document
     assert doc.title.startswith("Application for")
@@ -89,7 +89,7 @@ async def test_fallback_provider_dehumanize():
         DehumanizeRequest(
             text="I spearheaded a testament to my ability to delve into complex systems.",
             context="Cover letter",
-        )
+        ),
     )
     assert response.humanized_text
     assert "spearhead" not in response.humanized_text.lower()

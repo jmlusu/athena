@@ -1,6 +1,5 @@
 """Pytest configuration and shared fixtures for backend tests."""
 
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 

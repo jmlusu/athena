@@ -8,7 +8,7 @@ import pytest
 
 # Try to import weasyprint to determine if tests can run
 try:
-    from weasyprint import CSS, HTML
+    from weasyprint import CSS, HTML  # noqa: F401 — availability probe
     WEASYPRINT_AVAILABLE = True
 except (ImportError, OSError):
     WEASYPRINT_AVAILABLE = False
@@ -46,8 +46,9 @@ class TestPDFGeneration:
 
     def test_simple_pdf_generation(self):
         """End-to-end: HTML + CSS → PDF bytes."""
-        from weasyprint import CSS, HTML
         import io
+
+        from weasyprint import CSS, HTML
 
         html = HTML(string="<html><body><h1>Hello</h1><p>World</p></body></html>")
         css = CSS(string="@page { size: A4; margin: 1in; }")
@@ -91,8 +92,9 @@ class TestDocumentGeneratorPDF:
 
     @pytest.fixture
     def sample_job(self):
-        from athena.models import Job, JobSource, JobType
         from uuid import uuid4
+
+        from athena.models import Job, JobSource, JobType
         return Job(
             id=uuid4(),
             source=JobSource.REMOTE_OK,

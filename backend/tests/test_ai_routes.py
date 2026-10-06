@@ -67,7 +67,6 @@ def sample_profile(temp_db):
 def fallback_provider(monkeypatch):
     """Force fallback provider for deterministic tests."""
     from athena.ai.providers.fallback import FallbackProvider
-    from athena.ai.providers.factory import get_ai_provider
 
     fallback = FallbackProvider()
     # get_provider() resolves this module-global name at call time; Depends()
@@ -234,7 +233,7 @@ def test_tailor_document_cover_letter(client, fallback_provider, sample_job, sam
 
 
 def test_tailor_document_consultancy_proposal(
-    client, fallback_provider, sample_job, sample_profile
+    client, fallback_provider, sample_job, sample_profile,
 ):
     payload = {
         "doc_type": "consultancy-proposal",
