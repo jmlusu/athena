@@ -14,10 +14,13 @@ except (ImportError, OSError):
     WEASYPRINT_AVAILABLE = False
 
 
-pytestmark = pytest.mark.skipif(
-    not WEASYPRINT_AVAILABLE,
-    reason="WeasyPrint/GTK not available; install GTK runtime to run PDF tests",
-)
+pytestmark = [
+    pytest.mark.weasyprint,
+    pytest.mark.skipif(
+        not WEASYPRINT_AVAILABLE,
+        reason="WeasyPrint/GTK not available; install GTK runtime to run PDF tests",
+    ),
+]
 
 
 class TestPDFGeneration:
