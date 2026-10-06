@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
-backend/.venv/
+.venv/
+venv/
 backend/.pytest_cache/
 backend/.mypy_cache/
 backend/.ruff_cache/
@@ -52,8 +53,7 @@ playwright-report/
 *.tsbuildinfo
 
 # Data (runtime stores — reproducible or local-only)
-company/athena/
-athena/company/
+company/
 jobs.jsonl
 user_profiles.jsonl
 scrape_jobs.jsonl
@@ -65,6 +65,7 @@ artifacts/
 
 # Profile documents (user uploads)
 profile/
+.media/
 
 # Tool caches
 .opencode/
@@ -78,5 +79,4 @@ build/
 *.err
 *_out.txt
 *_output.txt
-remaining.txt
 
