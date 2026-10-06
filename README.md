@@ -14,8 +14,8 @@
 athena/
 ├── backend/                 # FastAPI backend (AI, scraping, matching, documents)
 │   ├── src/athena/          # Domain modules (scrapers, ATS, matching, docs, AI)
-│   ├── tests/               # Unit tests (88 passing)
-│   ├── pyproject.toml
+│   ├── tests/               # Unit tests (102 passing)
+│   ├── pyproject.toml       # Python deps + ruff/mypy config
 │   └── uv.lock
 ├── src/                     # Primary: React 19 SPA + Vite 8 + Tailwind 4
 │   ├── api.ts               # API client for backend endpoints
@@ -24,10 +24,30 @@ athena/
 │   ├── types.ts             # Shared TypeScript types
 │   └── ...
 ├── server.ts                # Express BFF: proxies AI/data to FastAPI, serves SPA
+├── athena-mapper.ts         # Front↔back data model mapping (adapters)
+├── tests/server/            # Node unit tests (58 passing, node --test)
+├── e2e/                     # Playwright E2E (aistudio smoke suite)
+├── docs/                    # Guides, specs, implementation plans (archive/ = historical)
+├── repo-audit/              # Cleanup audit artifacts (inventory, plan, decisions)
 ├── .github/workflows/       # CI (ruff, pytest, lint, build)
-├── .env.example             # Environment template
-└── ARCHITECTURE.md          # System architecture diagram
+├── .env.example             # Environment template (canonical)
+├── AGENTS.md                # Rules for AI agents working this repo
+├── ARCHITECTURE.md          # System architecture diagram
+└── ATHENA_MASTER_SPEC.md    # Product requirements
 ```
+
+---
+
+## Documentation Index
+
+| Need | Read |
+|---|---|
+| How the system works | `ARCHITECTURE.md` |
+| What the product must do | `ATHENA_MASTER_SPEC.md` |
+| Rules for AI/human contributors | `AGENTS.md` |
+| Feature deep-dives | `docs/` (guides, specs, plans) |
+| Historical decisions / handoffs | `docs/archive/` (never current guidance) |
+| Repo cleanup audit trail | `repo-audit/` (inventory, plan, open questions) |
 
 ---
 
@@ -103,7 +123,7 @@ npm start         # Runs dist/server.mjs (serves dist/ statically)
 ## Testing
 
 ```bash
-# Backend tests (88 passing)
+# Backend tests (102 passing)
 cd backend && uv run pytest -q
 
 # Backend lint
@@ -112,7 +132,10 @@ cd backend && uv run ruff check .
 # Frontend type-check
 npm run lint
 
-# E2E tests (Playwright)
+# Node unit tests (58 passing)
+npm run test:unit
+
+# E2E tests (Playwright; requires backend + frontend running)
 npm run test:e2e
 ```
 
@@ -128,10 +151,11 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 
 ## Project Status
 
-- ✅ FastAPI backend recovered (88/88 tests pass)
+- ✅ FastAPI backend (102/102 tests pass)
 - ✅ Express BFF proxies all AI/data routes to FastAPI
 - ✅ n8n webhook ingress added
 - ✅ API client + frontend data loading wired
+- ✅ Repository cleanup completed (see `repo-audit/CLEANUP_PLAN.md`, health: `docs/REPOSITORY_HEALTH.md`)
 - ⏳ Backend data population (run scrapers to populate `company/athena/`)
 - ⏳ Full frontend wiring to real data (currently falls back to mock)
 - ⏳ Deployment target (Docker/systemd TBD)
