@@ -33,6 +33,12 @@
 - **Credential stash dropped** (S4) after review; no rotation (local-only, never pushed)
 - **Pushed-history PII documented-acceptance** for private repo (S7–S9, conditions in `docs/integration/MERGE_DECISIONS.md`)
 - **Real-PII persona fictionalized** in bundle fixtures (S5/S20); `scripts/profile_schema.json` untracked + gitignored (S6)
+- **Constant-time key comparison** (S13): `secrets.compare_digest` replaces set membership in `_check_api_key`
+- **Interactive API docs dev-only** (S14): `/docs`, `/redoc`, `/openapi.json` served only with `ATHENA_AUTH_MODE=open` (localhost dev), otherwise 404; removed from auth-exempt prefixes (only `/health` remains exempt)
+- **`ATHENA_AUTH_MODE` docs corrected** (S12): never disables API-key enforcement — dev convenience flag only
+- **Receipt wording corrected** (S11, documented acceptance): `authorization_signature` is a presence-checked attestation, not a verified HMAC; `confirmation_hash` is an opaque label, not a SHA-256 digest (DEF-009)
+- **Metrics docstring corrected** (S15): `/api/v1/athena/metrics` is API-key auth + rate-limited (was falsely claimed exempt)
+- **Rate-limiter deploy prerequisite** (S16): configure trusted proxy / X-Forwarded-For before any non-loopback deployment (recorded, no code change)
 
 ### Removed
 - Stale `athena/` fork (duplicate backend/frontend) and one-off cleanup scripts

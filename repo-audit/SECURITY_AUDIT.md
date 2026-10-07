@@ -2,7 +2,7 @@
 
 **Baseline:** `d674075` · no network calls · secrets referenced by name/shape only, never values · object-DB scan across 184 reachable commits / 1,597 blobs / 439 unreachable blobs.
 **Note:** Protocol §9 applies — deleting a secret does not invalidate a compromised credential; exposure → identify → revoke/rotate → remove → scan → verify → document (APPROVAL GATE 4 for security actions).
-**Wave C closure (2026-10-07, Gate 4 approved):** S1–S9, S17, S18, S19, S20, S22, S23 acted on — per-row evidence below. S11–S16 remain open (low severity, outside C-sec1..6 scope).
+**Wave C closure (2026-10-07, Gate 4 approved):** S1–S9, S17, S18, S19, S20, S22, S23 acted on — per-row evidence below. **C-sec7 closure (2026-10-07):** S11–S16 closed — S11 documented-acceptance, S12/S13/S14 fixed, S15 doc fix, S16 deploy prerequisite.
 
 ## Findings
 
@@ -18,12 +18,12 @@
 | **S8** | MED | PII resume markdown in pushed history (`profile/*.md`, 53 KB, same commits) | history only | **accepted `e35b520`** (same record) | same | **R4/R3** |
 | **S9** | MED | Runtime JSONL w/ 1 email-like value in pushed history (`athena/company/.../user_profiles.jsonl`, removed `6ea0ea3`) | history only | **accepted `e35b520`** (same record) | same | **R3** |
 | **S10** | MED | Historical non-placeholder 18-char example key in `.env.example` revisions (removed `59d9557`, 2026-09-23) | history only | historical | ensure deployed keys differ | **R2** |
-| **S11** | MED | "Human authorization" = presence-only signature (no HMAC); confirmationHash mislabelled SHA-256 (DEF-009) | `ai_routes.py:163-167` | live (documented) | verify signature or relabel | **R2** |
-| **S12** | LOW | `ATHENA_AUTH_MODE` inert — read only for loopback guard, never toggles enforcement (fails safe) | `app.py:278-283` vs docstring | live | implement or fix docs | **R1** |
-| **S13** | LOW | Non-constant-time key comparison (set membership, no `compare_digest`) | `app.py:133-137` | live | `secrets.compare_digest` | **R1** |
-| **S14** | LOW | `/docs`, `/redoc`, `/openapi.json` bypass auth AND rate limit → API-surface discovery | `app.py:141-153,319,341` | live | disable docs in prod | **R1** |
-| **S15** | LOW | Metrics docstring claims auth+ratelimit exemption; endpoint not actually exempt (doc drift) | `prometheus.py:71-72` vs `app.py:141-146` | live | fix docstring/decision | **R1** |
-| **S16** | LOW | Rate limiter keyed on raw socket IP; no trusted-proxy/X-Forwarded-For | `app.py:321` | live | proxy config before deploy | **R1** |
+| **S11** | MED | "Human authorization" = presence-only signature (no HMAC); confirmationHash mislabelled SHA-256 (DEF-009) | `ai_routes.py:163-167` | **closed `ec329ad`** — documented acceptance: presence-checked attestation relabelled; confirmation_hash = opaque label (DEF-009 stands for auth wave) | MERGE_DECISIONS C-sec7/S11 | **R2** |
+| **S12** | LOW | `ATHENA_AUTH_MODE` inert — read only for loopback guard, never toggles enforcement (fails safe) | `app.py:278-283` vs docstring | **closed `f5ddc88`** — docstring + `.env.example` corrected: AUTH_MODE never disables enforcement; dev convenience only | — | **R1** |
+| **S13** | LOW | Non-constant-time key comparison (set membership, no `compare_digest`) | `app.py:133-137` | **closed `f5ddc88`** — `secrets.compare_digest` on encoded bytes | — | **R1** |
+| **S14** | LOW | `/docs`, `/redoc`, `/openapi.json` bypass auth AND rate limit → API-surface discovery | `app.py:141-153,319,341` | **closed `f5ddc88`** — removed from exempt prefixes; served only when `ATHENA_AUTH_MODE=open`, else 404 | MERGE_DECISIONS C-sec7/S14 | **R1** |
+| **S15** | LOW | Metrics docstring claims auth+ratelimit exemption; endpoint not actually exempt (doc drift) | `prometheus.py:71-72` vs `app.py:141-146` | **closed `ec329ad`** — docstring corrected (endpoint is auth + rate-limited); ARCHITECTURE.md diagram fixed | — | **R1** |
+| **S16** | LOW | Rate limiter keyed on raw socket IP; no trusted-proxy/X-Forwarded-For | `app.py:321` | **accepted (deploy prerequisite)** — configure trusted proxy / X-Forwarded-For before any non-loopback deployment; no code change (loopback-only posture today) | MERGE_DECISIONS C-sec7/S16 | **R1** |
 | **S17** | LOW | **.gitignore gaps:** `.media/` NOT ignored (re-commit risk); `company/` root NOT ignored (=C9) | `.gitignore:55,67` | **closed `c71cea5`** — both rules live; probe-verified | — | **R1** |
 | **S18** | LOW | Mixed CI pinning (SHA vs floating tags) | ci.yml:24,80; e2e.yml:40,60 | **closed `8b47fc6`** — setup-node/cache/upload-artifact/uv all SHA-pinned; dependabot maintains | — | **R2** |
 | **S19** | LOW | BFF `/api/health` exposes `hasBackendKey` + internal `BACKEND_URL` (oracle) | `server.ts:108-115` | **closed `40e3808`** — collapsed to `{status,timestamp}` | — | **R2** |
@@ -55,7 +55,7 @@
 1. ~~**GitHub repo visibility unknown** (no network) → drives S7/S8/S9 severity~~ **RESOLVED 2026-10-07: PRIVATE** (NEW-Q1) → S7–S9 accepted with conditions, `e35b520`.
 2. ~~S4 stash credential validity unknown → rotation is a human call.~~ **RESOLVED 2026-10-07: no rotation** (owner: local-only, never pushed); stash dropped.
 3. S10: whether historical 18-char value ever protected a deployed instance. (No deployed instances known.)
-4. Local `main` 14 commits ahead of origin — audit findings not yet on remote (NEW-Q13 push strategy pending).
+4. ~~Local `main` 14 commits ahead of origin — audit findings not yet on remote~~ **RESOLVED 2026-10-07 (NEW-Q13):** pushed `origin/cleanup/sanitization` + PR #50.
 5. Blob scan filtered 10 B–200 KB; a key hidden in a larger blob would be missed.
 6. **No backup/restore strategy for `profile/` (15.7 MB) or `company/` (3.3 MB)** — unowned data-retention risk.
 

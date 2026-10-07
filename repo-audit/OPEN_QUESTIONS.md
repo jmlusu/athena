@@ -29,6 +29,9 @@ Supersedes the 2026-10-06 list. Resolved questions recorded with commit evidence
 | NEW-Q10 | vite-family → devDependencies? | **RESOLVED** — `d8f68ee` (full + `--omit=dev` install verified) |
 | NEW-Q11 | Legacy auth aliases? | **RESOLVED document-path** — kept in `_get_api_keys`, documented in `.env.example` advanced block (`25e1d19`) |
 | NEW-Q14 | mockData / fixture fictionalization? | **RESOLVED** — persona `9df6f9e`, keyword_bank `788715f`, test_profile deleted `2a568a0` (Gate 4 approved) |
+| NEW-Q15 | `D15` spec update (`ATHENA_MASTER_SPEC.md` docker/vitest/ports/endpoints) | **DONE** — `0701095` (owner-approved) |
+| NEW-Q12 | Remote branch cleanup: 40+ stale `origin/dependabot/*` + merged branches | **DONE 2026-10-07** — owner-authorized; inventoried, stale/merged branches deleted (remote mutation approved) |
+| NEW-Q13 | Unpushed `main` (14 commits): push timing/PR strategy? | **DONE 2026-10-07** — pushed `origin/cleanup/sanitization` + PR #50 (push-now strategy, owner-approved) |
 
 ---
 
@@ -49,10 +52,7 @@ Supersedes the 2026-10-06 list. Resolved questions recorded with commit evidence
 **NEW-Q9.** `docs/agent-authority-matrix.md` (879 L, zero inbound refs, stale §15): merge into PROTOCOL / cross-link from AGENTS / archive? **R2.**
 **NEW-Q10.** npm `vite`-family reclassify `dependencies → devDependencies` (build-only). **R2.**
 **NEW-Q11.** Legacy auth aliases `ATHENA_ADMIN_KEY/APPROVE_KEY/RUN_KEY` (undocumented, only in archive docs): remove from code or document? **R2.**
-**NEW-Q12.** Remote branch cleanup: 40+ stale `origin/dependabot/*` + merged branches (remote mutation → confirm). **R1 + confirm.**
-**NEW-Q13.** Unpushed `main` (14 commits): push timing/PR strategy for this cleanup branch work? Baseline tag exists locally only until pushed.
 **NEW-Q14.** `src/data/mockData.ts` real-PII fixture → fictional replacement is an R3 product-data decision (S5); `test_profile.json`/`keyword_bank_recovered.json` fixtures fictionalization (S20, R2).
-**NEW-Q15.** `D15` spec update (`ATHENA_MASTER_SPEC.md` docker/vitest/ports/endpoints) — spec-of-record edit needs owner sign-off (**R3**).
 
 ---
 
