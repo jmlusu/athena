@@ -86,7 +86,7 @@ class FallbackProvider(AthenaAIProvider):
         job = request.job
         profile = request.applicant_profile
 
-        full_name = profile.get("fullName", "Chifuniro Phiri")
+        full_name = profile.get("fullName", "Tendai Chirwa")
         dehumanize = request.dehumanize
 
         if dehumanize:
@@ -107,10 +107,10 @@ class FallbackProvider(AthenaAIProvider):
             and f"Principal Consultant & {job['title']}"
             or "Senior Technology & Operations Specialist",
             "contact": {
-                "email": profile.get("email", "chifuniro.phiri@consult-mw.com"),
-                "phone": "+265 99 412 8890",
-                "location": "Area 10, Lilongwe, Malawi",
-                "linkedin": "linkedin.com/in/chifuniro-phiri-mw",
+                "email": profile.get("email", "tendai.chirwa@example.com"),
+                "phone": "+265 99 000 0000",
+                "location": "Lilongwe, Malawi",
+                "linkedin": "linkedin.com/in/example-profile",
             },
             "summary": summary,
             "skills": [
@@ -173,7 +173,7 @@ class FallbackProvider(AthenaAIProvider):
         doc_type = request.doc_type
         dehumanize = request.dehumanize
 
-        full_name = profile.get("fullName", "Chifuniro Phiri")
+        full_name = profile.get("fullName", "Tendai Chirwa")
 
         if doc_type in ("consultancy-proposal", "executive-summary"):
             if dehumanize:

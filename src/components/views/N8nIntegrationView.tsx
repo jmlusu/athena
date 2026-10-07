@@ -22,7 +22,7 @@ export const N8nIntegrationView: React.FC = () => {
         targetLocations: ["Lilongwe, Malawi", "Remote Malawi", "Global Remote"],
         categories: ["job", "consultancy"],
         minimumAtsAutoApply: 90,
-        applicantId: "chifuniro-phiri-mw",
+        applicantId: "example-profile",
       },
       null,
       2

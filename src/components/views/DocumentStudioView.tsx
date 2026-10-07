@@ -90,7 +90,7 @@ export const DocumentStudioView: React.FC<DocumentStudioViewProps> = ({
         email: applicantProfile.email,
         phone: applicantProfile.phone,
         location: applicantProfile.location,
-        linkedin: "linkedin.com/in/chifuniro-phiri-mw",
+        linkedin: "linkedin.com/in/example-profile",
       },
       summary:
         "Senior technology & operations leader with 10+ years directing complex systems, public sector digital platforms, and donor compliance programs in Lilongwe and global remote environments. Proven track record managing $3M+ portfolios with USAID, UNDP, and private enterprise.",

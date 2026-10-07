@@ -2,13 +2,13 @@ import { ApplicantProfile, Opportunity, AutomationSettings, CronScheduleState } 
 
 export const initialApplicantProfile: ApplicantProfile = {
   id: "mock-profile-1",
-  fullName: "Chifuniro Phiri",
+  fullName: "Tendai Chirwa",
   headline: "Principal Systems Consultant & Technical Program Director",
-  email: "chifuniro.phiri@consult-mw.com",
-  phone: "+265 99 412 8890",
-  location: "Area 10, Lilongwe, Malawi (Open to Local & Global Remote)",
+  email: "tendai.chirwa@example.com",
+  phone: "+265 99 000 0000",
+  location: "Lilongwe, Malawi (Open to Local & Global Remote)",
   summary:
-    "Pragmatic technology leader and senior consultant with 10+ years directing complex digital systems, institutional workflows, and multi-country grant initiatives across Malawi, SADC, and international partners. Direct expertise working with ministries, UN agencies, USAID contractors, and venture-backed remote engineering hubs.",
+    "Pragmatic technology leader and senior consultant with 10+ years directing complex digital systems, institutional workflows, and multi-country grant initiatives across Malawi, SADC, and international partners. Direct experience working with ministries, UN agencies, USAID contractors, and venture-backed remote engineering hubs.",
   skills: [
     "Program Architecture & Technical Roadmaps",
     "Full-Stack Development (React, TypeScript, Node.js)",
@@ -22,7 +22,7 @@ export const initialApplicantProfile: ApplicantProfile = {
   experience: [
     {
       role: "Lead Technical Advisor & Systems Director",
-      company: "Malawi Digital Impact Consortium",
+      company: "Nyika Digital Group",
       period: "2022 - Present",
       location: "Lilongwe, Malawi",
       bullets: [
@@ -33,7 +33,7 @@ export const initialApplicantProfile: ApplicantProfile = {
     },
     {
       role: "Senior Engineering & Operations Consultant",
-      company: "Kachere Global Distributed Ventures",
+      company: "Kavula Global Ventures",
       period: "2019 - 2022",
       location: "Lilongwe (Remote / UK Clients)",
       bullets: [
@@ -43,7 +43,7 @@ export const initialApplicantProfile: ApplicantProfile = {
     },
     {
       role: "Systems Specialist & Data Lead",
-      company: "Southern Africa Development Advisory",
+      company: "Zambezi Development Advisory",
       period: "2016 - 2019",
       location: "Blantyre / Lilongwe, Malawi",
       bullets: [
@@ -71,7 +71,7 @@ export const initialApplicantProfile: ApplicantProfile = {
   ],
   hourlyRateUsd: 85,
   expectedMonthlyMwk: 4500000,
-  legalAuthorizedSigner: "Chifuniro Phiri",
+  legalAuthorizedSigner: "Tendai Chirwa",
 };
 
 export const initialOpportunities: Opportunity[] = [
@@ -112,13 +112,13 @@ export const initialOpportunities: Opportunity[] = [
       hasCoverLetter: true,
     },
     tailoredResume: {
-      fullName: "Chifuniro Phiri",
+      fullName: "Tendai Chirwa",
       title: "Chief of Party & Principal Systems Architect",
       contact: {
-        email: "chifuniro.phiri@consult-mw.com",
-        phone: "+265 99 412 8890",
+        email: "tendai.chirwa@example.com",
+        phone: "+265 99 000 0000",
         location: "Lilongwe, Malawi",
-        linkedin: "linkedin.com/in/chifuniro-phiri-mw",
+        linkedin: "linkedin.com/in/example-profile",
       },
       summary:
         "Field-tested technology executive with 10+ years driving nationwide systems architecture, donor compliance, and ministerial digital transformation in Lilongwe. Proven track record managing multi-million-dollar USAID portfolios and high-reliability data infrastructure.",
@@ -132,7 +132,7 @@ export const initialOpportunities: Opportunity[] = [
       experience: [
         {
           role: "Lead Technical Advisor & Systems Director",
-          company: "Malawi Digital Impact Consortium",
+          company: "Nyika Digital Group",
           period: "2022 - Present",
           location: "Lilongwe, Malawi",
           bullets: [
@@ -159,18 +159,18 @@ export const initialOpportunities: Opportunity[] = [
       greeting: "Dear Members of the Selection Committee,",
       paragraphs: [
         "I am writing to submit my formal application for the Chief of Party & Digital Systems Architect role in Lilongwe. Having spent the last several years working directly with the Ministry of Health and international donor agencies, I understand the concrete infrastructure challenges and institutional coordination required to deliver lasting digital transformation.",
-        "In my recent appointment at the Malawi Digital Impact Consortium, I led the technical strategy for systems serving over two million citizens. My focus has consistently been operational reliability: establishing hardened data pipelines, ensuring strict regulatory compliance, and mentoring local engineering leads.",
+        "In my recent appointment at the Nyika Digital Group, I led the technical strategy for systems serving over two million citizens. My focus has consistently been operational reliability: establishing hardened data pipelines, ensuring strict regulatory compliance, and mentoring local engineering leads.",
         "I welcome the opportunity to discuss how my hands-on knowledge of Lilongwe's public sector digital environment can accelerate your project's 2026-2027 performance milestones.",
       ],
       closing: "With highest regards,",
-      signature: "Chifuniro Phiri",
+      signature: "Tendai Chirwa",
       layout: "one-column",
       dehumanized: true,
     },
     formFields: {
-      fullName: "Chifuniro Phiri",
-      email: "chifuniro.phiri@consult-mw.com",
-      phone: "+265 99 412 8890",
+      fullName: "Tendai Chirwa",
+      email: "tendai.chirwa@example.com",
+      phone: "+265 99 000 0000",
       location: "Lilongwe, Malawi",
       citizenship: "Malawian Citizen",
       yearsOfExperience: "10+",
@@ -240,12 +240,12 @@ export const initialOpportunities: Opportunity[] = [
         },
       ],
       closing: "Submitted by,",
-      signature: "Chifuniro Phiri (Principal Consultant)",
+      signature: "Tendai Chirwa (Principal Consultant)",
       layout: "two-column",
       dehumanized: true,
     },
     formFields: {
-      consultantName: "Chifuniro Phiri",
+      consultantName: "Tendai Chirwa",
       businessRegistration: "MW-CON-2021-884",
       dailyConsultancyRate: "$500 USD / day",
       availability: "Immediate",
@@ -286,13 +286,13 @@ export const initialOpportunities: Opportunity[] = [
       hasCoverLetter: true,
     },
     tailoredResume: {
-      fullName: "Chifuniro Phiri",
+      fullName: "Tendai Chirwa",
       title: "Senior Workflow Automation & Systems Engineer",
       contact: {
-        email: "chifuniro.phiri@consult-mw.com",
-        phone: "+265 99 412 8890",
+        email: "tendai.chirwa@example.com",
+        phone: "+265 99 000 0000",
         location: "Lilongwe, Malawi (Full Remote Workstation)",
-        linkedin: "linkedin.com/in/chifuniro-phiri-mw",
+        linkedin: "linkedin.com/in/example-profile",
       },
       summary:
         "High-performance systems engineer specialized in n8n pipeline automation, TypeScript services, and asynchronous event flows. Proven capacity delivering clean, self-healing automation architectures for global remote teams.",
@@ -306,7 +306,7 @@ export const initialOpportunities: Opportunity[] = [
       experience: [
         {
           role: "Lead Technical Advisor & Systems Director",
-          company: "Malawi Digital Impact Consortium",
+          company: "Nyika Digital Group",
           period: "2022 - Present",
           location: "Lilongwe / Remote",
           bullets: [
@@ -326,9 +326,9 @@ export const initialOpportunities: Opportunity[] = [
       layout: "one-column",
     },
     formFields: {
-      fullName: "Chifuniro Phiri",
-      email: "chifuniro.phiri@consult-mw.com",
-      phone: "+265 99 412 8890",
+      fullName: "Tendai Chirwa",
+      email: "tendai.chirwa@example.com",
+      phone: "+265 99 000 0000",
       workLocation: "Remote (Lilongwe, Malawi - GMT+2)",
       internetRedundancy: "Dual Fiber + Starlink Satellite Backup",
       salaryExpectationUsd: "$7,500 / month",
@@ -481,8 +481,8 @@ export const initialOpportunities: Opportunity[] = [
       submittedAt: "2026-09-17T15:42:10Z",
       jobTitle: "Senior Full-Stack Developer (Remote Lilongwe Branch)",
       company: "Baobab Health Tech",
-      applicantName: "Chifuniro Phiri",
-      authorizedBy: "Chifuniro Phiri (Digital Authorization Signed)",
+      applicantName: "Tendai Chirwa",
+      authorizedBy: "Tendai Chirwa (Digital Authorization Signed)",
       authorizedAt: "2026-09-17T15:41:45Z",
       portalName: "Baobab Careers Portal / Greenhouse",
       followUpDate: "2026-09-24",

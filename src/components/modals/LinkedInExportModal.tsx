@@ -79,7 +79,7 @@ ${pitch}
 I look forward to discussing how my experience aligns with your milestones.
 
 Best regards,
-${receipt?.applicantName || "Chifuniro Phiri"}
+${receipt?.applicantName || "Tendai Chirwa"}
 ${receipt ? `[Verified via Athena Application Pipeline - Hash: ${receipt.confirmationHash.slice(0, 16)}]` : ""}`;
 
   // Experience Entry Description (for LinkedIn Profile Experience Section)
