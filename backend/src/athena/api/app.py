@@ -112,29 +112,38 @@ class _RateLimiter:
 
 # Default dev key - should be overridden in production via ATHENA_API_KEY env var
 _DEV_API_KEY = "dev-admin-key"
+# Placeholder values that count as "not configured" (fail-closed sentinel).
+_KEY_SENTINELS = frozenset({"CHANGE_ME"})
 
 
-def _get_api_keys() -> set[str]:
-    """Get the set of valid API keys from environment."""
+def _get_api_keys() -> tuple[set[str], bool]:
+    """Return (valid API keys, True when falling back to the dev key)."""
     keys = set()
     # Primary key
-    if primary := os.environ.get("ATHENA_API_KEY"):
-        keys.add(primary.strip())
+    primary = (os.environ.get("ATHENA_API_KEY") or "").strip()
+    if primary and primary.upper() not in _KEY_SENTINELS:
+        keys.add(primary)
     # Legacy aliases (for backward compat)
     for var in ("ATHENA_ADMIN_KEY", "ATHENA_APPROVE_KEY", "ATHENA_RUN_KEY"):
-        if val := os.environ.get(var):
-            keys.add(val.strip())
+        val = (os.environ.get(var) or "").strip()
+        if val and val.upper() not in _KEY_SENTINELS:
+            keys.add(val)
     # Dev fallback (only used if no explicit keys configured)
     if not keys:
-        keys.add(_DEV_API_KEY)
-    return keys
+        return {_DEV_API_KEY}, True
+    return keys, False
 
 
 def _check_api_key(request: Request) -> bool:
     """Return True if the request is authorised."""
     api_key = request.headers.get("X-API-Key", "")
-    valid_keys = _get_api_keys()
-    return api_key in valid_keys
+    valid_keys, using_fallback = _get_api_keys()
+    if api_key not in valid_keys:
+        return False
+    if using_fallback:
+        client = request.client
+        return client is not None and is_loopback_host(client.host)
+    return True
 
 
 # Paths that are exempt from the API-key guard
@@ -275,12 +284,28 @@ def create_app() -> FastAPI:
     )
 
     # ── Auth-mode loopback restriction ──────────────────────────────────
-    if os.environ.get("ATHENA_AUTH_MODE", "api_key") == "open":
-        bind_host = os.environ.get("ATHENA_HOST", "").strip()
-        if bind_host and not is_loopback_host(bind_host):
-            raise RuntimeError(  # noqa: TRY003
-                f"ATHENA_AUTH_MODE=open only allowed on loopback hosts; got {bind_host}",
-            )
+    bind_host = os.environ.get("ATHENA_HOST", "").strip()
+    if (
+        os.environ.get("ATHENA_AUTH_MODE", "api_key") == "open"
+        and bind_host
+        and not is_loopback_host(bind_host)
+    ):
+        raise RuntimeError(  # noqa: TRY003
+            f"ATHENA_AUTH_MODE=open only allowed on loopback hosts; got {bind_host}",
+        )
+
+    # ── Fail-closed: no real key on a non-loopback bind ─────────────────
+    _, fallback_only = _get_api_keys()
+    if fallback_only and bind_host and not is_loopback_host(bind_host):
+        raise RuntimeError(  # noqa: TRY003
+            "Fail-closed: ATHENA_API_KEY is unset or CHANGE_ME while "
+            f"ATHENA_HOST={bind_host} is non-loopback. Set a real ATHENA_API_KEY "
+            "and rotate any previously deployed key.",
+        )
+    if fallback_only:
+        logger.warning(
+            "ATHENA_API_KEY not configured — dev key fallback active, loopback clients only.",
+        )
 
     # ── CORS (configurable, restricted allowlist) ────────────────────────
     _default_origins = [

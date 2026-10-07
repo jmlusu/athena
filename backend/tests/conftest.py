@@ -1,5 +1,7 @@
 """Pytest configuration and shared fixtures for backend tests."""
 
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -8,6 +10,18 @@ from athena.store import AthenaDB
 
 BASE = "/api/v1/athena"
 HEADERS = {"X-API-Key": "dev-admin-key"}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _explicit_api_key():
+    """Configure the API key explicitly (fail-closed posture: no dev fallback)."""
+    saved = os.environ.get("ATHENA_API_KEY")
+    os.environ["ATHENA_API_KEY"] = "dev-admin-key"
+    yield
+    if saved is None:
+        os.environ.pop("ATHENA_API_KEY", None)
+    else:
+        os.environ["ATHENA_API_KEY"] = saved
 
 
 class MockDocumentOutput:
