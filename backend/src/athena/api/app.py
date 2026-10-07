@@ -2,8 +2,8 @@
 
 Security hardening (mirrors GAP-010 from dashboard):
 - CORS origins configurable via ATHENA_CORS_ORIGINS env var (comma-separated; defaults to localhost-only).
-- Auth is fail-closed by default (ATHENA_AUTH_MODE defaults to api_key): write endpoints require X-API-Key matching ATHENA_API_KEY.
-- Set ATHENA_AUTH_MODE=open only for localhost-only development.
+- Auth is fail-closed: API-key enforcement is always active; ATHENA_AUTH_MODE never disables it.
+- ATHENA_AUTH_MODE=open is a development-only convenience (loopback binds only) that also serves the interactive API docs; the default api_key mode disables /docs, /redoc and /openapi.json.
 - Simple in-memory rate limiter protects all endpoints (100 req/min default, configurable via ATHENA_RATE_LIMIT).
 - Response security headers (CSP, HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy) applied to every response.
 """
@@ -14,6 +14,7 @@ import contextlib
 import ipaddress
 import logging
 import os
+import secrets
 import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
@@ -138,7 +139,9 @@ def _check_api_key(request: Request) -> bool:
     """Return True if the request is authorised."""
     api_key = request.headers.get("X-API-Key", "")
     valid_keys, using_fallback = _get_api_keys()
-    if api_key not in valid_keys:
+    if not any(
+        secrets.compare_digest(api_key.encode(), key.encode()) for key in valid_keys
+    ):
         return False
     if using_fallback:
         client = request.client
@@ -146,11 +149,10 @@ def _check_api_key(request: Request) -> bool:
     return True
 
 
-# Paths that are exempt from the API-key guard
+# Paths that are exempt from the API-key guard. Interactive docs
+# (/docs, /redoc, /openapi.json) are not exempt and are served only
+# in dev (ATHENA_AUTH_MODE=open); otherwise they 404.
 _API_EXEMPT_PREFIXES = (
-    "/docs",
-    "/redoc",
-    "/openapi.json",
     "/health",
 )
 
@@ -286,13 +288,15 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
+    docs_enabled = os.environ.get("ATHENA_AUTH_MODE", "api_key") == "open"
     app = FastAPI(
         lifespan=_lifespan,
         title="Athena Job-Scraping Platform API",
         description="REST API for Athena job scraping, matching, and application platform",
         version="0.1.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url="/docs" if docs_enabled else None,
+        redoc_url="/redoc" if docs_enabled else None,
+        openapi_url="/openapi.json" if docs_enabled else None,
     )
 
     # ── Auth-mode loopback restriction ──────────────────────────────────
