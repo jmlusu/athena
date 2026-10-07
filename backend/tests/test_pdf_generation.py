@@ -24,6 +24,20 @@ pytestmark = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def mock_document_generator():
+    """Shadow conftest's autouse mock: these are integration tests for the
+    real DocumentGenerator + WeasyPrint pipeline (guarded by skipif above)."""
+
+
+@pytest.fixture(autouse=True)
+def _real_document_generator(monkeypatch):
+    """Undo conftest's autouse mock; these tests exercise the real generator."""
+    from athena.documents.generator import DocumentGenerator
+
+    monkeypatch.setattr("athena.documents.DocumentGenerator", DocumentGenerator)
+
+
 class TestPDFGeneration:
     """Tests for DOCX → PDF conversion via WeasyPrint."""
 
@@ -114,6 +128,7 @@ class TestDocumentGeneratorPDF:
             job_type=JobType.FULL_TIME,
             description="Python role",
             requirements=["Python", "FastAPI"],
+            application_url="https://example.com/apply",
         )
 
     async def test_generate_resume_pdf(self, sample_profile):
@@ -121,59 +136,43 @@ class TestDocumentGeneratorPDF:
         from athena.documents import DocumentGenerator
 
         gen = DocumentGenerator()
-        try:
-            output = await gen.generate_resume(sample_profile, output_format="pdf")
-            assert output.pdf_bytes is not None
-            assert len(output.pdf_bytes) > 100
-            assert output.pdf_bytes[:4] == b"%PDF"
-            assert output.filename.endswith(".pdf")
-        finally:
-            await gen.close()
+        output = await gen.generate_resume(sample_profile, output_format="pdf")
+        assert output.pdf_bytes is not None, f"warnings={output.warnings}"
+        assert len(output.pdf_bytes) > 100
+        assert output.pdf_bytes[:4] == b"%PDF"
+        assert output.filename.endswith(".pdf")
 
     async def test_generate_cover_letter_pdf(self, sample_profile, sample_job):
         """generate_cover_letter with output_format='pdf' returns PDF bytes."""
         from athena.documents import DocumentGenerator
 
         gen = DocumentGenerator()
-        try:
-            output = await gen.generate_cover_letter(
-                sample_profile, sample_job, output_format="pdf"
-            )
-            assert output.pdf_bytes is not None
-            assert len(output.pdf_bytes) > 100
-            assert output.pdf_bytes[:4] == b"%PDF"
-            assert output.filename.endswith(".pdf")
-        finally:
-            await gen.close()
+        output = await gen.generate_cover_letter(sample_profile, sample_job, output_format="pdf")
+        assert output.pdf_bytes is not None, f"warnings={output.warnings}"
+        assert len(output.pdf_bytes) > 100
+        assert output.pdf_bytes[:4] == b"%PDF"
+        assert output.filename.endswith(".pdf")
 
     async def test_generate_both_pdf(self, sample_profile, sample_job):
         """generate_both with output_format='pdf' returns both as PDF."""
         from athena.documents import DocumentGenerator
 
         gen = DocumentGenerator()
-        try:
-            resume, cover = await gen.generate_both(sample_profile, sample_job, output_format="pdf")
-            assert resume.pdf_bytes is not None
-            assert cover.pdf_bytes is not None
-            assert resume.pdf_bytes[:4] == b"%PDF"
-            assert cover.pdf_bytes[:4] == b"%PDF"
-        finally:
-            await gen.close()
+        resume, cover = await gen.generate_both(sample_profile, sample_job, output_format="pdf")
+        assert resume.pdf_bytes is not None, f"warnings={resume.warnings}"
+        assert cover.pdf_bytes is not None, f"warnings={cover.warnings}"
+        assert resume.pdf_bytes[:4] == b"%PDF"
+        assert cover.pdf_bytes[:4] == b"%PDF"
 
     async def test_generate_both_formats(self, sample_profile, sample_job):
         """generate_both with output_format='both' returns docx + pdf."""
         from athena.documents import DocumentGenerator
 
         gen = DocumentGenerator()
-        try:
-            resume, cover = await gen.generate_both(
-                sample_profile, sample_job, output_format="both"
-            )
-            assert resume.docx_bytes is not None
-            assert resume.pdf_bytes is not None
-            assert cover.docx_bytes is not None
-            assert cover.pdf_bytes is not None
-            assert resume.filename.endswith(".pdf")
-            assert cover.filename.endswith(".pdf")
-        finally:
-            await gen.close()
+        resume, cover = await gen.generate_both(sample_profile, sample_job, output_format="both")
+        assert resume.docx_bytes is not None
+        assert resume.pdf_bytes is not None, f"warnings={resume.warnings}"
+        assert cover.docx_bytes is not None
+        assert cover.pdf_bytes is not None, f"warnings={cover.warnings}"
+        assert resume.filename.endswith(".pdf")
+        assert cover.filename.endswith(".pdf")
