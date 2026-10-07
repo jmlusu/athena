@@ -30,7 +30,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 PROFILE_DIR = REPO / "profile"
 OUTPUT = Path(__file__).resolve().parent / "profile_schema.json"
-RECOVERED_BANK = Path(__file__).resolve().parent / "keyword_bank_recovered.json"
+RECOVERED_BANK = REPO / "docs" / "archive" / "keyword_bank_recovered.json"
 
 MONTHS = {
     m: i
@@ -172,8 +172,8 @@ def parse_keywords() -> dict[str, list[str]]:
         core        preserved) — the categorical structure of spec item 3
 
     profile/ats-keywords.md is the documented source (executive roles, functional
-    keywords, core skill tags). scripts/keyword_bank_recovered.json holds the
-    larger pre-existing bank that was authored for Athena earlier and later
+    keywords, core skill tags). docs/archive/keyword_bank_recovered.json holds
+    the larger pre-existing bank that was authored for Athena earlier and later
     discarded with the mock profile. The recovered bank is merged into `flat`
     only — the categorical lists mirror the markdown so they stay auditable.
 
