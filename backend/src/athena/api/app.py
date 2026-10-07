@@ -139,9 +139,7 @@ def _check_api_key(request: Request) -> bool:
     """Return True if the request is authorised."""
     api_key = request.headers.get("X-API-Key", "")
     valid_keys, using_fallback = _get_api_keys()
-    if not any(
-        secrets.compare_digest(api_key.encode(), key.encode()) for key in valid_keys
-    ):
+    if not any(secrets.compare_digest(api_key.encode(), key.encode()) for key in valid_keys):
         return False
     if using_fallback:
         client = request.client
@@ -152,9 +150,7 @@ def _check_api_key(request: Request) -> bool:
 # Paths that are exempt from the API-key guard. Interactive docs
 # (/docs, /redoc, /openapi.json) are not exempt and are served only
 # in dev (ATHENA_AUTH_MODE=open); otherwise they 404.
-_API_EXEMPT_PREFIXES = (
-    "/health",
-)
+_API_EXEMPT_PREFIXES = ("/health",)
 
 # GET reads on these prefixes return personal data and need a key or loopback.
 _PII_READ_PREFIXES = (
