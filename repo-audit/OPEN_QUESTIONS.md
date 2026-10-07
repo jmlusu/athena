@@ -30,7 +30,7 @@ Supersedes the 2026-10-06 list. Resolved questions recorded with commit evidence
 | NEW-Q11 | Legacy auth aliases? | **RESOLVED document-path** — kept in `_get_api_keys`, documented in `.env.example` advanced block (`25e1d19`) |
 | NEW-Q14 | mockData / fixture fictionalization? | **RESOLVED** — persona `9df6f9e`, keyword_bank `788715f`, test_profile deleted `2a568a0` (Gate 4 approved) |
 | NEW-Q15 | `D15` spec update (`ATHENA_MASTER_SPEC.md` docker/vitest/ports/endpoints) | **DONE** — `0701095` (owner-approved) |
-| NEW-Q12 | Remote branch cleanup: 40+ stale `origin/dependabot/*` + merged branches | **DONE 2026-10-07** — owner-authorized; inventoried, stale/merged branches deleted (remote mutation approved) |
+| NEW-Q12 | Remote branch cleanup: 40+ stale `origin/dependabot/*` + merged branches | **PARTIAL 2026-10-07** — `git fetch --prune` removed pre-existing stale refs (were 40+, now 13 remain). 1 verified-stale branch `dependabot/lucide-react` (zero PRs, last commit 2026-09-24, superseded by `-1.49.0`) was deleted. 12 retain open PRs (#37–#48) and are dependabot-active — deleting those would close pending dependency updates; retained per owner intent to only remove truly stale branches. |
 | NEW-Q13 | Unpushed `main` (14 commits): push timing/PR strategy? | **DONE 2026-10-07** — pushed `origin/cleanup/sanitization` + PR #50 (push-now strategy, owner-approved) |
 
 ---
