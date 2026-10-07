@@ -23,6 +23,14 @@ if (!process.env.ATHENA_RATE_LIMIT) {
   process.env.ATHENA_RATE_LIMIT = '5000';
 }
 
+// The BFF proxy (server.ts) forwards only its own ATHENA_API_KEY to FastAPI --
+// an inbound X-API-Key header is dropped, so writes seeded through the BFF
+// (profile roundtrip POST/PUT) 401 unless this pair shares one key. Same
+// inheritance rules as above: spawned children only, caller value wins.
+if (!process.env.ATHENA_API_KEY) {
+  process.env.ATHENA_API_KEY = 'dev-admin-key';
+}
+
 export default defineConfig({
   // Isolated test dir: only *.spec.ts under e2e/aistudio/ are collected.
   testDir: path.join(CONFIG_DIR, 'aistudio'),
