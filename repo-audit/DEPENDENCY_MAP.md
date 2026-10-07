@@ -14,7 +14,7 @@
 | @playwright/test | USED (e2e + CI) | `e2e/playwright.config.ts:1`, `e2e.yml:53` |
 | @types/{express,node,react,react-dom} | BUILD (USED) | strict tsc |
 
-Smell (not removal): `vite`, `@vitejs/plugin-react`, `@tailwindcss/vite`, `tailwindcss` sit in `dependencies` though build-only → reclassify to `devDependencies` = **R2** (re-verify `npm ci --omit=dev` + build).
+Smell → CLOSED (do not reclassify): `vite`, `@vitejs/plugin-react`, `@tailwindcss/vite` sit in `dependencies` deliberately — production install must still build (`npm ci --omit=dev && npm run build`). The R2 reclassification was executed in `d8f68ee` and **reverted 2026-10-07**: it broke production-install builds (3 unresolved imports in `vite.config.ts`); both install modes + build re-verified OK post-revert. `tailwindcss` was never moved (stays `devDependencies`, installed transitively via `@tailwindcss/vite`).
 
 ## 2. Python (`backend/pyproject.toml`) — verdict: 6 candidates removed (B10); mypy kept (advisory CI job)
 

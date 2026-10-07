@@ -26,7 +26,7 @@ Supersedes the 2026-10-06 list. Resolved questions recorded with commit evidence
 | NEW-Q7 | mypy in CI? | **RESOLVED (a) advisory CI job** — `8b47fc6` (job `typecheck`, continue-on-error; 160 known errors) |
 | NEW-Q8 | Ruff tests scope / baseline? | **RESOLVED lint-then-hold** — tests linted in `7d1c921`, format baseline `071aeac`, count 80 (`health.mjs` ratcheted) |
 | NEW-Q9 | agent-authority-matrix merge/cross-link? | **RESOLVED cross-link + fix** — §15 rewritten to JSONL reality, linked from PROTOCOL + AGENTS §2, `9b0f159` |
-| NEW-Q10 | vite-family → devDependencies? | **RESOLVED** — `d8f68ee` (full + `--omit=dev` install verified) |
+| NEW-Q10 | vite-family → devDependencies? | **RESOLVED-keep-in-dependencies** — `d8f68ee` reclassification **reverted 2026-10-07**: it broke `npm ci --omit=dev` + `npm run build` (3 unresolved imports in `vite.config.ts`); `vite`/`@vitejs/plugin-react`/`@tailwindcss/vite` restored to `dependencies`, full + `--omit=dev` install and build re-verified |
 | NEW-Q11 | Legacy auth aliases? | **RESOLVED document-path** — kept in `_get_api_keys`, documented in `.env.example` advanced block (`25e1d19`) |
 | NEW-Q14 | mockData / fixture fictionalization? | **RESOLVED** — persona `9df6f9e`, keyword_bank `788715f`, test_profile deleted `2a568a0` (Gate 4 approved) |
 | NEW-Q15 | `D15` spec update (`ATHENA_MASTER_SPEC.md` docker/vitest/ports/endpoints) | **DONE** — `0701095` (owner-approved) |
