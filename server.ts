@@ -659,8 +659,9 @@ async function start() {
   }
 
   console.log("Calling app.listen()...");
-  const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Athena autonomous pipeline server active on http://0.0.0.0:${PORT}`);
+  const HOST = process.env.ATHENA_BFF_HOST || "127.0.0.1";
+  const server = app.listen(PORT, HOST, () => {
+    console.log(`Athena autonomous pipeline server active on http://${HOST}:${PORT}`);
   });
 
   server.on("error", (err) => {

@@ -117,7 +117,7 @@ def test_list_receipts_returns_only_receipt_apps(client, temp_db, sample_job, sa
     )
     temp_db.add_application(make_application(sample_profile.id))  # no receipt data
 
-    response = client.get(f"{BASE}/receipts")
+    response = client.get(f"{BASE}/receipts", headers=HEADERS)
 
     assert response.status_code == OK
     data = response.json()
@@ -154,20 +154,20 @@ def test_list_receipts_sorted_desc_and_paginated(client, temp_db, sample_profile
         ),
     )
 
-    response = client.get(f"{BASE}/receipts")
+    response = client.get(f"{BASE}/receipts", headers=HEADERS)
     assert response.status_code == OK
     data = response.json()
     assert data["total"] == RECEIPT_COUNT
     ids = [r["receipt_id"] for r in data["receipts"]]
     assert ids == ["ATH-RCPT-NEW", "ATH-RCPT-OLD"]
 
-    page = client.get(f"{BASE}/receipts", params={"limit": 1, "offset": 1})
+    page = client.get(f"{BASE}/receipts", params={"limit": 1, "offset": 1}, headers=HEADERS)
     assert page.status_code == OK
     page_data = page.json()
     assert page_data["total"] == RECEIPT_COUNT
     assert [r["receipt_id"] for r in page_data["receipts"]] == ["ATH-RCPT-OLD"]
 
-    beyond = client.get(f"{BASE}/receipts", params={"limit": 1, "offset": 5})
+    beyond = client.get(f"{BASE}/receipts", params={"limit": 1, "offset": 5}, headers=HEADERS)
     assert beyond.status_code == OK
     assert beyond.json()["receipts"] == []
     assert beyond.json()["total"] == RECEIPT_COUNT
@@ -190,6 +190,7 @@ def test_list_receipts_filters_by_profile(client, temp_db, sample_profile):
     response = client.get(
         f"{BASE}/receipts",
         params={"user_profile_id": str(sample_profile.id)},
+        headers=HEADERS,
     )
 
     assert response.status_code == OK
@@ -202,14 +203,14 @@ def test_list_receipts_filters_by_profile(client, temp_db, sample_profile):
 def test_list_receipts_empty(client, temp_db):
     assert temp_db.get_applications(None, None, None) == []
 
-    response = client.get(f"{BASE}/receipts")
+    response = client.get(f"{BASE}/receipts", headers=HEADERS)
 
     assert response.status_code == OK
     assert response.json() == {"receipts": [], "total": 0}
 
 
 def test_list_receipts_rejects_oversized_limit(client, temp_db):
-    response = client.get(f"{BASE}/receipts", params={"limit": 101})
+    response = client.get(f"{BASE}/receipts", params={"limit": 101}, headers=HEADERS)
 
     assert response.status_code == UNPROCESSABLE
     assert temp_db.get_applications(None, None, None) == []
@@ -225,7 +226,7 @@ def test_get_receipt_found(client, temp_db, sample_job, sample_profile):
         ),
     )
 
-    response = client.get(f"{BASE}/receipts/ATH-RCPT-ONE")
+    response = client.get(f"{BASE}/receipts/ATH-RCPT-ONE", headers=HEADERS)
 
     assert response.status_code == OK
     data = response.json()
@@ -238,7 +239,7 @@ def test_get_receipt_found(client, temp_db, sample_job, sample_profile):
 
 
 def test_get_receipt_not_found(client, temp_db):
-    response = client.get(f"{BASE}/receipts/ATH-RCPT-MISSING")
+    response = client.get(f"{BASE}/receipts/ATH-RCPT-MISSING", headers=HEADERS)
 
     assert response.status_code == NOT_FOUND
     assert temp_db.get_applications(None, None, None) == []
@@ -272,7 +273,7 @@ def test_list_profile_documents(client, temp_db):
     )
     temp_db.add_user_profile(profile)
 
-    response = client.get(f"{BASE}/profiles/{profile.id}/documents")
+    response = client.get(f"{BASE}/profiles/{profile.id}/documents", headers=HEADERS)
 
     assert response.status_code == OK
     docs = response.json()
@@ -283,7 +284,7 @@ def test_list_profile_documents(client, temp_db):
 
 
 def test_list_profile_documents_empty(client, sample_profile):
-    response = client.get(f"{BASE}/profiles/{sample_profile.id}/documents")
+    response = client.get(f"{BASE}/profiles/{sample_profile.id}/documents", headers=HEADERS)
 
     assert response.status_code == OK
     assert response.json() == []
@@ -293,7 +294,7 @@ def test_list_profile_documents_empty(client, sample_profile):
 def test_list_profile_documents_profile_not_found(client, temp_db):
     missing_id = uuid4()
 
-    response = client.get(f"{BASE}/profiles/{missing_id}/documents")
+    response = client.get(f"{BASE}/profiles/{missing_id}/documents", headers=HEADERS)
 
     assert response.status_code == NOT_FOUND
     assert temp_db.user_profiles.get_all() == []

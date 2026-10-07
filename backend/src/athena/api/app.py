@@ -154,12 +154,24 @@ _API_EXEMPT_PREFIXES = (
     "/health",
 )
 
+# GET reads on these prefixes return personal data and need a key or loopback.
+_PII_READ_PREFIXES = (
+    "/api/v1/athena/profiles",
+    "/api/v1/athena/applications",
+    "/api/v1/athena/receipts",
+)
+
 
 def _is_exempt_from_auth(path: str) -> bool:
     """Return True for paths that bypass the API-key middleware."""
     if path in _API_EXEMPT_PREFIXES:
         return True
     return any(path == prefix or path.startswith(prefix + "/") for prefix in _API_EXEMPT_PREFIXES)
+
+
+def _is_pii_read(path: str) -> bool:
+    """Return True for GET paths that serve personal data."""
+    return any(path == prefix or path.startswith(prefix + "/") for prefix in _PII_READ_PREFIXES)
 
 
 def is_loopback_host(host: str) -> bool:
@@ -356,13 +368,16 @@ def create_app() -> FastAPI:
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         return response
 
-    # ── API-key guard for write endpoints ───────────────────────────────
+    # ── API-key guard for writes and PII reads ──────────────────────────
     @app.middleware("http")
     async def _api_key_middleware(request: Request, call_next: Any) -> Response:
         if _is_exempt_from_auth(request.url.path):
             return cast(Response, await call_next(request))
-        # Only enforce on mutating methods
-        if request.method in ("POST", "PUT", "PATCH", "DELETE") and not _check_api_key(request):
+        needs_key = request.method in ("POST", "PUT", "PATCH", "DELETE")
+        if not needs_key and request.method == "GET" and _is_pii_read(request.url.path):
+            client = request.client
+            needs_key = not (client is not None and is_loopback_host(client.host))
+        if needs_key and not _check_api_key(request):
             return Response(
                 content='{"detail":"Invalid or missing API key"}',
                 status_code=401,
