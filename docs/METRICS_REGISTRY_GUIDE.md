@@ -17,7 +17,7 @@ to eliminate (see Roadmap Step 2, "2,557 Fix").
 You have a job list and (optionally) the backend pipeline stats response:
 
 ```tsx
-import { buildStatsShapeFromJobs } from '@/lib/athena/metrics-registry';
+import { buildStatsShapeFromJobs } from '@/src/lib/athena/metrics-registry';
 
 const statsShape = buildStatsShapeFromJobs(jobs, stats);
 return <MetricsAndBarChart stats={statsShape} ... />;
@@ -34,7 +34,7 @@ If you only have the `PipelineStatsAPI` response (no job list), use the
 approximating mapper:
 
 ```ts
-import { mapPipelineStatsToStatsShape } from '@/lib/athena/metrics-registry';
+import { mapPipelineStatsToStatsShape } from '@/src/lib/athena/metrics-registry';
 
 const statsShape = mapPipelineStatsToStatsShape(pipeline);
 ```
@@ -46,7 +46,7 @@ API payload. Prefer `buildStatsShapeFromJobs` when you have jobs.
 ## ATS thresholds (single source of truth)
 
 ```ts
-import { ATS_CRITICAL_MIN, ATS_FLAGGED_MIN, ATS_FLAGGED_MAX } from '@/lib/athena/metrics-registry';
+import { ATS_CRITICAL_MIN, ATS_FLAGGED_MIN, ATS_FLAGGED_MAX } from '@/src/lib/athena/metrics-registry';
 ```
 
 | Constant           | Value | Meaning                                  |
@@ -75,7 +75,7 @@ All funnel conversion rates use **`stats.new` as the denominator** (the full
 discovered cohort), never `matched`, `applied`, or an implicit default.
 
 ```ts
-import { calculateConversionRate, calculateFunnelData } from '@/lib/athena/metrics-registry';
+import { calculateConversionRate, calculateFunnelData } from '@/src/lib/athena/metrics-registry';
 
 const rate = calculateConversionRate(count, stats); // (count / stats.new) * 100, 0 when new === 0
 const funnel = calculateFunnelData(stats);          // 5 stages: Discovered → ATS Evaluated → Tailored → Submitted → Interview
@@ -91,7 +91,7 @@ Rules:
 ## Metric definitions and custom UIs
 
 ```ts
-import { METRIC_DEFINITIONS, getMetricDefinition, getMetricValue } from '@/lib/athena/metrics-registry';
+import { METRIC_DEFINITIONS, getMetricDefinition, getMetricValue } from '@/src/lib/athena/metrics-registry';
 
 getMetricValue(stats, 'criticalMatch');          // typed lookup on StatsShape
 getMetricDefinition('flagged');                  // name, description, formula, apiField, dataSource

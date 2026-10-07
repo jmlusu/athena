@@ -15,6 +15,11 @@ PROFILE_PATH = Path(__file__).parent / "profile_schema.json"
 
 def load_profile() -> dict:
     """Load the canonical profile (expanded keyword set) from profile_schema.json."""
+    if not PROFILE_PATH.exists():
+        sys.exit(
+            "scripts/profile_schema.json is not tracked in git (contains local PII). "
+            "Generate it with scripts/build_profile_payload.py from your local profile/*.md.",
+        )
     with PROFILE_PATH.open(encoding="utf-8") as f:
         return json.load(f)
 

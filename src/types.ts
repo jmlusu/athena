@@ -365,8 +365,6 @@ export interface N8nIngressResponse {
 
 export interface HealthResponse {
   status: string;
-  backend: string;
-  hasBackendKey: boolean;
   timestamp: string;
 }
 

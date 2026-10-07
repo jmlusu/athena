@@ -2,8 +2,8 @@
 
 Security hardening (mirrors GAP-010 from dashboard):
 - CORS origins configurable via ATHENA_CORS_ORIGINS env var (comma-separated; defaults to localhost-only).
-- Auth is fail-closed by default (ATHENA_AUTH_MODE defaults to api_key): write endpoints require X-API-Key matching ATHENA_API_KEY.
-- Set ATHENA_AUTH_MODE=open only for localhost-only development.
+- Auth is fail-closed: API-key enforcement is always active; ATHENA_AUTH_MODE never disables it.
+- ATHENA_AUTH_MODE=open is a development-only convenience (loopback binds only) that also serves the interactive API docs; the default api_key mode disables /docs, /redoc and /openapi.json.
 - Simple in-memory rate limiter protects all endpoints (100 req/min default, configurable via ATHENA_RATE_LIMIT).
 - Response security headers (CSP, HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy) applied to every response.
 """
@@ -14,6 +14,7 @@ import contextlib
 import ipaddress
 import logging
 import os
+import secrets
 import time
 from collections import defaultdict
 from collections.abc import AsyncIterator
@@ -112,37 +113,50 @@ class _RateLimiter:
 
 # Default dev key - should be overridden in production via ATHENA_API_KEY env var
 _DEV_API_KEY = "dev-admin-key"
+# Placeholder values that count as "not configured" (fail-closed sentinel).
+_KEY_SENTINELS = frozenset({"CHANGE_ME"})
 
 
-def _get_api_keys() -> set[str]:
-    """Get the set of valid API keys from environment."""
+def _get_api_keys() -> tuple[set[str], bool]:
+    """Return (valid API keys, True when falling back to the dev key)."""
     keys = set()
     # Primary key
-    if primary := os.environ.get("ATHENA_API_KEY"):
-        keys.add(primary.strip())
+    primary = (os.environ.get("ATHENA_API_KEY") or "").strip()
+    if primary and primary.upper() not in _KEY_SENTINELS:
+        keys.add(primary)
     # Legacy aliases (for backward compat)
     for var in ("ATHENA_ADMIN_KEY", "ATHENA_APPROVE_KEY", "ATHENA_RUN_KEY"):
-        if val := os.environ.get(var):
-            keys.add(val.strip())
+        val = (os.environ.get(var) or "").strip()
+        if val and val.upper() not in _KEY_SENTINELS:
+            keys.add(val)
     # Dev fallback (only used if no explicit keys configured)
     if not keys:
-        keys.add(_DEV_API_KEY)
-    return keys
+        return {_DEV_API_KEY}, True
+    return keys, False
 
 
 def _check_api_key(request: Request) -> bool:
     """Return True if the request is authorised."""
     api_key = request.headers.get("X-API-Key", "")
-    valid_keys = _get_api_keys()
-    return api_key in valid_keys
+    valid_keys, using_fallback = _get_api_keys()
+    if not any(secrets.compare_digest(api_key.encode(), key.encode()) for key in valid_keys):
+        return False
+    if using_fallback:
+        client = request.client
+        return client is not None and is_loopback_host(client.host)
+    return True
 
 
-# Paths that are exempt from the API-key guard
-_API_EXEMPT_PREFIXES = (
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-    "/health",
+# Paths that are exempt from the API-key guard. Interactive docs
+# (/docs, /redoc, /openapi.json) are not exempt and are served only
+# in dev (ATHENA_AUTH_MODE=open); otherwise they 404.
+_API_EXEMPT_PREFIXES = ("/health",)
+
+# GET reads on these prefixes return personal data and need a key or loopback.
+_PII_READ_PREFIXES = (
+    "/api/v1/athena/profiles",
+    "/api/v1/athena/applications",
+    "/api/v1/athena/receipts",
 )
 
 
@@ -151,6 +165,11 @@ def _is_exempt_from_auth(path: str) -> bool:
     if path in _API_EXEMPT_PREFIXES:
         return True
     return any(path == prefix or path.startswith(prefix + "/") for prefix in _API_EXEMPT_PREFIXES)
+
+
+def _is_pii_read(path: str) -> bool:
+    """Return True for GET paths that serve personal data."""
+    return any(path == prefix or path.startswith(prefix + "/") for prefix in _PII_READ_PREFIXES)
 
 
 def is_loopback_host(host: str) -> bool:
@@ -265,31 +284,45 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
+    docs_enabled = os.environ.get("ATHENA_AUTH_MODE", "api_key") == "open"
     app = FastAPI(
         lifespan=_lifespan,
         title="Athena Job-Scraping Platform API",
         description="REST API for Athena job scraping, matching, and application platform",
         version="0.1.0",
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url="/docs" if docs_enabled else None,
+        redoc_url="/redoc" if docs_enabled else None,
+        openapi_url="/openapi.json" if docs_enabled else None,
     )
 
     # ── Auth-mode loopback restriction ──────────────────────────────────
-    if os.environ.get("ATHENA_AUTH_MODE", "api_key") == "open":
-        bind_host = os.environ.get("ATHENA_HOST", "").strip()
-        if bind_host and not is_loopback_host(bind_host):
-            raise RuntimeError(  # noqa: TRY003
-                f"ATHENA_AUTH_MODE=open only allowed on loopback hosts; got {bind_host}",
-            )
+    bind_host = os.environ.get("ATHENA_HOST", "").strip()
+    if (
+        os.environ.get("ATHENA_AUTH_MODE", "api_key") == "open"
+        and bind_host
+        and not is_loopback_host(bind_host)
+    ):
+        raise RuntimeError(  # noqa: TRY003
+            f"ATHENA_AUTH_MODE=open only allowed on loopback hosts; got {bind_host}",
+        )
+
+    # ── Fail-closed: no real key on a non-loopback bind ─────────────────
+    _, fallback_only = _get_api_keys()
+    if fallback_only and bind_host and not is_loopback_host(bind_host):
+        raise RuntimeError(  # noqa: TRY003
+            "Fail-closed: ATHENA_API_KEY is unset or CHANGE_ME while "
+            f"ATHENA_HOST={bind_host} is non-loopback. Set a real ATHENA_API_KEY "
+            "and rotate any previously deployed key.",
+        )
+    if fallback_only:
+        logger.warning(
+            "ATHENA_API_KEY not configured — dev key fallback active, loopback clients only.",
+        )
 
     # ── CORS (configurable, restricted allowlist) ────────────────────────
     _default_origins = [
-        "http://localhost",
         "http://localhost:3000",
-        "http://127.0.0.1",
         "http://127.0.0.1:3000",
-        "http://localhost:8530",
-        "http://127.0.0.1:8530",
     ]
     origins_raw = os.environ.get("ATHENA_CORS_ORIGINS", "")
     origins = [o.strip() for o in origins_raw.split(",") if o.strip()]
@@ -335,13 +368,16 @@ def create_app() -> FastAPI:
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         return response
 
-    # ── API-key guard for write endpoints ───────────────────────────────
+    # ── API-key guard for writes and PII reads ──────────────────────────
     @app.middleware("http")
     async def _api_key_middleware(request: Request, call_next: Any) -> Response:
         if _is_exempt_from_auth(request.url.path):
             return cast(Response, await call_next(request))
-        # Only enforce on mutating methods
-        if request.method in ("POST", "PUT", "PATCH", "DELETE") and not _check_api_key(request):
+        needs_key = request.method in ("POST", "PUT", "PATCH", "DELETE")
+        if not needs_key and request.method == "GET" and _is_pii_read(request.url.path):
+            client = request.client
+            needs_key = not (client is not None and is_loopback_host(client.host))
+        if needs_key and not _check_api_key(request):
             return Response(
                 content='{"detail":"Invalid or missing API key"}',
                 status_code=401,

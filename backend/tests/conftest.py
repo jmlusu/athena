@@ -1,8 +1,27 @@
 """Pytest configuration and shared fixtures for backend tests."""
 
-from unittest.mock import AsyncMock, MagicMock
+import os
 
 import pytest
+from fastapi.testclient import TestClient
+
+from athena.api.app import create_app
+from athena.store import AthenaDB
+
+BASE = "/api/v1/athena"
+HEADERS = {"X-API-Key": "dev-admin-key"}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _explicit_api_key():
+    """Configure the API key explicitly (fail-closed posture: no dev fallback)."""
+    saved = os.environ.get("ATHENA_API_KEY")
+    os.environ["ATHENA_API_KEY"] = "dev-admin-key"
+    yield
+    if saved is None:
+        os.environ.pop("ATHENA_API_KEY", None)
+    else:
+        os.environ["ATHENA_API_KEY"] = saved
 
 
 class MockDocumentOutput:
@@ -22,13 +41,19 @@ class MockDocumentGenerator:
         pass
 
     async def generate_resume(self, profile, job=None, output_format="docx"):
-        name = getattr(profile, "full_name", getattr(profile, "fullName", "Test User")).replace(" ", "_")
+        name = getattr(profile, "full_name", getattr(profile, "fullName", "Test User")).replace(
+            " ", "_"
+        )
         return MockDocumentOutput(docx_bytes=b"mock-resume", filename=f"resume_{name}.docx")
 
     async def generate_cover_letter(self, profile, job, output_format="docx"):
-        name = getattr(profile, "full_name", getattr(profile, "fullName", "Test User")).replace(" ", "_")
+        name = getattr(profile, "full_name", getattr(profile, "fullName", "Test User")).replace(
+            " ", "_"
+        )
         company = getattr(job, "company", "Company").replace(" ", "_")
-        return MockDocumentOutput(docx_bytes=b"mock-cover", filename=f"cover_letter_{name}_{company}.docx")
+        return MockDocumentOutput(
+            docx_bytes=b"mock-cover", filename=f"cover_letter_{name}_{company}.docx"
+        )
 
     async def generate_both(self, profile, job=None, output_format="docx"):
         resume = await self.generate_resume(profile, job, output_format)
@@ -54,3 +79,19 @@ def mock_document_generator(monkeypatch):
 def mock_weasyprint_import(monkeypatch):
     """Mock weasyprint import to simulate missing dependency."""
     monkeypatch.setitem(__import__("sys").modules, "weasyprint", None)
+
+
+@pytest.fixture
+def client():
+    return TestClient(create_app())
+
+
+@pytest.fixture
+def temp_db(tmp_path, monkeypatch):
+    """Route API writes at a temp directory (side effect; many tests never read it back).
+
+    Without it the routes write through to the repo's real data directory.
+    """
+    db = AthenaDB(base_dir=tmp_path / "athena")
+    monkeypatch.setattr("athena.api.routes.athena_db", db)
+    return db

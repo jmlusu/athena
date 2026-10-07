@@ -23,8 +23,16 @@ if (!process.env.ATHENA_RATE_LIMIT) {
   process.env.ATHENA_RATE_LIMIT = '5000';
 }
 
+// The BFF proxy (server.ts) forwards only its own ATHENA_API_KEY to FastAPI --
+// an inbound X-API-Key header is dropped, so writes seeded through the BFF
+// (profile roundtrip POST/PUT) 401 unless this pair shares one key. Same
+// inheritance rules as above: spawned children only, caller value wins.
+if (!process.env.ATHENA_API_KEY) {
+  process.env.ATHENA_API_KEY = 'dev-admin-key';
+}
+
 export default defineConfig({
-  // Isolated test dir: the main config's testDir (`e2e/tests`) never sees these.
+  // Isolated test dir: only *.spec.ts under e2e/aistudio/ are collected.
   testDir: path.join(CONFIG_DIR, 'aistudio'),
   fullyParallel: true,
   // Playwright's default is cores/2, which is 8 here. Each worker launches a
@@ -60,14 +68,10 @@ export default defineConfig({
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
-      // Screenshots are Chrome-only: skip visual regression suite on non-Chromium
-      testIgnore: ['**/visual-regression.spec.ts'],
     },
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-      // Screenshots are Chrome-only: skip visual regression suite on non-Chromium
-      testIgnore: ['**/visual-regression.spec.ts'],
     },
   ],
   // Root AI Studio SPA: `npm run dev` -> tsx server.ts (Express BFF + Vite
@@ -75,7 +79,7 @@ export default defineConfig({
   webServer: [
     {
       // FastAPI backend (port 8000) — required for contract tests that proxy via Express BFF
-      command: 'uv run uvicorn src.athena.api.app:app --host 0.0.0.0 --port 8000',
+      command: 'uv run uvicorn src.athena.api.app:app --host 127.0.0.1 --port 8000',
       cwd: path.resolve(REPO_ROOT, 'backend'),
       url: 'http://localhost:8000/health',
       timeout: 120000,

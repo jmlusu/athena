@@ -33,7 +33,7 @@ export const ApplicantProfileView: React.FC<ApplicantProfileViewProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: string; type: string }[]>([
-    { name: "Chifuniro_Phiri_Executive_Resume_Master.pdf", size: "284 KB", type: "PDF Document" },
+    { name: "Tendai_Chirwa_Executive_Resume_Master.pdf", size: "284 KB", type: "PDF Document" },
     { name: "Malawi_Public_Health_MIS_Deployment_Portfolio.pdf", size: "1.4 MB", type: "Portfolio & Case Studies" },
     { name: "USAID_UNDP_Consultancy_Terms_Archive.docx", size: "95 KB", type: "Past Contracts" },
   ]);

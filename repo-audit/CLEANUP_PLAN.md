@@ -1,105 +1,91 @@
-# CLEANUP PLAN — Proposed Dispositions (APPROVAL REQUIRED BEFORE PHASE 4)
+# CLEANUP PLAN — Proposed Dispositions (Phase 1 refresh — APPROVAL REQUIRED BEFORE EXECUTION)
 
-**Status:** PROPOSED — nothing deleted yet. Per §2, destruction begins only after sign-off.
+**Status:** REFRESHED at `d674075` from the Phase 1 read-only audit. **Nothing deleted in this phase.**
+Supersedes the 2026-10-06 plan; archived copy: `docs/archive/repo-audit/`.
 
-Legend: **KEEP** · **CONSOLIDATE** · **REFACTOR** · **REPLACE** · **ARCHIVE** · **DELETE** · **INVESTIGATE**
+Legend: **KEEP** · **CONSOLIDATE** · **ARCHIVE** · **DELETE** · **FIX** · **INVESTIGATE** · risk R1–R5.
 
 ---
 
-## Wave 1 — Tracked generated artifacts (safe, mechanical)
+## 0. Already executed (prior waves — recorded, no action)
 
-| Action | Items |
-|---|---|
-| `git rm -r --cached` | `athena/company/athena/athena/embeddings_cache/` (6 `.npy`), `athena/company/athena/athena/*.jsonl` (3), `backend/src/athena.egg-info/` (5) |
-| `.gitignore` += | `*.egg-info/`, `.benchmarks/`, `athena/company/` (belt & braces) |
-| Local delete | `tmp_output.txt`, `backend_uvicorn.log` (untracked/ignored) |
-
-Risk: none to runtime (all reproducible or runtime state kept on disk).
-
-## Wave 2 — Duplicate implementations (largest clarity win)
-
-| Action | Items | Disposition |
+| Wave | Status | Evidence |
 |---|---|---|
-| DELETE | `athena/src/ai_company/**` (31 py) | DELETE — broken, superseded by `backend/src/athena/` |
-| DELETE | `athena/tests/**` (4 py) | DELETE — duplicates `backend/tests/`, broken imports |
-| DELETE | `athena/src/{components,pages,lib}/**` (45 tsx/ts) | DELETE — old frontend + old brand system |
-| DELETE | `athena/` remaining dirs (`athena/company/...` data after Wave 1) | DELETE |
-| DELETE | `scripts/cleanup_duplicates.ps1`, `scripts/cleanup_remaining.ps1` | DELETE — executed, hardcoded key |
-| DELETE | `tasks/plan.md`, `tasks/todo.md` | DELETE — agent scratch |
-
-→ Resolves: D1, D2, D3, D5; removes old brand palette `#070A40/#E63946/#00BFFF` (§23);
-→ One Python backend, one frontend, one test suite per language.
-
-## Wave 3 — Documentation consolidation (§10, §34)
-
-| Action | Items |
-|---|---|
-| ARCHIVE → `docs/archive/` | `ATHENA-AI-STUDIO-HANDOFF/`, `athena-aistudio-opencode-handoff-package.md`, `docs/integration/{AI_STUDIO_INVENTORY,OPENCODE_INVENTORY,ATHENA_IMPLEMENTATION_COMPARISON,MERGE_DECISIONS,FINAL_INTEGRATION_REPORT}.md`, `docs/audits/CODEBASE_AUDIT_MASTER_SPEC.md`, `docs/ATHENA_ARCHITECTURE_AND_BRANDING.md`, `docs/ATHENA_FUNCTIONAL_AND_TECHNICAL_SPECIFICATION.md` |
-| DELETE (executed directives/plans) | `ATHENA_INVENTORY_DIRECTIVE.md`, `ATHENA_MERGE_DIRECTIVE.md`, `ATHENA_MERGE_CHECKLIST.md`, `ATHENA_VALIDATION_DIRECTIVE.md`, `UI_FIX_PLAN.md`, `WAYFINDER_MAP_3/4/5` |
-| CONSOLIDATE (verify then move/delete) | `WAYFINDER_MAP_1` → merge into `docs/METRICS_REGISTRY_GUIDE.md`; `WAYFINDER_MAP_2` → `docs/specs/` if gap still open; `AUTONOMOUS_CONTROLS_...` → `docs/specs/right-pane-requirements.md` |
-| INVESTIGATE | `ROADMAP_STEP2_ANALYSIS.md`, `dual_environment_compatibility_standard.md` (Q10) |
-| KEEP root | `README.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `ATHENA_MASTER_SPEC.md`, `ATHENA_AGENT_RULES.md`→`AGENTS.md` |
-
-## Wave 4 — Configuration & dependencies (§9, §21)
-
-| Action | Items |
-|---|---|
-| REFACTOR | `backend/.env.production.example` → rewrite to real vars (or delete, Q7) |
-| DELETE (unused deps) | npm `@google/genai`, `motion`, `autoprefixer` |
-| REFACTOR | `backend/pyproject.toml` ruff `extend-exclude` dead paths |
-| INVESTIGATE | `Caddyfile`, `backend/Dockerfile` (Q8) |
-
-## Wave 5 — Naming & structure (§16–§18)
-
-| Action | Items |
-|---|---|
-| MOVE | nothing structural beyond above; root becomes 15 repo files + 5 docs |
-| REFACTOR | `ATHENA_AGENT_RULES.md` → `AGENTS.md` with §27/28/29 rules (Q12) |
-| KEEP | `server.ts`, `athena-mapper.ts`, `index.html` at root (genuine repo-level entry points) |
-
-## Wave 6 — Validation (§7, §25, §26)
-
-```
-npm run lint          (tsc --noEmit)
-npm run build
-npm run test:unit     (node --test tests/server)
-cd backend && uv run ruff check .
-cd backend && uv run pytest -q
-npm run test:e2e      (if services running — else record as WARN)
-git status            (verify only intended changes)
-```
-Then **create `npm run health`** orchestrating the above with PASS/WARN/FAIL (§26).
-
-## Wave 7 — Documentation (§11, §27, §30, §37)
-
-1. Update `README.md` — accurate repo map + doc index
-2. Verify `ARCHITECTURE.md` — mark any PLANNED items (§11)
-3. Create `AGENTS.md` — source-of-truth pointers + search-before-build / no-duplicate rules
-4. Write `docs/REPOSITORY_HEALTH.md` — before/after + remaining debt (§37)
-5. Archive or remove `repo-audit/` — keep a slim permanent record
+| Tracked generated artifacts untracked (npy/egg-info/jsonl/logs) | **DONE** | `6ea0ea3`, `d674075`; health generated-artifacts scan = clean |
+| Stale `athena/` fork + one-off cleanup scripts deleted | **DONE** | `568cead` |
+| Docs consolidated into `docs/` + archive separation | **DONE** | `ce48633` |
+| `ATHENA_AGENT_RULES.md` → `AGENTS.md` | **DONE** | `be31414` |
+| Unused npm deps dropped; config aligned with reality | **DONE** | `ab09821` (npm = 0 unused now) |
+| `npm run health` + CI health gate | **DONE** | `be14655`, `f86b704` |
+| Metrics registry implemented | **DONE** | `aff4a37` |
+| README repo map + `docs/REPOSITORY_HEALTH.md` | **DONE** | `e0662a6`, `2a11d8d` |
 
 ---
 
-## Expected Before → After (tracked files)
+## Wave A — Low-risk sanitation (Phase 2 eligible, R1/R2, agent-executable)
 
-| Metric | Before | After (est.) |
+| # | Action | Items | Refs |
+|---|---|---|---|
+| A1 | Local delete (ignored junk, no commit) | root `backend.err/.log/_uvicorn.log`, `frontend.err/.log`, `build_out.txt`, `test_unit_out.txt`; `backend/{fix_output,pytest_out,remaining,ruff_output}.txt` | DC20 |
+| A2 | `.gitignore` harden | `company/` (gap), `.media/`, root `.venv/`/`venv/`; anchor `/dist/ /build/ /profile/ /test-results/ /AppData/`; drop redundant rules (`.pytest_cache` ×2, `athena/company/`, per-file jsonl, `remaining.txt`) | C9–C12, S17 |
+| A3 | Doc fixes (accuracy) | README A1–A3; REPOSITORY_HEALTH A19–A23 (185 files, 11 areas, close debt #3, fix #4); DATA_STORES A26–A29; METRICS_REGISTRY_GUIDE A31 samples; CHANGELOG add `[2.4.0]` + remove broken `cd frontend && pnpm` block; ARCHITECTURE A5–A9 | R1 |
+| A4 | Stale-ref fixes | `AGENTS.md:17` (MERGE_DECISIONS path), `test_prometheus_metrics.py:3` docstring, e2e `testIgnore` ghosts, `scraper-discovery-gap` dead ref | DC16 |
+| A5 | Config hygiene | drop `.npmrc` (0 B) + `.gitattributes:1-3` pnpm drivers; trim ruff `extend-exclude` (note: removing `tests/` **increases lint scope → baseline re-measure**); delete dead mypy override; pytest marker decision (C23); drop `/58` literal in health.mjs | C22–C25, C19 |
+| A6 | Env example sync | add `ATHENA_AI_PROVIDER` + documented block for C2 vars to `.env.example`; delete `VITE_ATHENA_API_BASE`/`ATHENA_N8N_WEBHOOK_URL` rows or wire them; fix `ATHENA_DATA_DIR` relative/absolute contradiction; `NODE_ENV=production` in README prod path | C1–C7 |
+| A7 | **EXECUTED** (2026-10-07) — archive executed/superseded docs | `docs/specs/{legacy-cleanup,remaining-items-remediation}.md`, `docs/implementation-plans/{LEGACY_RETIREMENT_PLAN,PDF_GENERATION_PLAN}.md`, `docs/PRS_TRACEABILITY_MATRIX.md` → `docs/archive/` (inbound refs verified: none live) | D13, doc dispositions |
+| A8 | **EXECUTED** (2026-10-07) — tasks/ scratch | ARCHIVED `tasks/{plan,todo}.md` → `docs/archive/tasks/` (21/21 done); dir vacated — recreate `tasks/` on demand (closes Q11 conservatively) | DC2, Q11 |
+| A9 | CORS/health quick fixes | drop `:8530` origins (C30); collapse `/api/health` fields (C32/S19); broaden health secret patterns (S23); e2e uvicorn → `127.0.0.1` (S22) | R1 |
+| A10 | Git housekeeping (local, ask first) | delete merged local branch `chore/legacy-retirement`; propose stale remote branch cleanup (40+ dependabot/merged) — **remote changes = confirm** | INVENTORY |
+
+**Validation after each group:** `npm run lint && npm run build && npm run test:unit && npm run health` + `cd backend && uv run ruff check . && uv run pytest -q`. One commit per group (§13 atomic commit rule).
+
+## Wave B — Consolidation (Phase 3, per-item procedure + gate approvals)
+
+| # | Item | Disposition | Risk |
+|---|---|---|---|
+| B1 | D1 divergent status maps | one authoritative mapping + cross-language contract test | **R3** |
+| B2 | D2 ATS threshold literals ×7 | frontend → registry; backend → shared module | **R3** |
+| B3 | D3 `documents/humanizer.py` dead stack | INVESTIGATE then DELETE (or wire); update ARCHITECTURE A6 | **R3** |
+| B4 | DC5 `automation/` (1,827 LOC, unreachable) | **DECIDE: endpoint / archive / keep-planned** — ambiguous deletion = STOP condition | **R3** |
+| B5 | DC4 `adapters/` + DC6 `api/server.py` + DC7 `src/lockfile.ts` + DC10 `api.ts` dead methods | DELETE after §6 reference check (grep verified; dynamic check: none found) | **R2** |
+| B6 | D4/D5 test fixtures → conftest; delete `scripts/test_profile.json` | CONSOLIDATE/DELETE | **R3/R2** |
+| B7 | D6 runners (keep .py), D7 CI de-dup, D8 env examples merge (health.mjs coupling!) | CONSOLIDATE | **R2** |
+| B8 | D12/C26 `Caddyfile` + `backend/Dockerfile` | one ruling: delete both OR restore compose stack | **R2** |
+| B9 | D14 `docs/agent-authority-matrix.md` | cross-link/merge into PROTOCOL, fix §15 DB section | **R2** |
+| B10 | Dependency removals (DEPENDENCY_MAP: structlog, types-requests, pydantic-settings, python-multipart, pytest-cov, lxml pin) | SEARCH→STATIC→BUILD→TEST procedure (Phase 5) | **R2**; mypy removal = **R3** |
+| B11 | CI hardening: mypy advisory job, direct `test:unit` step, hard `ruff format`, action SHA-pinning (C14/C15/C17) | MODIFY workflows | **R2** |
+
+## Wave C — Security (Phase 6, APPROVAL GATE 4 — separate track)
+
+| # | Item | Risk |
 |---|---|---|
-| Tracked files | 239 | ~145 |
-| Root loose `.md` | 20 | 6 |
-| Duplicate backend copies | 2 | 1 |
-| Frontend copies | 2 | 1 |
-| Generated files in Git | 14 | 0 |
-| Directives/executed plans in root | 13 | 0 |
+| C-sec1 | **S1/C29 fail-open dev key** → fail-closed + `CHANGE_ME` sentinel + key rotation check | **R3** |
+| C-sec2 | **S2 unauthenticated PII reads / S3 BFF auth neutralization** (DEF-008) | **R4** |
+| C-sec3 | **S4 stash credential** → `git stash drop` + rotation decision | **R3** |
+| C-sec4 | **S5 PII in bundle** (mockData) → fictional fixture | **R3** |
+| C-sec5 | **S7/S8/S9 pushed PII history** — needs repo-visibility answer → purge (R5) or documented acceptance | **R5/R4** |
+| C-sec6 | S6/S20 tracked PII fixtures → untrack/fictionalize | **R2** |
 
-**Estimated deletions: ~95 files · archived (moved): ~36 · all recoverable via Git.**
+## Wave D — Architectural (Phase 4, mini-proposal per §7 + GATE 3)
 
----
+- `ATHENA_MASTER_SPEC.md` reality-update (A11–A17) — product-doc edit.
+- Port SSOT (C27/C33): env-driven BFF PORT, UI relative webhook URL.
+- Ruff baseline ratchet strategy + test-lint scope change (C22).
 
 ## Explicitly NOT doing
 
-- No Git history rewrite (§31) — `git rm --cached` only
-- No feature work (§39 Phase 0 freeze)
-- No test deletions for being red — failures classified first (§24)
-- No `.gitignore` use to hide source (§19)
-- No new tooling beyond the health command (§25)
-- No touching `profile/` PII (local, ignored)
+No history rewrite without R5 approval · no feature work · no test deletions for red status (failures classified: GTK-gated + 3 pre-existing E2E) · no `.gitignore` to hide source · no touching `profile/` PII or `company/` runtime data · no dependency removal on static analysis alone (plugins/dynamic checked: only `await import("vite")` exists) · no root loose-.md beyond the health-allowlisted 6.
+
+---
+
+## Expected outcome (approximate)
+
+| Metric | Before (185 tracked) | After |
+|---|---|---|
+| Dead code removed (DC4/6/7/10 + scripts) | — | ~250 LOC + 5 files |
+| Docs archived | 43 in archive | +5–7 |
+| Env drift (C1–C7) | 7 findings | 0 |
+| Stale refs (DC16) | 16 | 0 |
+| Security findings closed | S1–S6, S12–S23 | open only S7–S9 pending visibility decision |
+
+All changes recoverable via git; checkpoints `cleanup/c1-sanitization` … `c5-validated` (§12).

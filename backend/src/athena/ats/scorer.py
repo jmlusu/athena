@@ -5,6 +5,7 @@ from typing import Any
 
 from athena.matching import matching_engine
 from athena.models import Job, UserProfile
+from athena.models.thresholds import ATS_CRITICAL_MIN, ATS_FLAGGED_MAX, ATS_FLAGGED_MIN
 
 
 @dataclass
@@ -301,7 +302,166 @@ class ATSScorer:
     # mined as if it were skills, inflating the keyword denominator until the
     # component scored ~2/100 on every job.
     NOISE_TERMS = frozenset(
-        ["please", "kindly", "apply", "application", "applicants", "candidate", "candidates", "opportunity", "opportunities", "company", "companies", "organisation", "organization", "organisations", "organizations", "team", "teams", "role", "roles", "position", "positions", "job", "jobs", "career", "careers", "work", "working", "works", "working", "environment", "business", "join", "joining", "help", "helping", "support", "supporting", "build", "building", "create", "creating", "develop", "developing", "deliver", "delivering", "drive", "driving", "ensure", "ensuring", "grow", "growing", "make", "making", "new", "well", "good", "great", "strong", "excellent", "proven", "track", "record", "required", "requirements", "responsibilities", "qualifications", "responsibilities", "employer", "employers", "employee", "employees", "client", "clients", "customer", "customers", "including", "include", "includes", "included", "etc", "via", "well-known", "fast-paced", "self-service", "best", "practices", "solutions", "solution", "services", "service", "products", "product", "programs", "program", "project", "projects", "together", "exec", "execs", "executive", "executives", "admin", "administration", "office", "offices", "global", "world", "across", "within", "while", "who", "what", "when", "where", "which", "will", "would", "shall", "should", "may", "might", "must", "can", "also", "just", "only", "very", "more", "most", "much", "many", "some", "any", "all", "both", "each", "other", "others", "another", "same", "such", "own", "too", "own", "s", "t", "don", "now", "use", "used", "using", "useful", "like", "likely", "know", "knows", "known", "well"],
+        [
+            "please",
+            "kindly",
+            "apply",
+            "application",
+            "applicants",
+            "candidate",
+            "candidates",
+            "opportunity",
+            "opportunities",
+            "company",
+            "companies",
+            "organisation",
+            "organization",
+            "organisations",
+            "organizations",
+            "team",
+            "teams",
+            "role",
+            "roles",
+            "position",
+            "positions",
+            "job",
+            "jobs",
+            "career",
+            "careers",
+            "work",
+            "working",
+            "works",
+            "working",
+            "environment",
+            "business",
+            "join",
+            "joining",
+            "help",
+            "helping",
+            "support",
+            "supporting",
+            "build",
+            "building",
+            "create",
+            "creating",
+            "develop",
+            "developing",
+            "deliver",
+            "delivering",
+            "drive",
+            "driving",
+            "ensure",
+            "ensuring",
+            "grow",
+            "growing",
+            "make",
+            "making",
+            "new",
+            "well",
+            "good",
+            "great",
+            "strong",
+            "excellent",
+            "proven",
+            "track",
+            "record",
+            "required",
+            "requirements",
+            "responsibilities",
+            "qualifications",
+            "responsibilities",
+            "employer",
+            "employers",
+            "employee",
+            "employees",
+            "client",
+            "clients",
+            "customer",
+            "customers",
+            "including",
+            "include",
+            "includes",
+            "included",
+            "etc",
+            "via",
+            "well-known",
+            "fast-paced",
+            "self-service",
+            "best",
+            "practices",
+            "solutions",
+            "solution",
+            "services",
+            "service",
+            "products",
+            "product",
+            "programs",
+            "program",
+            "project",
+            "projects",
+            "together",
+            "exec",
+            "execs",
+            "executive",
+            "executives",
+            "admin",
+            "administration",
+            "office",
+            "offices",
+            "global",
+            "world",
+            "across",
+            "within",
+            "while",
+            "who",
+            "what",
+            "when",
+            "where",
+            "which",
+            "will",
+            "would",
+            "shall",
+            "should",
+            "may",
+            "might",
+            "must",
+            "can",
+            "also",
+            "just",
+            "only",
+            "very",
+            "more",
+            "most",
+            "much",
+            "many",
+            "some",
+            "any",
+            "all",
+            "both",
+            "each",
+            "other",
+            "others",
+            "another",
+            "same",
+            "such",
+            "own",
+            "too",
+            "own",
+            "s",
+            "t",
+            "don",
+            "now",
+            "use",
+            "used",
+            "using",
+            "useful",
+            "like",
+            "likely",
+            "know",
+            "knows",
+            "known",
+            "well",
+        ],
     )
 
     def _extract_skills_from_text(self, text: str) -> set[str]:
@@ -430,9 +590,9 @@ class ATSScorer:
 
     def get_score_tier(self, score: float) -> str:
         """Get tier label for score."""
-        if score >= 90:
+        if score >= ATS_CRITICAL_MIN:
             return "excellent"
-        if score >= 80:
+        if score >= ATS_FLAGGED_MIN:
             return "good"
         if score >= 70:
             return "fair"
@@ -440,11 +600,11 @@ class ATSScorer:
 
     def should_auto_apply(self, score: float) -> bool:
         """Determine if application should be auto-submitted."""
-        return score >= 90
+        return score >= ATS_CRITICAL_MIN
 
     def should_flag_for_review(self, score: float) -> bool:
         """Determine if application should be flagged for human review."""
-        return 80 <= score < 90
+        return ATS_FLAGGED_MIN <= score < ATS_FLAGGED_MAX
 
 
 # Global instance

@@ -22,7 +22,10 @@ export const Pagination: React.FC<PaginationProps> = ({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-white border border-[#E2E8F0] rounded-lg">
+    <nav
+      aria-label="pagination"
+      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-white border border-[#E2E8F0] rounded-lg"
+    >
       <div className="text-xs font-mono text-[#64748B]">
         Showing <span className="font-bold text-[#18181B]">{start.toLocaleString()}</span>–{" "}
         <span className="font-bold text-[#18181B]">{end.toLocaleString()}</span> of{" "}
@@ -62,6 +65,6 @@ export const Pagination: React.FC<PaginationProps> = ({
           Next
         </button>
       </div>
-    </div>
+    </nav>
   );
 };

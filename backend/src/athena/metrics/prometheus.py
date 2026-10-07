@@ -68,8 +68,8 @@ async def prometheus_metrics_endpoint(response: Response) -> Response:
     alerting, and external system ingestion. Rates use the "2,557 Fix"
     denominator (stats.new) for consistent funnel analysis semantics.
 
-    Endpoint is exempt from API-key auth and rate limiting so monitors
-    can always scrape metrics.
+    Endpoint is subject to API-key auth and rate limiting like every
+    other /api/v1/athena route; scrapers must send a valid X-API-Key.
     """
     # Get current pipeline stats
     stats = athena_db.get_pipeline_stats_dict()

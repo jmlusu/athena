@@ -42,8 +42,8 @@ export const FormFillerView: React.FC<FormFillerViewProps> = ({
         ? `$${applicantProfile.hourlyRateUsd * 8} USD / day ($${applicantProfile.hourlyRateUsd} / hr)`
         : `MWK ${applicantProfile.expectedMonthlyMwk.toLocaleString()} / month ($48,000 USD / yr)`,
     earliestStartDate: "2 Weeks Notice (Negotiable)",
-    linkedInUrl: "https://linkedin.com/in/chifuniro-phiri-mw",
-    portfolioUrl: "https://github.com/chifuniro-phiri-systems",
+    linkedInUrl: "https://linkedin.com/in/example-profile",
+    portfolioUrl: "https://github.com/example-profile",
     screeningAnswer1:
       opportunity.dehumanizedPitch ||
       "Over the past 8 years I have directed cross-functional systems in Lilongwe and with international remote consortia, consistently meeting technical milestones and regulatory standards.",
@@ -336,7 +336,7 @@ export const FormFillerView: React.FC<FormFillerViewProps> = ({
                 type="text"
                 value={typedSignature}
                 onChange={(e) => setTypedSignature(e.target.value)}
-                placeholder="e.g. Chifuniro Phiri"
+                placeholder="e.g. Tendai Chirwa"
                 className="w-full px-3 py-2 bg-white border border-red-300 rounded-md text-[#18181B] font-serif-heading font-semibold text-sm focus:outline-none focus:ring-1 focus:ring-red-600"
               />
               <div className="text-[10px] text-red-800 font-mono mt-1 flex items-center justify-between">

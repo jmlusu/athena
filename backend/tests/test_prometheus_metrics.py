@@ -1,8 +1,8 @@
 """Unit tests for Prometheus metrics text-format output.
 
-Registry tests moved to frontend/src/lib/athena/metrics-registry.test.ts —
-the Canonical Metrics Registry lives in TypeScript as the single source of
-truth (see docs/METRICS_REGISTRY_GUIDE.md).
+The canonical TypeScript metrics registry lives at
+``src/lib/athena/metrics-registry.ts`` (no dedicated unit test file yet;
+verification approach documented in ``docs/METRICS_REGISTRY_GUIDE.md``).
 """
 
 from pathlib import Path

@@ -1,4 +1,5 @@
 import React from "react";
+import { ATS_CRITICAL_MIN, ATS_FLAGGED_MIN } from "../../lib/athena/metrics-registry";
 
 interface CircularGaugeProps {
   score: number;
@@ -31,11 +32,11 @@ export const CircularGauge: React.FC<CircularGaugeProps> = ({
   let bgBadgeColor = "text-slate-700 bg-slate-100";
   let tierText = "Standard";
 
-  if (clampedScore >= 90) {
+  if (clampedScore >= ATS_CRITICAL_MIN) {
     strokeColor = "#F97316"; // Soft Orange / High Match Trigger
     bgBadgeColor = "text-[#EA580C] bg-orange-50";
     tierText = "Priority Auto-Apply (≥90)";
-  } else if (clampedScore >= 80) {
+  } else if (clampedScore >= ATS_FLAGGED_MIN) {
     strokeColor = "#D97706"; // Amber / Auto-flagged
     bgBadgeColor = "text-amber-700 bg-amber-50";
     tierText = "Flagged Review (80-89)";

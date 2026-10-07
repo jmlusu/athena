@@ -25,6 +25,7 @@ from athena.api.ai_schemas import (
     TailorResumeRequest,
     TailorResumeResponse,
 )
+from athena.models.thresholds import ATS_CRITICAL_MIN, ATS_FLAGGED_MIN
 
 
 class FallbackProvider(AthenaAIProvider):
@@ -54,9 +55,9 @@ class FallbackProvider(AthenaAIProvider):
         ratio = matched / len(req_list) if req_list else 0.85
         base_score = min(97, max(68, round(72 + ratio * 24)))
 
-        if base_score >= 90:
+        if base_score >= ATS_CRITICAL_MIN:
             match_category = "CRITICAL_MATCH"
-        elif base_score >= 80:
+        elif base_score >= ATS_FLAGGED_MIN:
             match_category = "FLAGGED_REVIEW"
         else:
             match_category = "STANDARD"
@@ -72,7 +73,7 @@ class FallbackProvider(AthenaAIProvider):
             ],
             recommendation=(
                 "Immediate auto-application recommended"
-                if base_score >= 90
+                if base_score >= ATS_CRITICAL_MIN
                 else "Tailor resume highlights prior to submission"
             ),
             dehumanized_pitch=(
@@ -85,7 +86,7 @@ class FallbackProvider(AthenaAIProvider):
         job = request.job
         profile = request.applicant_profile
 
-        full_name = profile.get("fullName", "Chifuniro Phiri")
+        full_name = profile.get("fullName", "Tendai Chirwa")
         dehumanize = request.dehumanize
 
         if dehumanize:
@@ -106,10 +107,10 @@ class FallbackProvider(AthenaAIProvider):
             and f"Principal Consultant & {job['title']}"
             or "Senior Technology & Operations Specialist",
             "contact": {
-                "email": profile.get("email", "chifuniro.phiri@consult-mw.com"),
-                "phone": "+265 99 412 8890",
-                "location": "Area 10, Lilongwe, Malawi",
-                "linkedin": "linkedin.com/in/chifuniro-phiri-mw",
+                "email": profile.get("email", "tendai.chirwa@example.com"),
+                "phone": "+265 99 000 0000",
+                "location": "Lilongwe, Malawi",
+                "linkedin": "linkedin.com/in/example-profile",
             },
             "summary": summary,
             "skills": [
@@ -172,7 +173,7 @@ class FallbackProvider(AthenaAIProvider):
         doc_type = request.doc_type
         dehumanize = request.dehumanize
 
-        full_name = profile.get("fullName", "Chifuniro Phiri")
+        full_name = profile.get("fullName", "Tendai Chirwa")
 
         if doc_type in ("consultancy-proposal", "executive-summary"):
             if dehumanize:

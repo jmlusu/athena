@@ -50,8 +50,8 @@ Athena is an autonomous job-discovery, matching, and application platform for wh
 | 8 | n8n orchestration | Visual topology, webhook tester, dispatcher stub | **AI Studio** |
 | 9 | Background scheduler | APScheduler, 4h/30m/1d jobs, control API | OpenCode |
 | 10 | Persistence layer | JSONL + filelock, dedupe, document files, embedding cache | OpenCode |
-| 11 | Full REST API | 28 endpoints `/api/v1/athena/*`, OpenAPI `/docs` | OpenCode |
-| 12 | Security stack | `X-API-Key`, rate limit, CORS, CSP/HSTS, loopback restriction | OpenCode |
+| 11 | Full REST API | 46 endpoints (`36` `/api/v1/athena/*` CRUD in `routes.py` + 10 AI/health), OpenAPI `/docs` | OpenCode |
+| 12 | Security stack | `X-API-Key` fail-closed (writes + PII reads), loopback-only dev fallback, rate limit, CORS, CSP/HSTS | OpenCode |
 | 13 | Browser automation | Playwright stealth, form filler, submitter (currently broken) | OpenCode |
 | 14 | DOCX generation | `python-docx` templates, resume/cover-letter | OpenCode |
 | 15 | React SPA frontend | `react-router` v7, routed views, error boundaries | OpenCode |
@@ -99,8 +99,8 @@ Athena is an autonomous job-discovery, matching, and application platform for wh
 └──────────────────┴──────────────────────────────────────────────┘
 ```
 
-**Ports:** Frontend 8530 (nginx) → Backend 8000 (FastAPI)  
-**Auth:** `X-API-Key` on mutating endpoints (fail-closed)  
+**Ports:** App/BFF 3000 (`server.ts`, serves built SPA + proxies `/api`) → Backend 8000 (FastAPI)  
+**Auth:** `X-API-Key` — required on all writes and PII reads; fail-closed when unset on non-loopback binds  
 **Env:** `ATHENA_API_KEY`, `ATHENA_CORS_ORIGINS`, `ATHENA_AUTH_MODE`, `GEMINI_API_KEY` (server-only)
 
 ---
@@ -178,8 +178,8 @@ Athena AI Abstraction
 
 | Target | Stack | Status |
 |--------|-------|--------|
-| Local Dev | docker-compose (nginx + backend + frontend) | ✅ |
-| OCI/Cloud | Docker + `deploy/oci-deploy.sh` SSH rollout | ✅ |
+| Local Dev | `npm run dev` (`server.ts` :3000) + `uv run uvicorn` (backend :8000) | ✅ |
+| Container (ref) | `backend/Dockerfile` only (deploy stack removed-for-good, NEW-Q4) | Reference |
 | AI Studio Preview | Single-process Node (Express + Vite) | Legacy |
 
 ---
@@ -189,7 +189,7 @@ Athena AI Abstraction
 | Layer | Tool | Coverage Target |
 |-------|------|-----------------|
 | Backend unit/integration | pytest | ≥80% |
-| Frontend unit | vitest + jsdom | ≥70% |
+| Frontend/BFF unit | `node --test` (`tests/server/*.test.ts`) | ≥70% |
 | E2E (critical flows) | Playwright | Core flows |
 | Lint/Format | ruff + tsc --noEmit | Clean |
 

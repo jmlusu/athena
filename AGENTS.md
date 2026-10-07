@@ -39,6 +39,7 @@ Before touching code, answer "which file owns this?" from this map. Full detail:
 | Python tests | `backend/tests/` |
 | Node tests | `tests/server/` |
 | E2E tests | `e2e/` |
+| Agent permission levels (A0–A4) | `docs/agent-authority-matrix.md` |
 | Historical records | `docs/archive/` — never treat as current guidance |
 
 ---
@@ -132,7 +133,7 @@ Before any PR/merge:
 - [ ] `npm run build` succeeds
 - [ ] `npm run test:unit` passes (node --test, tests/server/)
 - [ ] `cd backend && uv sync --extra dev` succeeds
-- [ ] `cd backend && uv run ruff check .` (81 pre-existing errors tolerated by CI — no NEW errors)
+- [ ] `cd backend && uv run ruff check .` (80 pre-existing errors tolerated by CI — no NEW errors)
 - [ ] `cd backend && uv run pytest -q` passes
 - [ ] `npm run test:e2e` passes when services are running (else document)
 - [ ] No secrets in diff (`git diff | Select-String "API_KEY|SECRET|PASSWORD"` on added lines)
@@ -165,3 +166,45 @@ When uncertain:
 
 For repository cleanup work specifically, also follow
 `ATHENA PHASED APPROVAL & ROLLBACK PROTOCOL.md` (risk levels R0–R5, checkpoints, rollback rules).
+
+---
+
+## 11. Known Runtime Issues — Server Runbook
+
+Observed and fixed while starting + monitoring both servers (2026-10-07: 10 min,
+20 cycles, 100/100 probes OK, 0 errors, both processes stable). On Windows,
+PowerShell 5.1 hosts; paths are repo-relative unless noted.
+
+### Canonical start (background, with logs)
+
+```powershell
+# Backend → <logdir>\backend.{out,err}.log
+Start-Process uv -ArgumentList 'run','uvicorn','athena.api.app:app','--host','127.0.0.1','--port','8000' `
+  -WorkingDirectory '<repo>\backend' -WindowStyle Hidden `
+  -RedirectStandardOutput '<logdir>\backend.out.log' -RedirectStandardError '<logdir>\backend.err.log'
+
+# BFF + Vite → <logdir>\bff.{out,err}.log  (cmd wrapper required — see R11-3)
+Start-Process cmd.exe -ArgumentList '/c','npm run dev' -WorkingDirectory '<repo>' -WindowStyle Hidden `
+  -RedirectStandardOutput '<logdir>\bff.out.log' -RedirectStandardError '<logdir>\bff.err.log'
+```
+
+Probes: `127.0.0.1:3000/api/health`, `127.0.0.1:3000/api/backend-health`,
+`127.0.0.1:3000/api/v1/athena/jobs?limit=1`, `127.0.0.1:8000/health`.
+
+### Symptom → fix
+
+| ID | Symptom | Diagnosis | Fix |
+|----|---------|-----------|-----|
+| R11-1 | `listen EADDRINUSE 127.0.0.1:3000` on `npm run dev` | Stale node process from a previous session holds the port | `netstat -ano \| findstr :3000` → `taskkill /PID <pid> /F` → restart. Never blanket-kill `node.exe` (opencode and other tools run on it) |
+| R11-2 | `WebSocket server error: Port 24678 is already in use` (Vite HMR) | Stale Vite instance still running | Same as R11-1: kill the stale node process; warning is non-fatal but signals an orphan |
+| R11-3 | `Start-Process : %1 is not a valid Win32 application` when starting npm | `npm` on PATH resolves to a non-executable shim | Wrap: `Start-Process cmd.exe -ArgumentList '/c','npm run dev'` (same for any `.cmd` shim: `tsx`, `npm`) |
+| R11-4 | Server starts, then dies when the launching shell/command exits | Shell tooling kills foreground children at command timeout | Start detached via `Start-Process ... -WindowStyle Hidden` with `-RedirectStandardOutput/-RedirectStandardError`; never rely on foreground `npm run dev` staying alive |
+| R11-5 | `taskkill` without `/F` → "could not be terminated … only forcefully" | Hidden background process ignores graceful close | Force-kill with `/F`. Side effect: `company/athena/athena_instance.lock.owner` breadcrumb stays behind. **Verified non-blocking** — OS drops file locks on process death, next start re-acquires. If startup *does* raise `Another Athena instance (pid=X) owns …`: the holder is still **alive** — stop that PID, do not delete the lock |
+| R11-6 | Health probes fail or return foreign content on `localhost:8000` | Port 8000 has three owners on this machine: uvicorn (`127.0.0.1`), `com.docker.backend.exe` (`0.0.0.0`), `wslrelay.exe` (`[::1]`) | Probe `127.0.0.1`, not `localhost`. Keep backend bound to `127.0.0.1`. Never bind it `0.0.0.0` (would fight Docker); do not kill Docker/WSL relays |
+| R11-7 | First `GET /api/health` times out right after `npm run dev` | Vite dependency optimizer blocks requests while bundling (one-time warm-up) | Wait for `optimizer bundling dependencies…` to finish in the log, then retry; transient, not an outage |
+
+### Rules
+
+- Capture server logs from the first start; an orphan with no logs cannot be diagnosed (R11-4/R11-5).
+- Watch `errhits` in `*.err.log` during monitoring: `Traceback|ERROR|EADDRINUSE|FATAL` — zero tolerance after warm-up.
+- Pre-existing dirty-tree entries (`package.json` dependency moves) are not runtime issues — do not "fix" them as part of server work.

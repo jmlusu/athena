@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Opportunity, PipelineStatus, OpportunityScope, OpportunityCategory } from "../../types";
 import { CircularGauge } from "../charts/CircularGauge";
+import { ATS_CRITICAL_MIN, ATS_FLAGGED_MAX, ATS_FLAGGED_MIN } from "../../lib/athena/metrics-registry";
 import { Pagination } from "../ui/Pagination";
 
 interface PipelineViewProps {
@@ -85,8 +86,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     if (scopeFilter !== "all" && opp.scope !== scopeFilter) return false;
     if (categoryFilter !== "all" && opp.category !== categoryFilter) return false;
     if (filterStage !== "all" && opp.status !== filterStage) return false;
-    if (filterAts === "critical" && opp.atsScore < 90) return false;
-    if (filterAts === "flagged" && (opp.atsScore < 80 || opp.atsScore >= 90)) return false;
+    if (filterAts === "critical" && opp.atsScore < ATS_CRITICAL_MIN) return false;
+    if (filterAts === "flagged" && (opp.atsScore < ATS_FLAGGED_MIN || opp.atsScore >= ATS_FLAGGED_MAX)) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -216,8 +217,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                 ) : (
                   <div>
                     {paginatedItems.map((opp) => {
-                      const isHighAts = opp.atsScore >= 90;
-                      const isFlagged = opp.atsScore >= 80 && opp.atsScore < 90;
+                      const isHighAts = opp.atsScore >= ATS_CRITICAL_MIN;
+                      const isFlagged = opp.atsScore >= ATS_FLAGGED_MIN && opp.atsScore < ATS_FLAGGED_MAX;
 
                       return (
                         <div

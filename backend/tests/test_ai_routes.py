@@ -3,30 +3,15 @@
 from uuid import uuid4
 
 import pytest
-from fastapi.testclient import TestClient
+from conftest import HEADERS
 
-from athena.api.app import create_app
 from athena.models import Job, JobSource, JobStatus, JobType, UserProfile
-from athena.store import AthenaDB
 
 BASE = "/api/v1/athena/ai"
-HEADERS = {"X-API-Key": "dev-admin-key"}
 OK = 200
 UNAUTHORIZED = 401
 BAD_REQUEST = 400
 UNPROCESSABLE = 422
-
-
-@pytest.fixture
-def temp_db(tmp_path, monkeypatch):
-    db = AthenaDB(base_dir=tmp_path / "athena")
-    monkeypatch.setattr("athena.api.routes.athena_db", db)
-    return db
-
-
-@pytest.fixture
-def client():
-    return TestClient(create_app())
 
 
 @pytest.fixture
@@ -67,7 +52,6 @@ def sample_profile(temp_db):
 def fallback_provider(monkeypatch):
     """Force fallback provider for deterministic tests."""
     from athena.ai.providers.fallback import FallbackProvider
-    from athena.ai.providers.factory import get_ai_provider
 
     fallback = FallbackProvider()
     # get_provider() resolves this module-global name at call time; Depends()
@@ -234,7 +218,10 @@ def test_tailor_document_cover_letter(client, fallback_provider, sample_job, sam
 
 
 def test_tailor_document_consultancy_proposal(
-    client, fallback_provider, sample_job, sample_profile
+    client,
+    fallback_provider,
+    sample_job,
+    sample_profile,
 ):
     payload = {
         "doc_type": "consultancy-proposal",

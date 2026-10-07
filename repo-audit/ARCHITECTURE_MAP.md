@@ -1,85 +1,81 @@
-# ARCHITECTURE MAP — Current State
+# ARCHITECTURE MAP — Current State (refreshed Phase 1)
 
-**Canonical architecture document:** `/ARCHITECTURE.md` (root) — CURRENT, accurate, v2.4.0.
+**Canonical architecture document:** `/ARCHITECTURE.md` (root) — CURRENT, accurate, v2.4.0 (drift rows listed below are doc-fix items, not competing sources).
+**Baseline:** `d674075`.
 
 ---
 
-## Source of Truth (established, not assumed)
+## Source of Truth (verified against tree)
 
-| Concern | Canonical | Evidence |
+| Concern | Canonical | Evidence / notes |
 |---|---|---|
-| Overall architecture | `ARCHITECTURE.md` (root) | Self-declares "Source of truth: `backend/`, root `server.ts`/`src/`, `.github/workflows/`"; matches package.json v2.4.0 |
-| Product spec | `ATHENA_MASTER_SPEC.md` | Named as spec of record by `ATHENA_AGENT_RULES.md` §1 |
-| Backend (Python) | `backend/src/athena/` | Superset of all forks; has `ai/`, `adapters/`, `metrics/`, `lockfile.py`, `paths.py`; CI runs here |
-| Frontend (React) | root `src/` | Referenced by `vite.config.ts`, `tsconfig.json`, ARCHITECTURE.md; brand = orange `#F97316` |
-| BFF | `server.ts` | Express proxy + SPA host; imports `athena-mapper.ts` |
-| Data mapping | `athena-mapper.ts` | Imported by `server.ts:7` and `tests/server/mapper.test.ts:22` |
-| API contract | `backend/src/athena/api/{routes,ai_routes,schemas}.py` | 31 CRUD + AI endpoints |
-| Model/provider config | `backend/src/athena/ai/providers/{base,factory,gemini,fallback}.py` | `AthenaAIProvider` ABC + factory |
-| Memory / persistence | `backend/src/athena/store.py` (JSONL + filelock) | ARCHITECTURE.md §1 DATA layer; **no SQL database exists** |
-| Agent behavior rules | `ATHENA_AGENT_RULES.md` | Existing equivalent of AGENTS.md |
-| Env config (canonical) | `.env.example` (root) | Matches README + actual code paths |
-| Env config (obsolete) | `backend/.env.production.example` | Describes DATABASE_URL/REDIS_URL/SMTP — **not implemented** |
-| CI | `.github/workflows/ci.yml` | quality + backend-quality jobs |
-| Tests (Python) | `backend/tests/` (16 files) | pytest testpaths=`["tests"]` from backend/ |
-| Tests (Node) | `tests/server/mapper.test.ts` | `npm run test:unit` |
-| Tests (E2E) | `e2e/` | `npm run test:e2e` |
-| Brand (frontend) | `src/index.css` + Tailwind classes | `.font-brand`; orange gradient tokens |
+| Overall architecture | `ARCHITECTURE.md` (root) | Self-declares source of truth; v2.4.0 |
+| Product spec | `ATHENA_MASTER_SPEC.md` | Named spec of record — **but STALE: see DOCUMENTATION_AUDIT A11–A17 (R3 to update)** |
+| Backend (Python) | `backend/src/athena/` | 48 src files; CI runs here; no forks remain (stale `athena/` deleted in `568cead`) |
+| Frontend (React) | root `src/` | 23 files; brand orange `#F97316` |
+| BFF | `server.ts` | Express proxy + SPA host; imports `athena-mapper.ts:7` |
+| Data mapping | `athena-mapper.ts` | Consumers: `server.ts:7`, `tests/server/mapper.test.ts:22` |
+| API contract | `backend/src/athena/api/{routes,ai_routes,schemas}.py` | **46 endpoints total** (36 CRUD + 9 AI + metrics + health) — docs saying "31" are stale (A5) |
+| Model/provider config | `ai/providers/{base,factory,gemini,fallback}.py` | ABC + factory; impls = gemini + rule-based fallback; OmniRoute PLANNED only |
+| Persistence | `backend/src/athena/store.py` (JSONL + filelock) | **No SQL/Redis/queue exists** (DATA_STORES A26 fixed accordingly) |
+| Agent behavior rules | `AGENTS.md` | Renamed from `ATHENA_AGENT_RULES.md` in `be31414` |
+| Cleanup governance | `ATHENA PHASED APPROVAL & ROLLBACK PROTOCOL.md` | R0–R5; pinned at root by `AGENTS.md:167` + `health.mjs:45` |
+| Env config (canonical) | `.env.example` (root) | Incomplete: missing `ATHENA_AI_PROVIDER` etc. (C1) |
+| Env config (backend prod) | `backend/.env.production.example` | **Rewritten to reality** (states "NO PostgreSQL/Redis/SMTP"); no longer the obsolete DATABASE_URL doc |
+| CI | `.github/workflows/{ci,e2e}.yml` + `dependabot.yml` | 3 jobs: quality, backend-quality, health |
+| Tests (Python) | `backend/tests/` (**14** files) | pytest testpaths=`["tests"]`; 102 pass + 8 GTK-gated skip |
+| Tests (Node) | `tests/server/mapper.test.ts` (1 file, 59 tests) | `npm run test:unit` |
+| Tests (E2E) | `e2e/` (config + 2 specs, 66 cases × 3 browsers) | 57/66 pass, 3 pre-existing failures |
+| Audit record | `repo-audit/` (11 files) | This phase regenerated 7 deliverables; archive copy in `docs/archive/repo-audit/` |
 
 ---
 
-## Actual Data / Control Flow
+## Actual Data / Control Flow (verified)
 
 ```
 Browser (React SPA, src/)
-   │  REST /api/*
+   │  REST /api/* (relative — src/api.ts:41)
    ▼
-Express BFF (server.ts, :3000)  ── injects X-API-Key, no secrets client-side
-   │  proxy /ai/* + /api/v1/athena/*
+Express BFF (server.ts, :3000, binds 0.0.0.0) ── injects X-API-Key server-side only
+   │  proxy /ai/* + /api/v1/athena/* + /api/lock/* + /api/submit-application
    ▼
 FastAPI (backend/src/athena/api/app.py, :8000)
-   │  middleware: CORS → rate-limit → X-API-Key → security headers
-   ├── api/routes.py     (31 CRUD endpoints)
-   ├── api/ai_routes.py  (AI endpoints + HITL submit gate)
-   ├── metrics/prometheus.py (auth-exempt)
+   │  CORS → rate-limit → X-API-Key (MUTATIONS ONLY, app.py:344) → security headers
+   ├── api/routes.py (36 CRUD) · api/ai_routes.py (9 AI + HITL gate) · metrics/prometheus.py
    ▼
-Domain modules (backend/src/athena/)
-   scrapers/ 14 sources · matching/ MiniLM-L6-v2 · ats/ 40-35-15-10
-   documents/ docx+PDF+humanizer · automation/ Playwright + HITL gate
-   ai/providers/ gemini⇄fallback · scheduler/ APScheduler 4h/30m/1d
+Domain modules: scrapers/ 14 sources · matching/ MiniLM · ats/ 40-35-15-10
+   documents/ generator+parser (humanizer.py = DEAD, see DUPLICATES D3)
+   automation/ Playwright (UNREACHABLE, see DEAD_CODE DC5) · scheduler/ 4h/30m/1d
+   adapters/ (ORPHAN, DEAD_CODE DC4) · ai/providers/ gemini⇄fallback
    ▼
-Data: JSONL + filelock (store.py) → company/athena/*.jsonl
+Data: JSONL + filelock → company/athena/*.jsonl (gitignored)
       embeddings cache → company/athena/embeddings_cache/*.npy
-      agent locks → artifacts/locks/*.lock
-      applicant dossier → profile/  (gitignored, PII)
+      agent locks → artifacts/locks/*.lock · profile/ (gitignored, PII)
 ```
 
-External: Google Gemini · HuggingFace sentence-transformers · n8n webhooks · 14 job boards.
-No GraphQL/gRPC/WebSocket/queue. No SQL. No Redis.
+External: Google Gemini · HuggingFace sentence-transformers · n8n webhook (literal in `fallback.py:447`, C3) · 14 job boards.
+No GraphQL/gRPC/WebSocket/queue/SQL/Redis.
+
+**Accuracy exceptions found this phase** (docs claim live, code says otherwise):
+1. `documents/humanizer.py` — zero callers; live dehumanize path = AI provider (A6/D3).
+2. `automation/` — 1,827 LOC never imported; submitter explicitly "no actual submission" (A7/DC5).
+3. `adapters/ai_studio.py` — zero importers (A8/DC4).
+4. Locks: two namespaces (Python `company/athena/locks/`, Node `artifacts/locks/`) — root ARCHITECTURE:61 blurs them (A29).
 
 ---
 
-## Competing Architecture Documents (must be reconciled)
+## Competing docs verdicts (updated)
 
-| Document | Verdict | Reason |
-|---|---|---|
-| `ARCHITECTURE.md` (root) | **CANONICAL** | Current, code-accurate, v2.4.0 |
-| `ATHENA_MASTER_SPEC.md` | KEEP (spec) | Product requirements, named spec of record |
-| `docs/ATHENA_ARCHITECTURE_AND_BRANDING.md` | ARCHIVE candidate | Predates current build; overlaps ARCHITECTURE.md |
-| `docs/ATHENA_FUNCTIONAL_AND_TECHNICAL_SPECIFICATION.md` | ARCHIVE candidate | Target-implementation guide; superseded by code + ARCHITECTURE.md |
-| `docs/audits/CODEBASE_AUDIT_MASTER_SPEC.md` | ARCHIVE candidate | Dated 2026-09-26 integration audit; historical |
-| `docs/DATA_STORES.md` | KEEP (likely) | Data-layer reference — verify currency in Phase 4 |
-
----
-
-## Note on Directive Sections 12–14 (not present in this repo)
-
-| Directive concept | Reality in this repository |
+| Document | Verdict |
 |---|---|
-| §12 "90/89 agents, 144/152/127" | **Zero occurrences** outside the directive file itself |
-| §13 "AI Company Builder" | Separate repository: `C:\Users\jmlus\light-speed-holdings` (per `ROADMAP_STEP2_ANALYSIS.md:219`) |
-| §14 "Lightspeed Memory (memory.db, FTS5, hash chain)" | **Does not exist here.** Persistence is JSONL + filelock (`store.py`). "Lightspeed" in this repo = company name only |
-| §23 brand `#070A40/#E63946/#00BFFF` | Found **only in the stale `athena/` fork**; live frontend uses orange `#F97316/#EA580C` |
-| §33 OmniRoute/local GGUF | OmniRoute is **PLANNED** (commented out in `factory.py:27`); implemented providers = gemini + rule-based fallback |
+| `ARCHITECTURE.md` (root) | **CANONICAL** — fix A5–A9 rows |
+| `ATHENA_MASTER_SPEC.md` | KEEP as spec, **UPDATE stale sections (R3)** |
+| `docs/DATA_STORES.md` | KEEP + fix A26/A27/A28 |
+| `docs/archive/PRS_TRACEABILITY_MATRIX.md` | **ARCHIVED 2026-10-07** (mapped deleted `frontend/` tree) |
+| `docs/agent-authority-matrix.md` | ORPHAN — cross-link/merge into PROTOCOL (D14, R2) |
+| `docs/ATHENA_ARCHITECTURE_AND_BRANDING.md`, `ATHENA_FUNCTIONAL_AND_TECHNICAL_SPECIFICATION.md`, `docs/audits/*` | Already in `docs/archive/` — no action |
+| `repo-audit/DIRECTIVE_SOURCE.md` | Historical directive record; superseded in practice by the PROTOCOL |
 
-→ Sections 12, 13, 14 are marked N/A for this repository. Recorded in OPEN_QUESTIONS.md.
+## Directive sections 12–14 (unchanged finding)
+
+§12 (90-agent model), §13 (AI Company Builder — separate repo `light-speed-holdings`), §14 (Lightspeed Memory/FTS5) — **zero occurrences here**; persistence is JSONL+filelock. §23 old brand palette lives nowhere in live code. §33 OmniRoute = PLANNED (factory comment now only a docstring in `base.py:27` — the old "factory.py:27 comment" claim is stale). Marked N/A; recorded in OPEN_QUESTIONS Q1.

@@ -115,7 +115,7 @@ def test_achievements_tokenize_into_keywords():
                 start_date=datetime(2020, 1, 1, tzinfo=UTC),
                 description="Built systems",
                 achievements=["Led cloud migration to AWS"],
-            )
+            ),
         ],
     )
     keywords = ATSScorer()._extract_profile_keywords(profile)
@@ -136,7 +136,7 @@ def test_empty_achievements_and_preferences_are_safe():
                 start_date=datetime(2021, 6, 1, tzinfo=UTC),
                 description="",
                 achievements=[],
-            )
+            ),
         ],
         preferences=JobPreferences(),
     )

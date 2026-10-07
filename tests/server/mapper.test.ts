@@ -164,6 +164,11 @@ describe("enum coverage", () => {
     assert.equal(STATUS_MAP.archived, "evaluated");
   });
 
+  test("fetched and scored land in their semantic columns (Python-canonical)", () => {
+    assert.equal(STATUS_MAP.fetched, "discovered");
+    assert.equal(STATUS_MAP.scored, "evaluated");
+  });
+
   test("an unrecognised source falls back to Corporate", () => {
     assert.equal(toOpportunity({ source: "some_new_board" }).platform, "Corporate");
     assert.equal(toOpportunity({}).platform, "Corporate");
@@ -182,7 +187,7 @@ describe("toOpportunity field mapping", () => {
     assert.equal(opp.platform, "RemoteOK");
     assert.equal(opp.atsScore, 36.2);
     assert.equal(opp.postedDate, "2026-08-30T21:00:01+00:00");
-    assert.equal(opp.status, "evaluated");
+    assert.equal(opp.status, "discovered");
     assert.equal(opp.isFlagged, false);
   });
 

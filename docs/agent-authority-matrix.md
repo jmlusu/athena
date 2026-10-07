@@ -474,13 +474,16 @@ An agent must never silently delete user/company memory to resolve an implementa
 
 ---
 
-# 15. DATABASE PERMISSIONS
+# 15. DATA STORE PERMISSIONS
+
+Athena has **no database** — persistence is JSONL files guarded by file locks.
+Canonical reference: `docs/DATA_STORES.md`.
 
 ### Read
 
 Allowed.
 
-### Local development database
+### Local development data (`company/athena/`)
 
 Agents may:
 
@@ -488,22 +491,20 @@ Agents may:
 create
 reset
 seed
-migrate
 destroy
 ```
 
-provided the database is explicitly identified as disposable development data.
+provided the data directory is explicitly disposable development data.
 
-### Persistent/shared/production database
+### Persistent/shared/production data
 
 Agents may not:
 
 ```text
-drop
-truncate
-reset
-migrate
-modify schema
+delete store files
+truncate JSONL
+reset data directory
+rename/migrate stores
 bulk delete
 bulk transform
 ```

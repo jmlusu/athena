@@ -20,6 +20,7 @@ import {
 import { Opportunity, OpportunityScope, OpportunityCategory } from "../../types";
 import { api } from "../../api";
 import { CircularGauge } from "../charts/CircularGauge";
+import { ATS_CRITICAL_MIN, ATS_FLAGGED_MAX, ATS_FLAGGED_MIN } from "../../lib/athena/metrics-registry";
 import { Pagination } from "../ui/Pagination";
 
 interface ScraperDiscoveryViewProps {
@@ -127,8 +128,8 @@ export const ScraperDiscoveryView: React.FC<ScraperDiscoveryViewProps> = ({
     </div>
   ) : (
     paginated.map((opp) => {
-      const isHigh = opp.atsScore >= 90;
-      const isFlag = opp.atsScore >= 80 && opp.atsScore < 90;
+      const isHigh = opp.atsScore >= ATS_CRITICAL_MIN;
+      const isFlag = opp.atsScore >= ATS_FLAGGED_MIN && opp.atsScore < ATS_FLAGGED_MAX;
 
       return (
         <div

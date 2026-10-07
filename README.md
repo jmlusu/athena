@@ -25,11 +25,11 @@ athena/
 │   └── ...
 ├── server.ts                # Express BFF: proxies AI/data to FastAPI, serves SPA
 ├── athena-mapper.ts         # Front↔back data model mapping (adapters)
-├── tests/server/            # Node unit tests (58 passing, node --test)
+├── tests/server/            # Node unit tests (59 passing, node --test)
 ├── e2e/                     # Playwright E2E (aistudio smoke suite)
-├── docs/                    # Guides, specs, implementation plans (archive/ = historical)
+├── docs/                    # Guides, specs, current plans (archive/ = historical)
 ├── repo-audit/              # Cleanup audit artifacts (inventory, plan, decisions)
-├── .github/workflows/       # CI (ruff, pytest, lint, build)
+├── .github/workflows/       # CI (lint, build, ruff, pytest, health)
 ├── .env.example             # Environment template (canonical)
 ├── AGENTS.md                # Rules for AI agents working this repo
 ├── ARCHITECTURE.md          # System architecture diagram
@@ -87,6 +87,8 @@ npm run dev
 ```bash
 npm run lint      # TypeScript type-check
 npm run build     # Build client + server bundle
+# Requires NODE_ENV=production in .env — otherwise the dev middleware
+# branch serves the app instead of the built dist/ bundle
 npm start         # Runs dist/server.mjs (serves dist/ statically)
 ```
 
@@ -100,16 +102,16 @@ npm start         # Runs dist/server.mjs (serves dist/ statically)
 | `ATHENA_API_KEY` | Shared secret for FastAPI auth (Express injects) | Yes |
 | `ATHENA_CORS_ORIGINS` | Comma-separated allowed origins | No (defaults to localhost) |
 | `ATHENA_AUTH_MODE` | `api_key` or `open` | No (default: `api_key`) |
-| `ATHENA_DATA_DIR` | Data directory for JSONL stores | No (default: `./company/athena`) |
+| `ATHENA_DATA_DIR` | Data directory for JSONL stores | No (default: `<repo>/company/athena`) |
+| `ATHENA_AI_PROVIDER` | `gemini` or `fallback` (rule-based, no key needed) | No (default: `fallback`) |
 | `NODE_ENV` | `development` or `production` | No |
 | `DISABLE_HMR` | Disable Vite HMR | No |
-| `VITE_ATHENA_API_BASE` | Base path for API calls | No (default: `/api/v1/athena`) |
 
 ---
 
 ## Key Features
 
-- **14 job board scrapers** (LinkedIn, Upwork, ReliefWeb, Lilongwe, etc.)
+- **14 job board scrapers** (lilongwe, remote, and consultancy source families)
 - **Semantic matching** with all-MiniLM-L6-v2 (384-dim embeddings)
 - **ATS scoring** (40/35/15/10 weights) with rule-based fallback
 - **Document generation** (resume, cover letter, consultancy proposal) with AI + dehumanizer
@@ -132,7 +134,7 @@ cd backend && uv run ruff check .
 # Frontend type-check
 npm run lint
 
-# Node unit tests (58 passing)
+# Node unit tests (59 passing)
 npm run test:unit
 
 # E2E tests (Playwright; requires backend + frontend running)
@@ -146,12 +148,13 @@ npm run test:e2e
 GitHub Actions workflow (`.github/workflows/ci.yml`):
 - **quality** — Node lint + build
 - **backend-quality** — Python ruff + pytest
+- **health** — `npm run health` (structure, deps, config, types, lint baseline, tests, build, security, artifacts, git-status)
 
 ---
 
 ## Project Status
 
-- ✅ FastAPI backend (102/102 tests pass)
+- ✅ FastAPI backend (104/104 tests pass)
 - ✅ Express BFF proxies all AI/data routes to FastAPI
 - ✅ n8n webhook ingress added
 - ✅ API client + frontend data loading wired

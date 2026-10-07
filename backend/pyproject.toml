@@ -8,19 +8,15 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.10.0",
-    "pydantic-settings>=2.6.0",
-    "python-multipart>=0.0.9",
     "apscheduler>=3.10.0",
     "httpx>=0.28.1",
     "google-genai>=1.0.0",
     "beautifulsoup4>=4.15.0",
-    "lxml>=6.1.3",
     "python-docx>=1.1.0",
     "weasyprint>=61.0",
     "pdfplumber>=0.11.0",
     "filelock>=3.16.0",
     "python-dotenv>=1.2.3",
-    "structlog>=25.1.0",
     "email-validator>=2.2.0",
     "numpy>=2.5.3",
     "sentence-transformers>=6.1.0",
@@ -31,10 +27,8 @@ dependencies = [
 dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=0.24.0",
-    "pytest-cov>=6.0.0",
     "ruff>=0.8.0",
     "mypy>=1.13.0",
-    "types-requests>=2.33.0.20260906",
 ]
 
 [build-system]
@@ -48,15 +42,18 @@ include = ["athena*"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = [".git", "__pycache__", "dist", "build", "*.egg-info", "tests/"]
+extend-exclude = ["*.egg-info"]
 
 [tool.ruff.lint]
 select = [
     "E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "T10", "PTH", "ERA", "PL", "RET", "PERF", "ARG", "TID", "FURB", "LOG", "TRY", "NPY", "PD", "EXE", "COM",
 ]
-ignore = ["TRY400", "PLR2004", "ARG002"]
+ignore = ["TRY400", "PLR2004", "ARG002", "COM812"]
 fixable = ["ALL"]
 unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501", "ARG001", "PLC0415", "PLR0912", "PLR0913", "PLR0915", "PLR0917", "RET504", "E731", "PLW0108"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -96,7 +93,6 @@ module = [
     "athena.matching.*",
     "athena.scheduler.*",
     "athena.ai.*",
-    "athena.ai.providers.*",
 ]
 ignore_missing_imports = true
 

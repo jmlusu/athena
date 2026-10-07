@@ -16,6 +16,7 @@ import {
   Share2,
 } from "lucide-react";
 import { Opportunity } from "../../types";
+import { ATS_CRITICAL_MIN, ATS_FLAGGED_MAX, ATS_FLAGGED_MIN } from "../../lib/athena/metrics-registry";
 import { CircularGauge } from "../charts/CircularGauge";
 import { LinkedInExportModal } from "./LinkedInExportModal";
 
@@ -36,8 +37,8 @@ export const OpportunityDetailModal: React.FC<OpportunityDetailModalProps> = ({
 
   if (!opportunity) return null;
 
-  const isHigh = opportunity.atsScore >= 90;
-  const isFlag = opportunity.atsScore >= 80 && opportunity.atsScore < 90;
+  const isHigh = opportunity.atsScore >= ATS_CRITICAL_MIN;
+  const isFlag = opportunity.atsScore >= ATS_FLAGGED_MIN && opportunity.atsScore < ATS_FLAGGED_MAX;
 
   return (
     <>

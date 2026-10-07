@@ -4,7 +4,10 @@ import { execFileSync } from "node:child_process";
 
 const ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const results = [];
-const RUFF_BASELINE = 81;
+const RUFF_BASELINE = 80;
+const SKIP = new Set(
+  (process.env.HEALTH_SKIP ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+);
 
 function record(name, status, detail) {
   results.push({ name, status, detail });
@@ -98,7 +101,8 @@ function gitFiles() {
 }
 
 // 4. types (tsc --noEmit)
-{
+if (SKIP.has("types")) record("types", "SKIP", "delegated to CI quality job");
+else {
   const r = run("npm", ["run", "lint"]);
   record("types", r.code === 0 ? "PASS" : "FAIL",
     r.code === 0 ? "tsc --noEmit clean" : r.out.trim().split("\n").slice(-8).join("\n"));
@@ -116,7 +120,8 @@ function gitFiles() {
 }
 
 // 6. tests
-{
+if (SKIP.has("tests")) record("tests", "SKIP", "delegated to CI quality/backend-quality jobs");
+else {
   const unit = run("npm", ["run", "test:unit"]);
   const unitPass = (unit.out.match(/ℹ pass (\d+)/) ?? [])[1] ?? "?";
   const unitFail = (unit.out.match(/ℹ fail (\d+)/) ?? [])[1] ?? "?";
@@ -126,12 +131,13 @@ function gitFiles() {
   if (unit.code !== 0 || pytest.code !== 0) {
     record("tests", "FAIL", `node: ${unitPass} passed/${unitFail} failed; pytest: ${pyPass} passed/${pyFail} failed`);
   } else {
-    record("tests", "PASS", `node ${unitPass}/58 pass, pytest ${pyPass} passed`);
+    record("tests", "PASS", `node ${unitPass} pass, pytest ${pyPass} passed`);
   }
 }
 
 // 7. build
-{
+if (SKIP.has("build")) record("build", "SKIP", "delegated to CI quality job");
+else {
   const r = run("npm", ["run", "build"]);
   record("build", r.code === 0 ? "PASS" : "FAIL",
     r.code === 0 ? "vite + esbuild bundle OK" : r.out.trim().split("\n").slice(-8).join("\n"));
@@ -143,7 +149,8 @@ function gitFiles() {
   const forbidden = tracked.filter((f) =>
     /\.(key|pem|p12|pfx)$/.test(f) || /^\.env$/.test(f) || /(^|\/)\.env\.(local|development|production)$/.test(f),
   );
-  const keyScan = run("git", ["grep", "-lE", "AIza[0-9A-Za-z_-]{35}|BEGIN [A-Z ]*PRIVATE KEY"]);
+  const keyScan = run("git", ["grep", "-lE",
+    "AIza[0-9A-Za-z_-]{35}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{22,}|xox[baprs]-[A-Za-z0-9-]{10,}|BEGIN [A-Z ]*PRIVATE KEY|sk-[A-Za-z0-9]{32,}"]);
   const hits = keyScan.code === 0 ? keyScan.out.split(/\r?\n/).filter(Boolean) : [];
   if (forbidden.length || hits.length) {
     const parts = [];
@@ -179,6 +186,7 @@ record("e2e", "WARN", "not run — requires backend+frontend services (npm run t
 const fail = results.filter((r) => r.status === "FAIL").length;
 const warn = results.filter((r) => r.status === "WARN").length;
 const pass = results.filter((r) => r.status === "PASS").length;
+const skip = results.filter((r) => r.status === "SKIP").length;
 const overall = fail > 0 ? "FAIL" : warn > 0 ? "WARN" : "PASS";
-console.log(`\nSUMMARY: ${pass} PASS, ${warn} WARN, ${fail} FAIL → ${overall}`);
+console.log(`\nSUMMARY: ${pass} PASS, ${warn} WARN${skip ? `, ${skip} SKIP` : ""}, ${fail} FAIL → ${overall}`);
 process.exit(fail > 0 ? 1 : 0);

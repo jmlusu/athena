@@ -30,10 +30,10 @@ graph TB
         subgraph FASTAPI["FastAPI Service"]
             direction TB
             MW["<b>Middleware chain</b><br/>CORS allowlist → rate limit 100/min/IP<br/>→ X-API-Key (mutating verbs only)<br/>→ CSP · HSTS · X-Frame-Options · Referrer-Policy"]
-            RT["<b>api/routes.py</b> — 31 CRUD endpoints<br/>/jobs · /profiles · /applications · /receipts<br/>/stats · /scrape · /process · /match<br/>/score · /scheduler/start|stop|status"]
+            RT["<b>api/routes.py</b> — 36 CRUD endpoints<br/>/jobs · /profiles · /applications · /receipts<br/>/stats · /scrape · /process · /match<br/>/score · /scheduler/start|stop|status"]
             AIR["<b>api/ai_routes.py</b><br/>/ai/score-ats · tailor-resume · tailor-document<br/>/ai/dehumanize · scrape-live · n8n/dispatch<br/>/ai/submit-application (rejects without<br/>authorization_signature)<br/>/ai/webhooks/n8n (ingress from n8n)"]
-            MET["<b>metrics/prometheus.py</b><br/>GET /api/v1/athena/metrics<br/><i>auth-exempt</i>"]
-            HP["GET /health · /docs · /redoc · /openapi.json"]
+            MET["<b>metrics/prometheus.py</b><br/>GET /api/v1/athena/metrics<br/><i>API-key auth + rate-limited</i>"]
+            HP["GET /health · /docs · /redoc · /openapi.json<br/><i>docs dev-only (ATHENA_AUTH_MODE=open)</i>"]
         end
 
         subgraph DOMAIN["Domain Modules — backend/src/athena/"]
@@ -45,7 +45,7 @@ graph TB
             AUTO["<b>automation/</b><br/>browser.py (Playwright stealth)<br/>form_filler.py · submitter.py<br/>7-stage submitter + LocalApprovalGate"]
             AIPV["<b>ai/providers/</b><br/>base.py ABC → factory.py<br/>gemini.py ⇄ fallback.py (rule-based)"]
             SCHED["<b>scheduler/</b> — APScheduler AsyncIOScheduler<br/>4h scrape · 30m process · 1d cleanup<br/>autostart via lifespan"]
-            ADAPT["<b>adapters/</b> · <b>models/</b><br/>ai_studio.py · Pydantic v2 domain models"]
+            ADAPT["<b>models/</b><br/>Pydantic v2 domain models<br/>status_mapping.py = canonical status map"]
         end
     end
 
@@ -58,7 +58,7 @@ graph TB
         JSONL["<b>JSONL collections</b> — AthenaStore[T] + filelock<br/>jobs.jsonl · applications.jsonl<br/>user_profiles.jsonl · scrape_jobs.jsonl"]
         DOCDIR["<b>Documents</b><br/>company/athena/documents/{profile_id}/*.docx"]
         EMB["<b>Embeddings cache</b><br/>company/athena/embeddings_cache/{hash}.npy"]
-        LOCKS["<b>Agent locks</b> — filelock<br/>artifacts/locks/*.lock"]
+        LOCKS["<b>Agent locks</b> — Node namespace<br/>artifacts/locks/*.lock (server.ts)<br/>Python: company/athena/locks/"]
         PROF["<b>Applicant dossier</b> — profile/<br/>resume · education · certs · ATS keywords"]
     end
 
@@ -184,7 +184,7 @@ graph LR
 |---|---|
 | Express BFF + SPA (dev) | 3000 |
 | FastAPI (local) | 8000 |
-| FastAPI (E2E) | 8001 |
+| FastAPI (E2E) | 8000 |
 | Express (prod, `npm start`) | 3000 |
 
 ### Communication

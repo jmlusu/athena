@@ -2,6 +2,8 @@
 
 **Purpose:** Allow LightSpeed agents to aggressively sanitize, consolidate, and streamline the repository while ensuring that every meaningful change is reviewable, reversible, and independently verifiable.
 
+**Agent authority levels (A0–A4):** see `docs/agent-authority-matrix.md` — what each agent class may observe, modify, or delete autonomously.
+
 ---
 
 # 1. CORE GOVERNANCE PRINCIPLE

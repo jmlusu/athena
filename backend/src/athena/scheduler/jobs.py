@@ -156,9 +156,7 @@ class AthenaScheduler:
 
             for job in jobs:
                 existing = (
-                    existing_by_source_id.get(job.source_job_id)
-                    if job.source_job_id
-                    else None
+                    existing_by_source_id.get(job.source_job_id) if job.source_job_id else None
                 )
                 if existing:
                     job.id = existing.id
