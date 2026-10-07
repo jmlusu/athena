@@ -23,6 +23,12 @@ Supersedes the 2026-10-06 list. Resolved questions recorded with commit evidence
 | NEW-Q3 | humanizer.py + automation/ fate? | **ANSWERED: KEEP as live features** → B3/B4 = KEEP; ARCHITECTURE A6/A7 listings stand as-is |
 | NEW-Q4 | Deployment story? | **ANSWERED: removed-for-good; keep `backend/Dockerfile` as reference** → delete `Caddyfile` (B8), no compose restore |
 | NEW-Q5 | Auth posture scope? | **ANSWERED: security track (Wave C, Gate 4) IS in scope for this cleanup branch** → S1/S2/S3 proceed under Gate 4 |
+| NEW-Q7 | mypy in CI? | **RESOLVED (a) advisory CI job** — `8b47fc6` (job `typecheck`, continue-on-error; 160 known errors) |
+| NEW-Q8 | Ruff tests scope / baseline? | **RESOLVED lint-then-hold** — tests linted in `7d1c921`, format baseline `071aeac`, count 80 (`health.mjs` ratcheted) |
+| NEW-Q9 | agent-authority-matrix merge/cross-link? | **RESOLVED cross-link + fix** — §15 rewritten to JSONL reality, linked from PROTOCOL + AGENTS §2, `9b0f159` |
+| NEW-Q10 | vite-family → devDependencies? | **RESOLVED** — `d8f68ee` (full + `--omit=dev` install verified) |
+| NEW-Q11 | Legacy auth aliases? | **RESOLVED document-path** — kept in `_get_api_keys`, documented in `.env.example` advanced block (`25e1d19`) |
+| NEW-Q14 | mockData / fixture fictionalization? | **RESOLVED** — persona `9df6f9e`, keyword_bank `788715f`, test_profile deleted `2a568a0` (Gate 4 approved) |
 
 ---
 

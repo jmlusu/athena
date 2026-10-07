@@ -6,13 +6,15 @@
 
 ---
 
-## [2.4.0] — 2026-10-06 (Repository Consolidation & Health Gate)
+## [2.4.0] — 2026-10-07 (Repository Consolidation & Health Gate)
 
 ### Added
-- `npm run health` — single repository health check (structure, dependencies, configuration, types, lint baseline, tests, build, security, generated-artifacts, git-status, e2e) + CI `health` job
+- `npm run health` — single repository health check (structure, dependencies, configuration, types, lint baseline, tests, build, security, generated-artifacts, git-status, e2e) + CI `health` job with `HEALTH_SKIP` de-duplication
 - `docs/REPOSITORY_HEALTH.md` — before/after metrics and remaining technical-debt register
 - Metrics registry `src/lib/athena/metrics-registry.ts` (ATS thresholds, stats/funnel math), adopted by `MetricsAndBarChart`
 - `repo-audit/` refreshed: Phase 1 read-only audit deliverables (inventory, dependency map, duplicates, dead code, configuration, documentation, security) + phased approval protocol
+- Cross-language status contract test (`backend/tests/test_status_contract.py`) pinning `status_mapping.py` ↔ `athena-mapper.ts`
+- CI advisory mypy job; direct `npm run test:unit` step in CI
 
 ### Changed
 - Documentation consolidated into `docs/` with `docs/archive/` historical separation
@@ -20,10 +22,22 @@
 - README: repo map, documentation index, corrected scraper/test/CI facts
 - Configuration aligned with reality; unused npm dependencies removed (`@google/genai`, `motion`, `autoprefixer`)
 - E2E results recorded: 57/66 pass (3 pre-existing failures × 3 browsers)
+- Status mapping: Python canonical + TS derived (`fetched→discovered`, `scored→evaluated`); ATS 90/80 thresholds single-sourced
+- CI hardened: `ruff format --check` hard gate, `ruff check --fix` masking dropped, all actions SHA-pinned, uv pinned `0.12.5` in Dockerfile
+- Backend deps trimmed (structlog, types-requests, pydantic-settings, python-multipart, pytest-cov, lxml pin); vite-family moved to devDependencies
+
+### Security
+*(Wave C — APPROVAL GATE 4, approved 2026-10-07)*
+- **Fail-closed API key** (S1/C29): dev fallback loopback-only, `CHANGE_ME` sentinel, non-loopback start without a real key refused
+- **PII reads authenticated** (S2): `/profiles*`, `/applications*`, `/receipts*` GETs need key or loopback; **BFF binds `127.0.0.1`** by default (S3, closes DEF-008)
+- **Credential stash dropped** (S4) after review; no rotation (local-only, never pushed)
+- **Pushed-history PII documented-acceptance** for private repo (S7–S9, conditions in `docs/integration/MERGE_DECISIONS.md`)
+- **Real-PII persona fictionalized** in bundle fixtures (S5/S20); `scripts/profile_schema.json` untracked + gitignored (S6)
 
 ### Removed
 - Stale `athena/` fork (duplicate backend/frontend) and one-off cleanup scripts
 - Generated artifacts untracked (`.npy`, `*.egg-info`, `*.jsonl`, junk logs); `.gitignore` hardened
+- Dead code/config: `adapters/`, `api/server.py`, `src/lockfile.ts`, 26 unused `api.ts` methods, `Caddyfile`, duplicate runner `.bat`, dead git-hooks script, `scripts/test_profile.json`
 
 ### Notes
 - Ruff baseline: 80 pre-existing errors tolerated by CI (no new errors)
