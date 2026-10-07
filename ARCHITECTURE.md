@@ -32,8 +32,8 @@ graph TB
             MW["<b>Middleware chain</b><br/>CORS allowlist → rate limit 100/min/IP<br/>→ X-API-Key (mutating verbs only)<br/>→ CSP · HSTS · X-Frame-Options · Referrer-Policy"]
             RT["<b>api/routes.py</b> — 36 CRUD endpoints<br/>/jobs · /profiles · /applications · /receipts<br/>/stats · /scrape · /process · /match<br/>/score · /scheduler/start|stop|status"]
             AIR["<b>api/ai_routes.py</b><br/>/ai/score-ats · tailor-resume · tailor-document<br/>/ai/dehumanize · scrape-live · n8n/dispatch<br/>/ai/submit-application (rejects without<br/>authorization_signature)<br/>/ai/webhooks/n8n (ingress from n8n)"]
-            MET["<b>metrics/prometheus.py</b><br/>GET /api/v1/athena/metrics<br/><i>auth-exempt</i>"]
-            HP["GET /health · /docs · /redoc · /openapi.json"]
+            MET["<b>metrics/prometheus.py</b><br/>GET /api/v1/athena/metrics<br/><i>API-key auth + rate-limited</i>"]
+            HP["GET /health · /docs · /redoc · /openapi.json<br/><i>docs dev-only (ATHENA_AUTH_MODE=open)</i>"]
         end
 
         subgraph DOMAIN["Domain Modules — backend/src/athena/"]

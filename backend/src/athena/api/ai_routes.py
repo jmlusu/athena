@@ -158,7 +158,9 @@ async def submit_application(
     """Generate submission receipt with human authorization.
 
     Requires X-API-Key header AND authorization_signature in request body.
-    This is the formal submission endpoint that creates a cryptographic receipt.
+    The signature is presence-checked (non-empty), not cryptographically
+    verified; the receipt records it as a signed attestation. The returned
+    confirmation_hash is an opaque reference label, not a SHA-256 digest.
     """
     if not request.authorization_signature:
         raise HTTPException(
