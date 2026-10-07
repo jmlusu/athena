@@ -66,6 +66,8 @@ artifacts/
 # Profile documents (user uploads)
 profile/
 .media/
+# Regenerable from profile/*.md by scripts/build_profile_payload.py (contains PII)
+scripts/profile_schema.json
 
 # Tool caches
 .opencode/
